@@ -233,7 +233,9 @@ public class Xml {
                         add(removeQuotes(toAdd));
                     }
                 }else if (value.startsWith(FileUtility.SET_OPERATION)){
+
                     String toSet = value.substring(FileUtility.SET_OPERATION.length()).trim();
+
                     set(removeQuotes(toSet)); // supports value and <value/>...
                 }else{// value or <value/>...
                     set(removeQuotes(value));
@@ -309,31 +311,4 @@ public class Xml {
         return rtrn;
     }
 
-
-    public static void main(String[] args) {
-        String fooxml = "<foo name=\"foo\"><bar name=\"bar\"><biz name=\"biz\"/></bar><bar name=\"bar.bar\"/></foo>";
-        Xml loaded = new XmlLoader().loadXml(fooxml);
-        System.out.println("initial");
-        System.out.println(loaded.documentString());
-
-//        String modify = "++ @key=test";
-//        loaded.get("/foo/bar[@name=\"bar\"]").modify(modify);
-//
-//        System.out.println("\n"+modify);
-//        System.out.println(loaded.documentString());
-
-        String setBlurp = "blurp";
-        loaded.get("/foo/bar[@name=\"bar\"]").modify(setBlurp);
-
-        System.out.println("\n"+setBlurp);
-        System.out.println(loaded.documentString());
-
-        String setFoo = "++ <foo/><foo/><foooo>:)</foooo>";
-        loaded.get("/foo/bar[@name=\"bar\"]").modify(setFoo);
-
-        System.out.println("\n"+setFoo);
-        System.out.println(loaded.documentString());
-
-
-    }
 }
