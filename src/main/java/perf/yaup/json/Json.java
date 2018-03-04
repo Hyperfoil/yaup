@@ -294,6 +294,7 @@ public class Json {
             value = new Long(((Integer) value).longValue());
         }
         checkKeyType(key);
+
         if(has(key)){
             Object existing = get(key);
             if(existing instanceof Json && ( (Json)existing).isArray()){
@@ -338,7 +339,7 @@ public class Json {
     public String getString(Object key,String defaultValue) {
         return has(key) ? data.get(key).toString() : defaultValue;
     }
-    public Optional<String> optString(String key){
+    public Optional<String> optString(Object key){
         return Optional.ofNullable(getString(key));
     }
 
