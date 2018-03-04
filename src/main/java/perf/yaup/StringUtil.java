@@ -1,9 +1,31 @@
 package perf.yaup;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Created by wreicher
  */
 public class StringUtil {
+
+    private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+    public static char randNameChar(){
+        return VALID_REGEX_NAME_CHARS.charAt(ThreadLocalRandom.current().nextInt(0,  VALID_REGEX_NAME_CHARS.length()));
+    }
+
+    public static String generateRegexNameSubstitute(String input){
+        StringBuilder rtrn = new StringBuilder();
+        while(input.contains(rtrn.toString())){
+            rtrn.append(randNameChar());
+        }
+        return rtrn.toString();
+    }
+    public static String escapeRegex(String input){
+
+        String rtrn = input;
+        rtrn = rtrn.replaceAll("\\.(?<!\\\\\\.)","\\\\.");
+        return rtrn;
+    }
 
     public static int countOccurances(String toFind,String target){
         int count = 0;
@@ -60,4 +82,13 @@ public class StringUtil {
         }
         return costs[s2.length()];
     }
+
+    public static String removeQuotes(String value){
+        String rtrn = value;
+        if( (value.startsWith("\"")&& value.endsWith("\"")) || (value.startsWith("\'") && value.endsWith("\'"))) {
+            rtrn =value.substring(1,value.length()-1);
+        }
+        return rtrn;
+    }
+
 }
