@@ -1,9 +1,7 @@
 package perf.yaup.xml;
 
-import org.w3c.dom.Attr;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
+import org.w3c.dom.*;
+import perf.yaup.StringUtil;
 import perf.yaup.file.FileUtility;
 
 import javax.xml.transform.*;
@@ -103,6 +101,37 @@ public class Xml {
         NodeList children = node.getChildNodes();
         for(int i=0; i<children.getLength(); i++){
             rtrn.add(new Xml(children.item(i)));
+        }
+        return rtrn;
+    }
+    public Optional<Xml> optChild(String tagName){
+        Optional<Xml> rtrn = Optional.empty();
+        NodeList children = node.getChildNodes();
+        for(int i=0; i<children.getLength(); i++){
+            Node child = children.item(i);
+            if(tagName.equals(child.getNodeName())){
+                rtrn = Optional.of(new Xml(child));
+            }
+        }
+        return rtrn;
+    }
+    public Optional<Xml> optAttribute(String attributeName){
+        Optional<Xml> rtrn = Optional.empty();
+        NamedNodeMap attributes = node.getAttributes();
+        Node node = attributes.getNamedItem(attributeName);
+        if(node!=null){
+            rtrn = Optional.of(new Xml(node));
+        }
+        return rtrn;
+    }
+    public boolean hasChild(String tagName){
+        boolean rtrn = false;
+        NodeList children = node.getChildNodes();
+        for(int i=0; i<children.getLength();i++){
+            Node child = children.item(i);
+            if(tagName.equals(child.getNodeName())){
+                rtrn = true;
+            }
         }
         return rtrn;
     }
@@ -206,14 +235,14 @@ public class Xml {
                 if(value.startsWith(FileUtility.DELETE_OPERATION)){//--
                     delete();
                 }else if (value.startsWith(FileUtility.ADD_OPERATION)){//++ value
-                    String newValue = removeQuotes(value.substring(FileUtility.OPERATION_LENGTH).trim());
+                    String newValue = StringUtil.removeQuotes(value.substring(FileUtility.OPERATION_LENGTH).trim());
                     node.setNodeValue(node.getNodeValue()+newValue);
 
                 }else if (value.startsWith(FileUtility.SET_OPERATION)){//== value
-                    node.setNodeValue( removeQuotes( value.substring(FileUtility.OPERATION_LENGTH).trim() ) );
+                    node.setNodeValue( StringUtil.removeQuotes( value.substring(FileUtility.OPERATION_LENGTH).trim() ) );
 
                 }else{ //value
-                    node.setNodeValue( removeQuotes( value ) );
+                    node.setNodeValue( StringUtil.removeQuotes( value ) );
                 }
                 break;
             case Node.ELEMENT_NODE:
@@ -228,17 +257,17 @@ public class Xml {
                         String attributeKey = toAdd.substring(ATTRIBUTE_KEY.length(), valueIndex);
                         String attributeValue = toAdd.substring(valueIndex + ATTRIBUTE_VALUE_KEY.length());
                         Element elm = (Element) node;
-                        elm.setAttribute(attributeKey, removeQuotes(attributeValue));
+                        elm.setAttribute(attributeKey, StringUtil.removeQuotes(attributeValue));
                     } else {//++ value or //++ <value/><value/>... handled by add
-                        add(removeQuotes(toAdd));
+                        add(StringUtil.removeQuotes(toAdd));
                     }
                 }else if (value.startsWith(FileUtility.SET_OPERATION)){
 
                     String toSet = value.substring(FileUtility.SET_OPERATION.length()).trim();
 
-                    set(removeQuotes(toSet)); // supports value and <value/>...
+                    set(StringUtil.removeQuotes(toSet)); // supports value and <value/>...
                 }else{// value or <value/>...
-                    set(removeQuotes(value));
+                    set(StringUtil.removeQuotes(value));
                 }
                 break;
             default:
@@ -272,6 +301,8 @@ public class Xml {
         switch(node.getNodeType()){
             case Node.ATTRIBUTE_NODE:
                 return node.getNodeValue();
+            case Node.ELEMENT_NODE:
+                return node.getTextContent();
             default:
                 return node.getNodeValue();
         }
@@ -302,13 +333,6 @@ public class Xml {
         }
 
         return new String(baos.toByteArray());
-    }
-    private String removeQuotes(String value){
-        String rtrn = value;
-        if( (value.startsWith("\"")&& value.endsWith("\"")) || (value.startsWith("\'") && value.endsWith("\'"))) {
-            rtrn =value.substring(1,value.length()-1);
-        }
-        return rtrn;
     }
 
 }
