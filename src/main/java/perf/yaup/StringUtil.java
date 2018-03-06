@@ -24,6 +24,7 @@ public class StringUtil {
 
         String rtrn = input;
         rtrn = rtrn.replaceAll("\\.(?<!\\\\\\.)","\\\\.");
+        rtrn = rtrn.replaceAll("\\+(?<!\\\\\\+)","\\\\+");
         return rtrn;
     }
 

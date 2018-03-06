@@ -145,6 +145,7 @@ public class Xml {
     }
 
     public void setChild(String value){
+
         if(isEmpty()){
             return;
         }
@@ -194,6 +195,7 @@ public class Xml {
      * set the value of this. Will treat "<...>" as xml
      */
     public void set(String value){
+
         if(isEmpty()){
             return;
         }
@@ -221,15 +223,17 @@ public class Xml {
      * ++ value              : add the value to the attribute value or text value depending if this represents an attribute or element
      * ++ <value></value>... : add the value to the attribute value or add to the children elements
      * ++ @key=value         : add the attribute with value to this (will replace any existing value)
-     * == value              : sets the value same as [value]
-     * == <value></value>... : sets the value same as [<value></value>]
+     * == value              : sets the text value
+     * == <value></value>... : removes all current children and sets children to <value></value>
      *
      */
     public void modify(String value){
+
         if(isEmpty()){
             return;
         }
         int opIndex = -1;
+
         switch(node.getNodeType()){
             case Node.ATTRIBUTE_NODE:
                 if(value.startsWith(FileUtility.DELETE_OPERATION)){//--
@@ -303,10 +307,14 @@ public class Xml {
                 return node.getNodeValue();
             case Node.ELEMENT_NODE:
                 return node.getTextContent();
+            case Node.TEXT_NODE:
+                return node.getNodeValue();
             default:
                 return node.getNodeValue();
         }
+
     }
+    public String getName(){return node.getNodeName();}
     public String getValue(){return isEmpty()? "" : node.getNodeValue();}
     public String documentString(){
         return documentString(4);

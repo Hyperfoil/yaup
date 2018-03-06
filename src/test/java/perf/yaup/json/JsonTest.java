@@ -2,6 +2,7 @@ package perf.yaup.json;
 
 import org.json.JSONObject;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class JsonTest {
@@ -71,13 +72,13 @@ public class JsonTest {
 
     }
 
-    @Test
+    @Test @Ignore
     public void fromString(){
         Json expected = Json.fromString("[{\"comment\":\"comment1\"},{\"comment\":\"comment2\"},{\"key\":\"0Level1\"},{\"value\":\"hasValue\",\"key\":\"0Level1\",\"child\":[[{\"value\":\"normal\",\"key\":\"1\"},{\"value\":\"quoted[{]}\\\\\\\"Value\",\"key\":\"1\",\"child\":[[{\"value\":\"one\",\"key\":\"1.1\"},{\"value\":\"Alpha\",\"key\":\"1.1.a\"},{\"value\":\"Bravo\",\"key\":\"1.1.b\"}],[{\"value\":\"two\",\"key\":\"1.2\"},{\"value\":\"Yankee\",\"key\":\"1.2.y\"}],[{\"value\":\"Zulu\",\"key\":\"1.2.z\"}]]}]]},{\"comment\":\"inlineComment\",\"key\":\"0Level2\",\"child\":[[{\"key\":\"1\",\"child\":[[{\"key\":\"first\"},{\"key\":\"second\"},{\"key\":\"quoted\\\\\\\" :,[{]\"},{\"key\":\"other\"},[[{\"key\":\"subOne\"},{\"key\":\"subTwo\"}]],[[{\"value\":\"subValue\",\"key\":\"subKey\"}]],{\"key\":\"zed\"}]]},{\"value\":\"bar\",\"key\":\"2\"}]]}]\n");
-        System.out.println(expected.toString(2));
+
     }
 
-    @Test
+    @Test @Ignore
     public void indent(){
         Json json = new Json();
         json.set("a",new Json());
