@@ -57,26 +57,6 @@ public class XmlLoader {
         }
     }
 
-    public static void main(String[] args) {
-        String basePath = "/home/wreicher/runtime/wildfly-10.0.0.Final-pool/modules/system/layers/base/org/apache/activemq/artemis/main/";
-        String path = basePath+"module.xml"+FileUtility.SEARCH_KEY+"./resources/resource-root[@path]/@path";
-        XmlLoader loader = new XmlLoader();
-        HashFactory hasher = new HashFactory();
-        loader.getValues(path).forEach(s -> {
-            File f = new File(basePath+s);
-            if(f.exists()) {
-                if(f.isDirectory()){}
-                else {
-                    try {
-                        String fileHash = hasher.getInputHash(new FileInputStream(f));
-                        System.out.printf("  %-60s -> %s%n",s,fileHash);
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-    }
     public List<String> getValues(String pathValue){
         ArrayList<String> rtrn = new ArrayList<>();
         String searchPath;

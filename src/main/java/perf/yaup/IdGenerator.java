@@ -52,14 +52,4 @@ public class IdGenerator<T> {
             counter.set(val+1);
         }
     }
-
-    public static void main(String[] args) {
-
-        IdGenerator<Integer> id = new IdGenerator<>();
-
-        for(int i=0; i<100; i++){
-            System.out.println(id.getId(i));
-        }
-
-    }
 }

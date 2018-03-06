@@ -41,23 +41,6 @@ public class XmlOperation {
     private Operation operation;
     private String value;
 
-    public static void main(String[] args) {
-        //Xml xml = new XmlLoader().loadXml(new File("/home/wreicher/code/spec/jEnterpriseClean/modules/orders/src/main/webapp/WEB-INF/web.xml").toPath());
-        Xml xml = new XmlLoader().loadXml(new File("/home/wreicher/perfWork/standalone-full.xserver4.mfg-del-ins-driver-did-testing.xml").toPath());
-
-        xml.getAll("/server/profile/subsystem[@xmlns ='urn:jboss:domain:logging:3.0']").forEach(System.out::println);
-        System.exit(0);
-
-        List<XmlOperation> toApply = Arrays.asList(
-            XmlOperation.parse("/web-app/env-entry[env-entry-name = \"vehicle.service.host\"]/env-entry-value == laptop"),
-            XmlOperation.parse("/web-app/env-entry[env-entry-name = \"vehicle.service.port\"]/env-entry-value == 31337")
-        );
-        boolean modified = toApply.stream().map(op->op.apply(xml)).reduce(Boolean::logicalOr).orElse(false);
-        System.out.println("modified = "+modified);
-        //System.out.println(xml.documentString(4));
-    }
-
-
     public static XmlOperation parse(String input){
         String patternString = String.format("(?<operation>%s|%s|%s)", StringUtil.escapeRegex(ADD_OPERATION), StringUtil.escapeRegex(DELETE_OPERATION), StringUtil.escapeRegex(SET_OPERATION));
         Pattern operationPattern = Pattern.compile(patternString);

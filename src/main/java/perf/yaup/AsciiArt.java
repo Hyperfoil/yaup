@@ -64,9 +64,6 @@ public class AsciiArt {
     }
 
 
-    public static void main(String[] args) {
-        System.out.println("testing \033[0;37;41mCOLOR1\033[1;35;44mCOLOR2\033[m");
-    }
 
     public static char horiz(double value){
         return horiz(value,100);
