@@ -123,7 +123,9 @@ public class XmlOperationTest {
 
         String replaced = XmlOperation.replaceXmlnsAttribute(search);
 
-        assertFalse("should not find @xmlns",replaced.contains("@xmlns"));
+
+
+        assertFalse("should not find @xmlns but found: "+replaced,replaced.contains("@xmlns"));
         assertEquals("shoudl replace both references",
                 "/foo[starts-with(namespace::*[name()=\"\"]=\"urn:foo:bar:biz\"]/bar[starts-with(namespace::*[name()=\"biz\"]=\"foo:biz:buz\"]",
                 replaced);

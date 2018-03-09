@@ -17,7 +17,7 @@ import static perf.yaup.file.FileUtility.SET_OPERATION;
 public class XmlOperation {
 
     private static final String NAMESPACE_PATTERN = "starts-with(namespace::*[name()=\"%s\"]=\"%s\"";
-    private static final String XMLNS_PATTERN = "^@xmlns:?(?<prefix>[^=\\s]*)\\s*=\\s*['\"]?(?<namespace>[^\\s'\\\"\\]]+)['\"]?";
+    private static final String XMLNS_PATTERN = "@xmlns:?(?<prefix>[^=\\s]*)\\s*=\\s*['\"]?(?<namespace>[^\\s'\\\"\\]]+)['\"]?";
     private static final String XPATH_ATTRIBUTE_CRITERIA_PATTERN="^\\s*@(?<name>[^\\s=\\]]+)\\s*";
 
 
