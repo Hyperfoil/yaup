@@ -81,4 +81,63 @@ public class XmlOperation {
         }
         return modified;
     }
+    public static int lastPathIndex(String path) {
+        int rtrn = -1;
+        if (path.contains("/")) {
+            rtrn = path.length();
+            boolean stop = false;
+            char quoteChar = '"';
+            boolean inQuote = false;
+            boolean inCtriteria = false;
+            while (rtrn > 0 && !stop) {
+                rtrn--;
+                switch (path.charAt(rtrn)) {
+                    case '\'':
+                    case '"':
+                        if (!inQuote) {
+                            inQuote = true;
+                            quoteChar = path.charAt(rtrn);
+                        } else {
+                            if (quoteChar == path.charAt(rtrn)) {//potentially end of quote
+                                if (rtrn > 0 && '\\' == path.charAt(rtrn - 1)) {//it's escaped, not end
+                                    rtrn--;
+                                } else {
+                                    inQuote = false;
+                                }
+                            }
+                        }
+                        break;
+                    case ']':
+                        if (!inQuote) {
+                            inCtriteria = true;
+                        }
+                        break;
+                    case '[':
+                        if (!inQuote && inCtriteria) {
+                            inCtriteria = false;
+                        }
+                        break;
+                    case '/':
+                        if (!inQuote && !inCtriteria) {
+                            stop = true;
+                            rtrn++;//back track because we don't want to capture the slash
+                        }
+                        break;
+                }
+            }
+        }
+        return rtrn;
+    }
+    public static String lastPathFragment(String path){
+        String rtrn = "";
+        int i = lastPathIndex(path);
+
+        if(i<0){
+            i=0;
+        }
+        rtrn = path.substring(i);
+
+        return rtrn;
+    }
+
 }
