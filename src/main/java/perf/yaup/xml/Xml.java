@@ -39,9 +39,14 @@ public class Xml {
     protected Xml(Node node){
         this.node = node;
     }
+
+    //legacy
     public boolean isEmpty(){return node==null;}
 
+    public boolean exists(){return node!=null;}
+
     public Xml get(String search){
+        //TODO detect simple attribute or child search and use attribute / firstChild
         List<Xml> list = getAll(search);
         return list.isEmpty() ? EMPTY : list.get(0);
     }
@@ -104,6 +109,23 @@ public class Xml {
         }
         return rtrn;
     }
+    public Xml firstChild(String tagName){
+        Xml rtrn = null;
+        if(isEmpty()){
+            rtrn = new Xml(null);
+        }else {
+            NodeList children = node.getChildNodes();
+            for (int i = 0; i < children.getLength(); i++) {
+                Node child = children.item(i);
+                if (tagName.equals(child.getNodeName())) {
+                    if (rtrn == null) {
+                        rtrn = new Xml(child);
+                    }
+                }
+            }
+        }
+        return rtrn;
+    }
     public Optional<Xml> optChild(String tagName){
         Optional<Xml> rtrn = Optional.empty();
         NodeList children = node.getChildNodes();
@@ -112,6 +134,17 @@ public class Xml {
             if(tagName.equals(child.getNodeName())){
                 rtrn = Optional.of(new Xml(child));
             }
+        }
+        return rtrn;
+    }
+    public Xml attribute(String name){
+        Xml rtrn = null;
+        if(isEmpty()){
+            rtrn = new Xml(null);
+        }else{
+            NamedNodeMap attributes = node.getAttributes();
+            Node attributeNode = attributes.getNamedItem(name);
+            rtrn = new Xml(attributeNode);
         }
         return rtrn;
     }
@@ -258,8 +291,8 @@ public class Xml {
 
                     if (toAdd.startsWith(ATTRIBUTE_KEY)) { //++ @key=value
                         int valueIndex = toAdd.indexOf(ATTRIBUTE_VALUE_KEY);
-                        String attributeKey = toAdd.substring(ATTRIBUTE_KEY.length(), valueIndex);
-                        String attributeValue = toAdd.substring(valueIndex + ATTRIBUTE_VALUE_KEY.length());
+                        String attributeKey = toAdd.substring(ATTRIBUTE_KEY.length(), valueIndex).trim();
+                        String attributeValue = toAdd.substring(valueIndex + ATTRIBUTE_VALUE_KEY.length()).trim();
                         Element elm = (Element) node;
                         elm.setAttribute(attributeKey, StringUtil.removeQuotes(attributeValue));
                     } else {//++ value or //++ <value/><value/>... handled by add
