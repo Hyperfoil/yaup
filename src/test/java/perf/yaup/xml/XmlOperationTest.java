@@ -6,7 +6,6 @@ import perf.yaup.file.FileUtility;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 
 public class XmlOperationTest {
 
@@ -92,10 +91,10 @@ public class XmlOperationTest {
     public void applySetMissingAttribute(){
         String xmlContent = "<foo>bizz</foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
-        XmlOperation op = XmlOperation.parse("/foo/@key "+FileUtility.SET_OPERATION+" value");
+        XmlOperation op = XmlOperation.parse("/foo/@key "+FileUtility.SET_OPERATION+" value with space");
         op.apply(xml);
         assertFalse("should add path's @key to value when missing",xml.attribute("key").isEmpty());
-        assertEquals("value",xml.attribute("key").toString());
+        assertEquals("value with space",xml.attribute("key").toString());
     }
     @Test
     public void appplySetMissingTag(){
@@ -127,7 +126,7 @@ public class XmlOperationTest {
 
         assertFalse("should not find @xmlns but found: "+replaced,replaced.contains("@xmlns"));
         assertEquals("shoudl replace both references",
-                "/foo[starts-with(namespace::*[name()=\"\"]=\"urn:foo:bar:biz\"]/bar[starts-with(namespace::*[name()=\"biz\"]=\"foo:biz:buz\"]",
+                "/foo[starts-with(namespace::*[name()=\"\"],\"urn:foo:bar:biz\")]/bar[starts-with(namespace::*[name()=\"biz\"],\"foo:biz:buz\")]",
                 replaced);
     }
 

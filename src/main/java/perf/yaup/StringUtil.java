@@ -29,7 +29,11 @@ public class StringUtil {
 
         String rtrn = input;
         rtrn = rtrn.replaceAll("\\.(?<!\\\\\\.)","\\\\.");
+        rtrn = rtrn.replaceAll("\\*(?<!\\\\\\.)","\\\\*");
         rtrn = rtrn.replaceAll("\\+(?<!\\\\\\+)","\\\\+");
+        rtrn = rtrn.replaceAll("\\?(?<!\\\\\\?)","\\\\?");
+        rtrn = rtrn.replaceAll("\\^(?<!\\\\\\^)","\\\\^");
+        rtrn = rtrn.replaceAll("\\$(?<!\\\\\\$)","\\\\\\$");
         return rtrn;
     }
 
@@ -94,6 +98,13 @@ public class StringUtil {
         }
         return costs[s2.length()];
     }
+
+    /**
+     * Find the first occurance of a character in toFind that is not wrapped in ' or "
+     * @param input
+     * @param toFind
+     * @return
+     */
     public static String findNotQuoted(String input,String toFind){
         //validity traps
         if(input==null){ return ""; }
@@ -146,5 +157,19 @@ public class StringUtil {
         }
         return rtrn;
     }
-
+    public static int indexNotMatching(String input,String toFind,int start) {
+        int index = start;
+        boolean stop = false;
+        HashSet<Character> chars = new HashSet<>();
+        if (toFind != null) {
+            char charArray[] = toFind.toCharArray();
+            for (int i = 0; i < charArray.length; i++) {
+                chars.add(charArray[i]);
+            }
+        }
+        while (!stop && index < input.length() && chars.contains(input.charAt(index))) {
+            index++;
+        }
+        return index;
+    }
 }

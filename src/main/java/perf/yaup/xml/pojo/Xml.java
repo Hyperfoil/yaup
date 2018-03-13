@@ -2,9 +2,7 @@ package perf.yaup.xml.pojo;
 
 //import com.sun.xml.internal.stream.events.StartDocumentEvent;
 
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
@@ -25,15 +23,6 @@ public class Xml {
 
     public static final String ATTRIBUTE_VALUE_PREFIX="=";
     public static final String ATTRIBUTE_WRAPPER="\"";
-
-    public static void main(String[] args) {
-        Xml xml = parseFile("/home/wreicher/perfWork/standalone-full.xserver4.mfg-del-ins-driver-did-testing.xml");
-        //xml = parseFile("/home/wreicher/code/spec/jEnterpriseClean/faban/run.xml.template");
-
-
-
-        System.out.println(xml.documentString(2));
-    }
 
     public static Xml parseFile(String path){
         Xml rtrn = null;
@@ -56,26 +45,27 @@ public class Xml {
         parentStack.push(rtrn);
         XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 
+
         try {
             XMLEventReader xmlEventReader = xmlInputFactory.createXMLEventReader(stream);
             while (xmlEventReader.hasNext()) {
                 XMLEvent xmlEvent = xmlEventReader.nextEvent();
-//                if(xmlEvent.isStartDocument()){
-//
-//                    StartDocumentEvent startDocumentEvent = (StartDocumentEvent)xmlEvent;
-//                    if(startDocumentEvent.getVersion()!=null){
-//                        rtrn.setAttribute(new Xml(Type.Attribute,"version",startDocumentEvent.getVersion()));
-//                    }
-//                    if(startDocumentEvent.encodingSet()){
-//                        rtrn.setAttribute(new Xml(Type.Attribute,"encoding",startDocumentEvent.getCharacterEncodingScheme()));
-//                    }
-//                    if(startDocumentEvent.getSystemId()!=null){
-//                        rtrn.setAttribute(new Xml(Type.Attribute,""));
-//                    }
-//                    if(startDocumentEvent.standaloneSet()){
-//                        rtrn.setAttribute(new Xml(Type.Attribute,"standalone",startDocumentEvent.isStandalone()?"yes":"no"));
-//                    }
-//                }
+                if(xmlEvent.isStartDocument()){
+
+                    StartDocument startDocumentEvent = (StartDocument)xmlEvent;
+                    if(startDocumentEvent.getVersion()!=null){
+                        rtrn.setAttribute(new Xml(Type.Attribute,rtrn,"version",startDocumentEvent.getVersion()));
+                    }
+                    if(startDocumentEvent.encodingSet()){
+                        rtrn.setAttribute(new Xml(Type.Attribute,rtrn,"encoding",startDocumentEvent.getCharacterEncodingScheme()));
+                    }
+                    if(startDocumentEvent.getSystemId()!=null){
+                        rtrn.setAttribute(new Xml(Type.Attribute,rtrn,""));
+                    }
+                    if(startDocumentEvent.standaloneSet()){
+                        rtrn.setAttribute(new Xml(Type.Attribute,rtrn,"standalone",startDocumentEvent.isStandalone()?"yes":"no"));
+                    }
+                }
 
                 if(xmlEvent.isStartElement()){
 
@@ -86,8 +76,6 @@ public class Xml {
                         newElementName = startElement.getName().getPrefix()+":"+newElementName;
                     }
                     Xml newElement = new Xml(Type.Tag,parentStack.peek(),newElementName);
-
-                    parentStack.push(newElement);
 
                     for(Iterator<Namespace> namespaceIterator = startElement.getNamespaces(); namespaceIterator.hasNext();){
                         Namespace namespace = namespaceIterator.next();
@@ -130,6 +118,7 @@ public class Xml {
 
 
                 }else if (xmlEvent.isEndElement()){
+
                     parentStack.pop();
                 }else if (xmlEvent.isEndDocument()){
 
@@ -138,6 +127,7 @@ public class Xml {
         }catch (XMLStreamException e) {
             e.printStackTrace();
         }
+
         return rtrn;
     }
 
@@ -295,7 +285,7 @@ public class Xml {
 
     @Override
     public String toString(){
-        return value;
+        return isDocument() ? "?xml" : (getName()+":"+value);
     }
 
     public String documentString(){

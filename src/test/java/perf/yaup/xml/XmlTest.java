@@ -8,9 +8,7 @@ public class XmlTest {
     @Test @Ignore
     public void toStringTest(){
         XmlLoader loader = new XmlLoader();
-
         Xml loaded = loader.loadXml("<foo><bar>one</bar></foo>");
-
     }
 
 

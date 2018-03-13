@@ -45,10 +45,18 @@ public class Xml {
 
     public boolean exists(){return node!=null;}
 
-    public Xml get(String search){
+    public Xml get(String search) {
         //TODO detect simple attribute or child search and use attribute / firstChild
-        List<Xml> list = getAll(search);
-        return list.isEmpty() ? EMPTY : list.get(0);
+        if (!search.contains("/") && !search.contains("[") && search.startsWith("@")) {
+            //just an attribute
+            return attribute(search);
+        } else if ( !search.contains("@") && search.lastIndexOf("/")<=0 && !search.contains("[")) {
+            //just a tag
+            return firstChild(search);
+        } else {
+            List<Xml> list = getAll(search);
+            return list.isEmpty() ? EMPTY : list.get(0);
+        }
     }
     public List<Xml> getAll(String search){
         if(isEmpty()){
@@ -56,8 +64,9 @@ public class Xml {
         }
         ArrayList<Xml> rtrn = new ArrayList<>();
         XPath xPath = xPathFactory.newXPath();
+
         try {
-            NodeList nodeList = (NodeList) xPath.evaluate(search, node, XPathConstants.NODESET);
+            NodeList nodeList = (NodeList) xPath.compile(search).evaluate(node, XPathConstants.NODESET);
             for(int i=0; i<nodeList.getLength(); i++){
                 Node node = nodeList.item(i);
                 rtrn.add(new Xml(node));
@@ -79,7 +88,8 @@ public class Xml {
         }
     }
 
-    public void trimEmptyText(){
+    private void trimEmptyText(Node toTrim){
+
         if(isEmpty()){
             return;
         }
@@ -88,7 +98,7 @@ public class Xml {
             xpathExp = xPathFactory.newXPath().compile(
                     "//text()[normalize-space(.) = '']");
             NodeList emptyTextNodes = (NodeList)
-                    xpathExp.evaluate(node, XPathConstants.NODESET);
+                    xpathExp.evaluate(toTrim, XPathConstants.NODESET);
             // Remove each empty text node from document.
             for (int i = 0; i < emptyTextNodes.getLength(); i++) {
                 Node emptyTextNode = emptyTextNodes.item(i);
@@ -109,15 +119,19 @@ public class Xml {
         }
         return rtrn;
     }
+
     public Xml firstChild(String tagName){
         Xml rtrn = null;
+        if(tagName==null){
+            return new Xml(null);
+        }
         if(isEmpty()){
             rtrn = new Xml(null);
         }else {
             NodeList children = node.getChildNodes();
             for (int i = 0; i < children.getLength(); i++) {
                 Node child = children.item(i);
-                if (tagName.equals(child.getNodeName())) {
+                if (child!=null && tagName.equals(child.getNodeName())) {
                     if (rtrn == null) {
                         rtrn = new Xml(child);
                     }
@@ -137,6 +151,7 @@ public class Xml {
         }
         return rtrn;
     }
+
     public Xml attribute(String name){
         Xml rtrn = null;
         if(isEmpty()){
@@ -186,8 +201,6 @@ public class Xml {
         addChild(value);
     }
     private void addChild(String value){
-
-
 
         value = "<cld>"+value+"</cld>";
         List<Xml> xmls = xmlLoader.loadXml(value).getChildren();
@@ -353,7 +366,8 @@ public class Xml {
         return documentString(4);
     }
     public String documentString(int indent){
-        trimEmptyText();
+        Node toPrint = node.cloneNode(true);
+        trimEmptyText(toPrint);
         Transformer transformer = null;
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
@@ -364,7 +378,7 @@ public class Xml {
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", Integer.toString(indent));
-            DOMSource source = new DOMSource(node);
+            DOMSource source = new DOMSource(toPrint);
             StreamResult result = new StreamResult(baos);
             transformer.transform(source, result);
         } catch (TransformerConfigurationException e) {

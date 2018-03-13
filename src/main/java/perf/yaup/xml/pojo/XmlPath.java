@@ -1,49 +1,27 @@
 package perf.yaup.xml.pojo;
 
+import perf.yaup.StringUtil;
+
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class XmlPath {
 
-    private static final String PARENT_PREFIX = "./";
-    private static final String RELATIVE_PREFIX = "./";
-    private static final String DEEP_SEARCH = "//";
-    private static final String TAG_SEPARATOR = "/";
-    private static final String ATTRIBUTE_PREFIX = "@";
-    private static final String CRITERIA_LIST_PREFIX = "[";
-    private static final String CRITERIA_LIST_SUFFIX = "]";
-
-    private static final String DOTS = "(?<dots>\\.{0,2})";
-    private static final String SLASHES = "(?<slashes>/{0,2})";
-
-    private static final Pattern TAG_NAME_PATTERN = Pattern.compile(("^"+DOTS+SLASHES+"\\s*(?<name>[^/\\[\\]@\\s=]+)\\s*"));
-    private static final Pattern ATTRIBUTE_PATH_PATTERN = Pattern.compile("^"+DOTS+SLASHES+"\\s*@(?<name>[^/\\[\\]\\s=]+)\\s*");
-    private static final Pattern CRITERIA_SEPARATOR_PATTERN = Pattern.compile("^\\s*(?:and|AND)?\\s*");
-    private static final Pattern CRITERIA_ATTRIBUTE_PATTERN = Pattern.compile("^\\s*@(?<name>[^\\]\\s=]+)\\s*=\\s*['\"](?<value>[^\"]+)['\"]\\s*");
-    private static final Pattern CRITERIA_VALUE_PATTERN = Pattern.compile("^\\s*=\\s*\"(?<value>[^\"]+)\"\\s*");
-
-    private static enum Scope {Global("//"),Absolute("/"),Relative("");
-
-        private String prefix;
-        private Scope(String prefix){
-            this.prefix = prefix;
-        }
-        public String getPrefix(){return prefix;}
-    }
+    private static enum Scope {Descendant,Absolute,Relative}
 
     private static enum Method {
-        Undefined(""),Equals("="),StartsWith("^"),EndsWith("$"),Contains("~");
+        Undefined('?'),Equals('='),StartsWith('^'),EndsWith('$'),Contains('~'),GreaterThan('>'),LessThan('<');
 
-        private String operator;
-        private Method(String operator){
+        private char operator;
+        private Method(char operator){
             this.operator = operator;
         }
 
-        public String getOperator(){return operator;}
+        public char getOperator(){return operator;}
     }
-    public static enum Type {Undefined,Start,Tag,Attribute}
+    public static enum Type {Undefined,Start,Tag,Attribute,Function,Index}
 
     public int size(){
         int rtrn = 1;//for this
@@ -63,123 +41,201 @@ public class XmlPath {
         return rtrn;
     }
 
-    public static XmlPath parse(String path){
-        return parse(path,new AtomicInteger(0));
+    private static enum State {Path,Criteria,Function}
+
+    private static XmlPath error(String error){
+        return new XmlPath(error);
     }
-    public static XmlPath parse(String path,AtomicInteger index){
+
+    public static XmlPath parse(String path){
+        System.out.println("parse: "+path);
+        int index = 0;
         XmlPath rtrn = new XmlPath(Type.Start);
-        XmlPath xp = rtrn;
 
-        //valid paths do not alwasy start with tag separator (relative, absolute, deep scan)
-        int previousPathIndex=index.get()-1;
-        while(previousPathIndex<index.get() && index.get() < path.length()){
-            previousPathIndex = index.get();
-            Matcher m;
+        Stack<XmlPath> parentStack = new Stack<>();
+        parentStack.push(rtrn);
 
-            m = TAG_NAME_PATTERN.matcher(path.substring(index.get()));
+        Stack<State> state = new Stack<>();
+        state.push(State.Path);
 
-            if (m.find(0)) {
-                index.addAndGet(m.end());
-                boolean deep = m.group("slashes").length() == DEEP_SEARCH.length();
-                String name = m.group("name");
+        int previousLoopIndex = index-1;//offset for initial loop check
 
+        String operators = Arrays.asList(Method.values()).stream().map(m->m.getOperator()+"").collect(Collectors.joining(""));
+        operators = StringUtil.escapeRegex(operators);
 
-                XmlPath nextSegment = new XmlPath(Type.Tag);
-                nextSegment.setDeepScan(deep);
-                nextSegment.setName(name);
+        Matcher pathMatcher = Pattern.compile("(?<prefix>\\.{0,2}/{0,2})(?<attr>@?)(?<name>[^'\"\\s,/\\(\\[@"+operators+"]+)(?<suffix>[\\(\\[/]?).*").matcher(path);
 
-                if (path.startsWith(CRITERIA_LIST_PREFIX, index.get())) {
-                    int prevIndex = index.get();
-                    index.incrementAndGet();
-                    while (!path.startsWith(CRITERIA_LIST_SUFFIX, index.get()) && prevIndex < index.get()) {
-                        prevIndex = index.get();
-
-                        if ((m = CRITERIA_SEPARATOR_PATTERN.matcher(path.substring(index.get()))).find(0)) {
-                            index.addAndGet(m.end());
-                        }
-
-                        m = CRITERIA_ATTRIBUTE_PATTERN.matcher(path.substring(index.get()));
-                        if (m.find(0)) {
-                            String attributeName = m.group("name");
-                            String attributeValue = m.group("value");
-
-                            XmlPath attributePath = new XmlPath(Type.Attribute);
-                            attributePath.isFirst = true;
-                            attributePath.setChild(true);
-                            attributePath.setName(attributeName);
-                            attributePath.setValue(attributeValue);
-
-                            //TODO support multiple critera
-                            attributePath.setMethod(Method.Equals);
-
-                            nextSegment.addChild(attributePath);
-                            index.addAndGet(m.end());
-                        } else {
-                            //if(path.startsWith(TAG_SEPARATOR,index.get())) {
-
-                            XmlPath criteriaPath = parse(path, index);
-                            criteriaPath.setChild(true);
-                            if ((m = CRITERIA_VALUE_PATTERN.matcher(path.substring(index.get()))).find(0)) {
-                                String criteriaValue = m.group("value");
-                                XmlPath criteriaTail = criteriaPath.getTail();
-                                criteriaTail.setValue(criteriaValue);
-                                index.addAndGet(m.end());
-                            }
-                            if (criteriaPath.size() > 1) {//more than just a start
-                                nextSegment.addChild(criteriaPath);
-                            }
-                            //}
-                        }
-                    }
-                    if (path.startsWith(CRITERIA_LIST_SUFFIX, index.get())) {
-                        index.incrementAndGet();
-                    } else {
-                        //WTF?
-                    }
-                }
-                xp.setNext(nextSegment);
-                xp = nextSegment;
-
-
-            } else {
-                m = ATTRIBUTE_PATH_PATTERN.matcher(path.substring(index.get()));
-                if(m.find(0)){
-
-                    boolean deep = m.group("slashes").length() == DEEP_SEARCH.length();
-                    String name = m.group("name");
-
-                    XmlPath nextSegment = new XmlPath(Type.Attribute);
-                    nextSegment.setName(name);
-
-                    xp.setNext(nextSegment);
-
-                    xp = nextSegment;
-
-                    index.addAndGet(m.end());
-                }else{
-                    //WTF
-
-                }
-            }
+        Set<Character> methodOperators = new HashSet<>();
+        for(int i=0; i<Method.values().length;i++){
+            methodOperators.add(Method.values()[i].getOperator());
         }
 
+        while(previousLoopIndex<index && index < path.length()){
+            previousLoopIndex = index;
+            //attribute or path fragment
+            if(path.startsWith(")",index)){
+                if(!State.Function.equals(state.peek())){
+                    return error("unexpected close function arguments ')' @ "+index+" in "+path);
+                }
+                parentStack.pop();//remove the previous argument
+                state.pop();
+                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",index+1);
+                index = nonSpaceIndex;
+            }else if (path.startsWith("]",index)){
+                if(!State.Criteria.equals(state.peek())){
+                    return error("unexpected close criteria ']' @ "+index+" in "+path);
+                }
+                parentStack.pop();
+                state.pop();
+                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",index+1);
+                index = nonSpaceIndex;
+            }else if (path.startsWith(",",index)){
+                if(!State.Function.equals(state.peek())){
+                    return error("unexpected function argument separator ',' @ "+index+" in "+path);
+                }
+                parentStack.pop();
+                XmlPath newStart = new XmlPath(Type.Start);
+                parentStack.peek().addChild(newStart);
+                parentStack.push(newStart);
+
+                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",index+1);
+                index = nonSpaceIndex;
+            }else if ( methodOperators.contains(path.charAt(index)) ) {
+                char operatorChar = path.charAt(index);
+
+                Method method = Arrays.asList(Method.values()).stream().filter(m->operatorChar==m.getOperator()).findFirst().orElse(Method.Undefined);
+                if (Type.Start.equals(parentStack.peek().getType())) {
+                    return error("unexpected value comparison = @ " + index + " in " + path);
+                }
+                parentStack.peek().setMethod(method);
+
+
+                int nonSpaceIndex = StringUtil.indexNotMatching(path, "     ", index + 1);
+                index = nonSpaceIndex;
+            }else if (path.startsWith("[",index)){
+                //index
+                int closeIndex = StringUtil.indexNotMatching(path,"1234567890",index+1);
+
+
+                //Still not supported
+
+            }else if (path.startsWith("'",index) || path.startsWith("\"",index)){
+                if(Type.Start.equals(parentStack.peek().getType())){
+                    return error("unexpected string constant @ "+index+" in "+path);
+                }
+
+                char quoteChar = path.charAt(index);
+                int closeIndex = index+1;
+                while(closeIndex < path.length() && quoteChar != path.charAt(closeIndex) || (closeIndex>1 && '/' == path.charAt(closeIndex-1))){
+                    closeIndex++;
+
+                }
+
+                if(closeIndex == path.length()){
+                    return error("failed to find closing "+quoteChar+" which starts @ "+index+" in "+path);
+                }
+                String quotedValue = path.substring(index+1,closeIndex);
+                closeIndex++;//to include the trailing quote
+
+                parentStack.peek().setValue(quotedValue);
+
+                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",closeIndex);
+                index = nonSpaceIndex;
+            }else if ( State.Criteria.equals(state.peek()) &&
+                    (path.startsWith("and",index) || path.startsWith("AND",index)) ) {
+
+                parentStack.pop();//remove previous criteria
+
+                XmlPath newStart = new XmlPath(Type.Start);
+                parentStack.peek().addChild(newStart);
+                parentStack.push(newStart);
+
+                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",index+"and".length());
+                index = nonSpaceIndex;
+            }else if(pathMatcher.reset(path.substring(index)).matches()){
+                String prefix = pathMatcher.group("prefix");
+                String attr = pathMatcher.group("attr");
+                String name = pathMatcher.group("name");
+                String suffix = pathMatcher.group("suffix");
+
+                Type type = Type.Tag;
+                Scope scope = Scope.Relative;
+                if("@".equals(attr)){
+                    type = Type.Attribute;
+                }
+                if("/".equals(prefix) ){
+                    if( !Type.Start.equals(parentStack.peek().getType()) ) {
+                        scope = Scope.Absolute;
+                    }
+                }else if("//".equals(prefix)){
+                    scope = Scope.Descendant;
+                }else if("".equals(prefix)){
+                    //relative start
+                }else {
+                    //TODO handle this scope
+                    return error("unsupported scope=["+prefix+"] @ "+index+" in "+path);
+                }
+
+                XmlPath nextPath = new XmlPath(type);
+                nextPath.setName(name);
+                nextPath.setScope(scope);
+
+                parentStack.peek().setNext(nextPath);
+                parentStack.pop();
+                parentStack.push(nextPath);
+                if("[".equals(suffix)){
+                    int suffixIndex = index + pathMatcher.end("suffix");
+                    int closeIndex = path.indexOf("]",suffixIndex);
+
+                    //still not sure I'm going to add this
+                    if(false && closeIndex>suffixIndex && path.substring(suffixIndex,closeIndex).matches("\\d+")){
+                        String criteria = path.substring(suffixIndex,closeIndex);
+
+                        XmlPath childIndex = new XmlPath(Type.Index);
+                        childIndex.setName(parentStack.peek().getName());
+                        childIndex.setValue(criteria);
+
+
+                    }else {
+
+                        XmlPath newStart = new XmlPath(Type.Start);
+                        parentStack.peek().addChild(newStart);
+                        parentStack.push(newStart);
+                        state.push(State.Criteria);
+                    }
+                }else if ("(".equals(suffix)){
+                    XmlPath newStart = new XmlPath(Type.Start);
+                    parentStack.peek().addChild(newStart);
+
+                    parentStack.push(newStart);
+                    state.push(State.Function);
+                }else if (!"/".equals(suffix) && !"".equals(suffix)){
+                    return error("unknown path separator ["+suffix+"] @ "+(index+pathMatcher.start("suffix"))+" in "+path);
+                }
+                int nonSpaceIndex = StringUtil.indexNotMatching(path,"     ",index+pathMatcher.end("suffix"));
+                index = nonSpaceIndex;
+            }
+        }
+        if(index < path.length()){
+            return error("failed to parse @ "+index+" in "+path);
+        }
         return rtrn;
     }
-
-    public static void main(String[] args) {
-        Xml xml2 = Xml.parseFile("/tmp/jboss-eap-7.1/standalone/configuration/standalone-full.xml");
-
-        //System.out.println(xml2.documentString(4));
-
-        XmlPath path = XmlPath.parse("/server/profile/subsystem[@xmlns=\"urn:jboss:domain:webservices:2.0\"]");//
-
-        System.out.println(path.toString());
-
-        List<Xml> matches = path.getMatches(xml2);
-        matches.forEach(xml21 -> {
-            System.out.println(xml21.documentString(0));
-        });
-
+    @Override
+    public boolean equals(Object other){
+        boolean rtrn = false;
+        if(other instanceof XmlPath){
+            XmlPath otherPath = (XmlPath)other;
+            rtrn =
+                this.scope == otherPath.scope &&
+                this.getName() == otherPath.getName() &&
+                this.getType() == otherPath.getType() &&
+                this.getValue() == otherPath.getValue() &&
+                this.getMethod() == otherPath.getMethod() &&
+                this.isChild() == otherPath.isChild() &&
+                this.isFirst == otherPath.isFirst;
+        }
+        return rtrn;
     }
 
     private Scope scope = Scope.Relative;
@@ -197,13 +253,20 @@ public class XmlPath {
         this.type = type;
         this.children = new ArrayList<>();
     }
-
+    private XmlPath(String error){
+        this(Type.Undefined);
+        this.name="Error: ";
+        this.value = error;
+    }
 
     private void setNext(XmlPath next){
         this.next = next;
         next.prev = this;
         if(Type.Start.equals(this.getType())){
             next.isFirst=true;
+        }
+        if(this.isChild()){
+            next.setChild(true);
         }
     }
 
@@ -222,11 +285,8 @@ public class XmlPath {
     public XmlPath getNext() {
         return next;
     }
-
-    private void setDeepScan(boolean scan){
-        if(scan){
-            this.scope = Scope.Global;
-        }
+    private void setScope(Scope scope){
+        this.scope = scope;
     }
     private void setName(String name){
         this.name = name;
@@ -235,23 +295,23 @@ public class XmlPath {
         this.value = value;
     }
     private void setMethod(Method method){
-        if(this.method.equals(Method.Undefined)) {
-            this.method = method;
-        }
+        this.method = method;
     }
     private void addChild(XmlPath child){
         this.children.add(child);
+        child.setChild(true);
     }
 
     public List<XmlPath> getChildren(){return Collections.unmodifiableList(children);}
-    public boolean isGlobal(){return scope.equals(Scope.Global);}
+    public boolean isDescendant(){return scope.equals(Scope.Descendant);}
     public boolean isRelative(){return scope.equals(Scope.Relative);}
     public boolean isAbsoulte(){return scope.equals(Scope.Absolute);}
+    public boolean isValid(){return !Type.Undefined.equals(getType());}
     public Type getType(){return type;}
     public String getName(){return name;}
     public boolean hasValue(){return value!=null;}
     public String getValue(){return value;}
-    public Method getCriteria(){return method;}
+    public Method getMethod(){return method;}
 
     @Override
     public String toString(){
@@ -268,7 +328,6 @@ public class XmlPath {
 
 
     public List<Xml> getMatches(Xml xml){
-
         List<Xml> toMatch = new ArrayList<>();
         List<Xml> tmp;
         List<Xml> matches = new ArrayList<>();
@@ -279,216 +338,143 @@ public class XmlPath {
             toMatch = matches;
             matches = tmp;
             matches.clear();
-            target.addMatches(toMatch, matches);
-
+            target.collectMatches(toMatch, matches);
 
         }while(!matches.isEmpty() && (target=target.getNext())!=null);
 
         return matches;
     }
-    public void addMatches(List<Xml> toCheck, List<Xml> matches){
 
-        {
-            for (Xml xml : toCheck) {
-                if (Type.Start.equals(getType())){
-                    if(xml.isDocument()){
-                        matches.addAll(xml.getChildren());
-                    }else{
-                        matches.add(xml);
-                        //matches.addAll(xml.getChildren());
+    //right now we merge all matches into the same array, this wont' work with index [0] references
+    //becuase it treats all previous matches as being on the same level... maybe we add an index on the current?
+    public void collectMatches(List<Xml> toCheck, List<Xml> matches){
+        System.out.println("collectMatches:"+this.toString(false)+"\n  toCheck="+toCheck+"\n  matches="+matches);
+        for (Xml xml : toCheck) {
+            if (Type.Start.equals(getType())){
+                if(xml.isDocument()){
+                    matches.addAll(xml.getChildren());
+                }else{
+                    matches.add(xml);
+                    //matches.addAll(xml.getChildren());
+                }
+            }
+            if ( Type.Attribute.equals(getType()) ) {
+                boolean rtrn = true;
+                Xml attributeXml = xml.getAttributes().get(getName());
+                if (attributeXml == null) {
+                    rtrn = false;
+                } else {
+                    String xmlPathValue = getValue();
+                    String attributeValue = attributeXml.getValue();
+                    if(xmlPathValue!=null) {
+                        rtrn = rtrn && methodMatch(attributeValue);
+                    } else {//expect an empty value
+                        //it just needs to have the attribute so we are ok
                     }
                 }
-                if (getType().equals(Type.Attribute)) {
+                if(rtrn){
+                    matches.add(attributeXml);
+                }
+
+            } else if (Type.Tag.equals(getType())) {
+
+                //TODO handle absolute, relative, global matching just does relative atm
+                if (isFirst() && !isChild()) {
+
                     boolean rtrn = true;
-                    Xml attributeXml = xml.getAttributes().get(getName());
-                    if (attributeXml == null) {
-                        rtrn = false;
-                    } else {
-                        String xmlPathValue = getValue();
-                        String attributeValue = attributeXml.getValue();
-                        if (xmlPathValue != null) {
-                            switch (getCriteria()) {
-                                case Equals:
-                                    rtrn = rtrn && attributeValue.equals(getValue());
-                                    break;
-                                case StartsWith:
-                                    rtrn = rtrn && attributeValue.startsWith(getValue());
-                                    break;
-                                case EndsWith:
-                                    rtrn = rtrn && attributeValue.endsWith(getValue());
-                                    break;
-                                case Contains:
-                                    rtrn = rtrn && attributeValue.contains(getValue());
-                                    break;
-                                default:
-                                    rtrn = false;
-                            }
-                        } else {//expect an empty value
-                            //it just needs to have the attribute so we are ok
+                    rtrn = rtrn && getName().equals(xml.getName());
+                    if(hasValue()){
+                        boolean methodMatches = methodMatch(xml.getValue());
+                        rtrn = rtrn && methodMatches;
+                    }
+                    if (rtrn && !getChildren().isEmpty()) {
+                        List<XmlPath> pathChildren = getChildren();
+                        for (int i = 0; i < pathChildren.size() && rtrn; i++) {
+                            XmlPath pathChild = pathChildren.get(i).getNext();//use next to skip the start pathN
+                            List<Xml> matchers = pathChild.getMatches(xml);
+                            rtrn = rtrn && !matchers.isEmpty();
                         }
                     }
-                    if(rtrn){
-                        matches.add(attributeXml);
+                    if (rtrn) {
+                        matches.add(xml);
                     }
+                } else {
 
-                } else if (getType().equals(Type.Tag)) {
-
-                    //TODO handle absolute, relative, global matching
-                    if (isFirst() && !isChild()) {
-
+                    for (Xml child : xml.getChildren()) {
                         boolean rtrn = true;
-                        rtrn = rtrn && getName().equals(xml.getName());
-                        if(hasValue()){
-                            //TODO use criteria to match it
-
-                            rtrn = rtrn && getValue().equals(xml.getValue());
+                        rtrn = rtrn && getName().equals(child.getName());
+                        if(rtrn && hasValue()){
+                            boolean methodMatches = methodMatch(child.getValue());
+                            rtrn = rtrn && methodMatches;
                         }
                         if (rtrn && !getChildren().isEmpty()) {
                             List<XmlPath> pathChildren = getChildren();
                             for (int i = 0; i < pathChildren.size() && rtrn; i++) {
                                 XmlPath pathChild = pathChildren.get(i);
-                                List<Xml> matchers = pathChild.getMatches(xml);//new LinkedList<>();
-                                //pathChild.addMatches(Collections.singletonList(xml), matches);
+                                List<Xml> matchers = pathChild.getMatches(child);
                                 rtrn = rtrn && !matchers.isEmpty();
                             }
                         }
                         if (rtrn) {
-                            matches.add(xml);
-                        }
-                    } else {
-
-                        for (Xml child : xml.getChildren()) {
-                            boolean rtrn = true;
-                            rtrn = rtrn && getName().equals(child.getName());
-                            if(hasValue()){
-
-                                rtrn = rtrn && getValue().equals(child.getValue());
-                            }
-
-                            if (rtrn && !getChildren().isEmpty()) {
-                                List<XmlPath> pathChildren = getChildren();
-                                for (int i = 0; i < pathChildren.size() && rtrn; i++) {
-                                    XmlPath pathChild = pathChildren.get(i);
-                                    List<Xml> matchers = pathChild.getMatches(child);
-                                    //pathChild.addMatches(Collections.singletonList(child), matchers);
-                                    rtrn = rtrn && !matchers.isEmpty();
-                                }
-                            }
-                            if (rtrn) {
-                                matches.add(child);
-                            }
+                            matches.add(child);
                         }
                     }
                 }
+            }else if (Type.Function.equals(getType())){
+                //yikes
             }
         }
-
     }
-    public boolean matches(perf.yaup.xml.Xml xml){
 
-        boolean rtrn = true;
-        if(getType().equals(Type.Attribute)){
-            String targetValue = getValue();
-
-            perf.yaup.xml.Xml attributeXml = xml.optAttribute(getName()).orElse(perf.yaup.xml.Xml.EMPTY);
-            String attributeValue =attributeXml.getValue();
-
-            if(targetValue!=null) {
-                switch (getCriteria()) {
-                    case Equals:
-                        rtrn = rtrn && attributeValue.equals(getValue());
-                        break;
-                    case StartsWith:
-                        rtrn = rtrn && attributeValue.startsWith(getValue());
-                        break;
-                    case EndsWith:
-                        rtrn = rtrn && attributeValue.endsWith(getValue());
-                        break;
-                    case Contains:
-                        rtrn = rtrn && attributeValue.contains(getValue());
-                        break;
-                    default:
-
-                        rtrn = false;
-                }
-            }else{
-                //attributes exists
-                rtrn = rtrn && !attributeValue.isEmpty();
-            }
-        }else if (getType().equals(Type.Tag)){
-            //Tag type doesn't support criteria other than equals
-            rtrn = rtrn && getName().equals(xml.getName());
-
-            if(!getChildren().isEmpty()){
-                List<XmlPath> children = getChildren();
-                for(int i=0; i<children.size(); i++){
-                    XmlPath child = children.get(i);
-
-                    rtrn = rtrn && child.matches(xml);
-                }
-            }
-        }else{
-            //wtf
+    public boolean methodMatch(String foundValue){
+        boolean rtrn = foundValue != null;
+        switch (getMethod()) {
+            case Equals:
+                rtrn = rtrn && foundValue.equals(getValue());
+                break;
+            case StartsWith:
+                rtrn = rtrn && foundValue.startsWith(getValue());
+                break;
+            case EndsWith:
+                rtrn = rtrn && foundValue.endsWith(getValue());
+                break;
+            case Contains:
+                rtrn = rtrn && foundValue.contains(getValue());
+                break;
+            case Undefined:
+            default:
+                rtrn = false;
         }
         return rtrn;
     }
 
     private void append(StringBuilder sb,boolean recursive){
-        sb.append(":"+getType()+":");
-        if(getType().equals(Type.Attribute)){
-            if(!isFirst()){
-                sb.append(TAG_SEPARATOR);
-            }
-            sb.append(ATTRIBUTE_PREFIX);
+        sb.append("{");
+        sb.append(""+(isFirst?"^":"")+scope+":"+getType()+":");
+        if(Type.Attribute.equals(getType())){
+            sb.append("@");
         }
-        if (Type.Tag.equals(getType())) {
-            if(isGlobal()){
-                sb.append(DEEP_SEARCH);
-            }else if (isAbsoulte()) {
-                sb.append(TAG_SEPARATOR);
-            }else if (isRelative()){
-                if(isFirst){
-                    sb.append("./");
-                }else {
-                    sb.append(TAG_SEPARATOR);
-                }
-            }
-        }
-        if(getType().equals(Type.Start)){
-            //sb.append("START");
-        }else {
-            sb.append(getName());
-        }
-//        if(getType().equals(Type.Attribute) && getCriteria()!= Method.Undefined){
-//
-//            if(hasValue()) {
-//                sb.append(getCriteria().getOperator());
-//                sb.append("\"");
-//                sb.append(getValue());
-//                sb.append("\"");
-//            }
-//        }
-        if(!getChildren().isEmpty()){
-            sb.append(CRITERIA_LIST_PREFIX);
-            List<XmlPath> children = getChildren();
+        sb.append(getName());
+        List<XmlPath> children = getChildren();
+        if(!children.isEmpty()){
+            sb.append("[ ");
             for(int i=0; i<children.size(); i++){
-                XmlPath child = children.get(i);
-                if(i>0) {
+                if (i > 0) {
                     sb.append(" and ");
                 }
-                child.append(sb,true);
+                XmlPath child = children.get(i);
+                child.append(sb,recursive);
             }
-            sb.append(CRITERIA_LIST_SUFFIX);
+            sb.append("]");
         }
         if(hasValue()){
-
-            sb.append(getCriteria().getOperator());
-            sb.append("\"");
+            sb.append(" ");
+            sb.append(method.getOperator());
+            sb.append(" ");
             sb.append(getValue());
-            sb.append("\"");
         }
-
-        if(hasNext() && recursive){
+        sb.append("} ");
+        if(recursive && hasNext()){
             getNext().append(sb,recursive);
         }
     }
