@@ -11,11 +11,31 @@ import static org.junit.Assert.assertTrue;
 
 public class XmlPathTest {
 
+    @Test
+    public void parseDescendant(){
+        XmlPath path = XmlPath.parse("//foo");
+        assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
+        assertTrue(path.hasNext());
+        path = path.getNext();
+        assertTrue(path.isDescendant());
+    }
+    @Test
+    public void parseSecondDescendant(){
+        XmlPath path = XmlPath.parse("/foo//bar");
+        assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
+        assertTrue(path.hasNext());
+        path = path.getNext();
+        assertTrue(path.hasNext());
+        path = path.getNext();
+        System.out.println(path.toString(false));
+        assertTrue(path.isDescendant());
+        assertEquals("bar",path.getName());
+    }
 
     @Test @Ignore
     public void parseChildIndex(){
         XmlPath path = XmlPath.parse("/foo/[2]");
-        System.out.println(path);
+        assertEquals("/[#] is not a valid xpath",XmlPath.Type.Undefined,path.getType());
     }
     @Test @Ignore
     public void parseTagIndex(){
@@ -198,7 +218,7 @@ public class XmlPathTest {
         assertEquals("result name should be one","one",matches.get(0).attribute("key").getValue());
     }
 
-    @Test
+    @Test @Ignore
     public void childIndex(){
         Xml xml = Xml.parse("<foo><bar key=\"1\"><buz key=\"1\"/><buz key=\"2\"/></bar><bar key=\"2\"><buz key=\"1\"/><buz key=\"2\"/></bar></foo>");
 
@@ -206,6 +226,25 @@ public class XmlPathTest {
         List<Xml> matches = path.getMatches(xml);
 
         System.out.println(matches);
+
+    }
+    @Test
+    public void textFunction(){
+        XmlPath path = XmlPath.parse("/a/text()");
+        System.out.println(path);
+    }
+
+    @Test
+    public void descendantSearch(){
+        Xml xml = Xml.parse("<a><b><c key='1'/><c key='2'/></b><b><c key='1'/><c key='2'/></b></a>");
+
+        XmlPath path = XmlPath.parse("//c");
+        List<Xml> found = path.getMatches(xml);
+        assertEquals("should find all 4 c's",4,found.size());
+
+        path = XmlPath.parse("a//c");
+        found = path.getMatches(xml);
+        assertEquals("should find all 4 c's",4,found.size());
 
     }
 

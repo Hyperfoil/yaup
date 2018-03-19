@@ -48,7 +48,6 @@ public class XmlPath {
     }
 
     public static XmlPath parse(String path){
-        System.out.println("parse: "+path);
         int index = 0;
         XmlPath rtrn = new XmlPath(Type.Start);
 
@@ -162,10 +161,16 @@ public class XmlPath {
                 Scope scope = Scope.Relative;
                 if("@".equals(attr)){
                     type = Type.Attribute;
+                }else if ("(".equals(suffix)){
+                    type = Type.Function;
                 }
                 if("/".equals(prefix) ){
                     if( !Type.Start.equals(parentStack.peek().getType()) ) {
-                        scope = Scope.Absolute;
+                        if(index>0 && '/' == path.charAt(index-1)){// double // means descendant
+                            scope = Scope.Descendant;
+                        } else {
+                            scope = Scope.Absolute;
+                        }
                     }
                 }else if("//".equals(prefix)){
                     scope = Scope.Descendant;
@@ -188,13 +193,19 @@ public class XmlPath {
                     int closeIndex = path.indexOf("]",suffixIndex);
 
                     //still not sure I'm going to add this
+                    //TODO index should always be a criteria and use parent name?
                     if(false && closeIndex>suffixIndex && path.substring(suffixIndex,closeIndex).matches("\\d+")){
+
                         String criteria = path.substring(suffixIndex,closeIndex);
 
                         XmlPath childIndex = new XmlPath(Type.Index);
                         childIndex.setName(parentStack.peek().getName());
                         childIndex.setValue(criteria);
 
+                        index+=closeIndex-suffixIndex+"]".length();
+                        parentStack.peek().setNext(childIndex);
+                        parentStack.pop();
+                        parentStack.push(childIndex);
 
                     }else {
 
@@ -204,11 +215,15 @@ public class XmlPath {
                         state.push(State.Criteria);
                     }
                 }else if ("(".equals(suffix)){
-                    XmlPath newStart = new XmlPath(Type.Start);
-                    parentStack.peek().addChild(newStart);
+                    if(index+pathMatcher.end("suffix") < path.length() && ')'==path.charAt(index+pathMatcher.end("suffix"))){
+                        index++;
+                    }else {
+                        XmlPath newStart = new XmlPath(Type.Start);
+                        parentStack.peek().addChild(newStart);
 
-                    parentStack.push(newStart);
-                    state.push(State.Function);
+                        parentStack.push(newStart);
+                        state.push(State.Function);
+                    }
                 }else if (!"/".equals(suffix) && !"".equals(suffix)){
                     return error("unknown path separator ["+suffix+"] @ "+(index+pathMatcher.start("suffix"))+" in "+path);
                 }
@@ -246,8 +261,9 @@ public class XmlPath {
     private List<XmlPath> children;
     private XmlPath next;
     private XmlPath prev;
+    private XmlPath parent;
     private boolean isFirst = false;
-    private boolean isChild = false;
+    private boolean isCriteria = false;
 
     public XmlPath(Type type){
         this.type = type;
@@ -266,18 +282,24 @@ public class XmlPath {
             next.isFirst=true;
         }
         if(this.isChild()){
-            next.setChild(true);
+            next.setParent(this.getParent());
+
         }
     }
 
-    private void setChild(boolean isChild){
+    private void setParent(XmlPath parent){
         XmlPath target = this;
         while(target!=null){
-            target.isChild = isChild;
+            target.isCriteria = true;
+            target.parent = parent;
             target = target.getNext();
         }
     }
-    public boolean isChild(){return isChild;}
+    public boolean hasParent(){return parent!=null;}
+    public XmlPath getParent(){
+        return this.parent;
+    }
+    public boolean isChild(){return isCriteria;}
     public boolean isFirst(){return isFirst;}
     public boolean hasPrevious(){return prev!=null;}
     public XmlPath getPrevious(){return prev;}
@@ -299,15 +321,18 @@ public class XmlPath {
     }
     private void addChild(XmlPath child){
         this.children.add(child);
-        child.setChild(true);
+        child.setParent(this);
     }
 
     public List<XmlPath> getChildren(){return Collections.unmodifiableList(children);}
+
     public boolean isDescendant(){return scope.equals(Scope.Descendant);}
     public boolean isRelative(){return scope.equals(Scope.Relative);}
     public boolean isAbsoulte(){return scope.equals(Scope.Absolute);}
+
     public boolean isValid(){return !Type.Undefined.equals(getType());}
     public Type getType(){return type;}
+
     public String getName(){return name;}
     public boolean hasValue(){return value!=null;}
     public String getValue(){return value;}
@@ -338,6 +363,13 @@ public class XmlPath {
             toMatch = matches;
             matches = tmp;
             matches.clear();
+
+            if(target.isDescendant()){
+                for(int i=0; i<toMatch.size();i++){
+                    Xml entry = toMatch.get(i);
+                    toMatch.addAll(entry.getChildren());
+                }
+            }
             target.collectMatches(toMatch, matches);
 
         }while(!matches.isEmpty() && (target=target.getNext())!=null);
@@ -348,7 +380,7 @@ public class XmlPath {
     //right now we merge all matches into the same array, this wont' work with index [0] references
     //becuase it treats all previous matches as being on the same level... maybe we add an index on the current?
     public void collectMatches(List<Xml> toCheck, List<Xml> matches){
-        System.out.println("collectMatches:"+this.toString(false)+"\n  toCheck="+toCheck+"\n  matches="+matches);
+
         for (Xml xml : toCheck) {
             if (Type.Start.equals(getType())){
                 if(xml.isDocument()){
@@ -378,7 +410,6 @@ public class XmlPath {
 
             } else if (Type.Tag.equals(getType())) {
 
-                //TODO handle absolute, relative, global matching just does relative atm
                 if (isFirst() && !isChild()) {
 
                     boolean rtrn = true;

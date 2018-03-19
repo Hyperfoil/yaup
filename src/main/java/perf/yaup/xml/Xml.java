@@ -46,7 +46,7 @@ public class Xml {
     public boolean exists(){return node!=null;}
 
     public Xml get(String search) {
-        //TODO detect simple attribute or child search and use attribute / firstChild
+        //detect simple attribute or child search and use attribute / firstChild
         if (!search.contains("/") && !search.contains("[") && search.startsWith("@")) {
             //just an attribute
             return attribute(search);

@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -13,6 +14,80 @@ import java.util.stream.Stream;
  * A javascript object representation that can be either an Array or Object.
  */
 public class Json {
+
+    private static class HashJson extends Json {
+
+        public HashJson(){
+            super(false);
+        }
+        @Override
+        public void add(Object key,Object value){
+            if(value==null){
+                return;
+            }
+            if(has(key) ){
+                if(get(key).equals(value)){
+                    //do nothing because we already have that value
+                }else {
+                    if (!(get(key) instanceof HashArray)) {
+                        HashArray newEntry = new HashArray();
+                        newEntry.add(get(key));
+                        newEntry.add(value);
+                        super.set(key, newEntry);
+                    } else {
+                        if (get(key) instanceof Json) {
+                            System.out.println("key(" + key + ") is a " + get(key).getClass().getSimpleName());
+                        }
+                    }
+                }
+            }else{
+                super.add(key,value);
+            }
+        }
+        @Override
+        public void add(Object value){
+            System.out.println("HashJson.add("+value+")");
+        }
+    }
+    private static class HashArray extends Json {
+        HashMap<String,Json> seen;
+        public HashArray(){
+            seen = new HashMap<>();
+        }
+        @Override
+        public void add(Object object){
+            if(object == null){
+                return;
+            }
+            String key = object.toString();
+            if (object instanceof Json){
+                Json jsonObject = (Json)object;
+                if(jsonObject.isArray()){
+
+                }else{
+                    StringBuilder sb = new StringBuilder();
+                    Json.keyId(jsonObject,sb);
+                    key = sb.toString();
+                }
+            }
+            if(!seen.containsKey(key)){
+                seen.put(key,object instanceof Json ? (Json)object : null);
+                super.add(object);
+            }else{
+                if (object instanceof Json && seen.get(key)!=null){
+                    Json.mergeStructure(seen.get(key),(Json)object);
+                }
+                //log filtering of seen entry?
+            }
+
+        }
+        @Override
+        public void set(Object key,Object value){}
+        @Override
+        public void add(Object key,Object value){
+            add(value);
+        }
+    }
 
     public static JSONArray toJSONArray(Json json){
         JSONArray rtrn = new JSONArray();
@@ -168,8 +243,101 @@ public class Json {
         return rtrn;
     }
 
-    private Map<Object,Object> data;
+    public static Json typeStructure(Json target){
+        Json rtrn ;
+        if(target.isArray()) {
+            rtrn = new HashArray();
+        }else{
+            rtrn = new HashJson();
+        }
+        target.forEach((key,value)->{
+            if(value instanceof Json){
+                Json valueStructure = typeStructure((Json)value);
+                rtrn.add(key,valueStructure);
+            }else{
+                rtrn.add(key,value.getClass().getSimpleName());
+            }
+        });
+        return rtrn;
+    }
+    private static void mergeStructure(Json to,Json from){
+
+
+        if(to.isArray()){//going to be a HashArray
+            if(from.isArray()){
+                from.values().forEach(fromValue->{
+                    to.add(fromValue);
+                });
+            }else{
+                to.add(from);
+            }
+        }else{
+            if(from.isArray()){
+
+            }else{
+                from.forEach((key,value)->{
+                    if(to.has(key)){
+                        Object toValue = to.get(key);
+                        if(toValue instanceof Json){
+                            Json toValueJson = (Json)toValue;
+                            if(toValueJson.isArray()){
+                                if(value instanceof Json){
+                                    Json jsonValue = (Json)value;
+                                    if(jsonValue.isArray()){
+                                        jsonValue.forEach(v->toValueJson.add(v));
+                                    }else{
+                                        //TODO not sure if we should just add as an entry
+                                        toValueJson.add(value);
+                                    }
+                                }else {
+                                    toValueJson.add(value);
+                                }
+                            }else{
+                                if(value instanceof Json){
+                                    Json fromValueJson = (Json)value;
+                                    if(fromValueJson.isArray()){
+                                        System.out.println("mergeStructure: what to do?\n  to["+key+"] = "+toValueJson+"\n  from["+key+"]="+value);
+                                    }else{
+                                        mergeStructure(toValueJson,fromValueJson);
+                                    }
+                                }
+
+                            }
+                        }else{//to has a value that is not a Json
+                            to.add(key,value);
+                        }
+                    }else{
+                        System.out.println("mergeStructure missing to["+key+"]");
+                    }
+                });
+            }
+        }
+
+    }
+    private static void keyId(Json target,StringBuilder sb){
+        sb.append("[ ");
+        target.keys().stream().sorted().forEach(key->{
+            Object value = target.get(key);
+            sb.append(key);
+            sb.append(" ");
+            if(value instanceof Json){
+                keyId((Json)value,sb);
+            }
+        });
+        sb.append("]");
+    }
+
+    private LinkedHashMap<Object,Object> data;
     private boolean isArray;
+
+    public static List<String> dotChain(String path){
+        return new ArrayList<>(
+                Arrays.asList(path.split("\\.(?<!\\\\\\.)"))
+                        .stream()
+                        .map(s->s.replaceAll("\\\\\\.","."))
+                        .collect(Collectors.toList())
+        );
+    }
 
     public Json(){
         this(true);
@@ -211,6 +379,18 @@ public class Json {
         }else{
             return false;
         }
+    }
+    public Json clone(){
+        Json rtrn = new Json();
+        for(Object key : data.keySet()){
+            Object value = data.get(key);
+            if(value instanceof Json){
+                rtrn.set(key,((Json)value).clone());
+            }else{
+                rtrn.set(key,value);
+            }
+        }
+        return rtrn;
     }
 
     @Override
@@ -283,6 +463,28 @@ public class Json {
     }
     public boolean has(Object key){
         return data.containsKey(key);
+    }
+
+    public Json chain(String...keys){
+        return chain(Arrays.asList(keys));
+    }
+    public Json chain(List<String> keys){
+        Json rtrn = this;
+        for(int i=0; i<keys.size(); i++){
+            String key = keys.get(i);
+            if(!key.isEmpty()){
+                if(!rtrn.has(key)){
+                    rtrn.set(key,new Json());
+                }
+                if( !(rtrn.get(key) instanceof Json) ){
+                    Object existing = rtrn.get(key);
+                    rtrn.set(key,new Json());
+                    rtrn.getJson(key).add(existing);
+                }
+                rtrn = rtrn.getJson(key);
+            }
+        }
+        return rtrn;
     }
 
     public void add(Object value){

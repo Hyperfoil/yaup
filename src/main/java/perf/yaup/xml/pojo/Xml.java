@@ -2,6 +2,9 @@ package perf.yaup.xml.pojo;
 
 //import com.sun.xml.internal.stream.events.StartDocumentEvent;
 
+import perf.yaup.HashedLists;
+import perf.yaup.json.Json;
+
 import javax.xml.stream.*;
 import javax.xml.stream.events.*;
 import java.io.ByteArrayInputStream;
@@ -13,6 +16,10 @@ import java.util.function.Consumer;
 
 public class Xml {
 
+
+
+    public static final Xml INVALID = new Xml(Type.Invalid,null,"","");
+
     public static final String COMMENT_PREFIX = "<!--";
     public static final String END_TAG_PREFIX = "</";
     public static final String START_TAG_PREFIX = "<";
@@ -23,6 +30,7 @@ public class Xml {
 
     public static final String ATTRIBUTE_VALUE_PREFIX="=";
     public static final String ATTRIBUTE_WRAPPER="\"";
+
 
     public static Xml parseFile(String path){
         Xml rtrn = null;
@@ -140,8 +148,10 @@ public class Xml {
     private ArrayList<Xml> allChildren;
     private ArrayList<Xml> tagChildren;
     private ArrayList<Xml> textChildren;
-
+    private HashedLists<String,Xml> namedTagChildren;
     private Xml parent;
+    int tagIndex=-1;
+    int namedIndex =-1;
 
     private Xml(Type type, Xml parent, String name){
         this(type,parent, name,null);
@@ -154,24 +164,47 @@ public class Xml {
         this.attributes = new LinkedHashMap<>();
         this.allChildren = new ArrayList<>();
         this.tagChildren = new ArrayList<>();
+        this.namedTagChildren = new HashedLists<>();
+
         this.textChildren = new ArrayList<>();
     }
+    public Xml get(String search) {
+        //detect simple attribute or child search and use attribute / firstChild
+        if (!search.contains("/") && !search.contains("[") && search.startsWith("@")) {
+            //just an attribute
+            return attribute(search);
+        } else if ( !search.contains("@") && search.lastIndexOf("/")<=0 && !search.contains("[")) {
+            //just a tag
+            return firstChild(search);
+        } else {
+            List<Xml> list = getAll(search);
+            return list.isEmpty() ? new Xml(Type.Invalid,null,"") : list.get(0);
+        }
+    }
     public List<Xml> getAll(String search){
-        XmlPath path = XmlPath.parse(search);
-        List<Xml> rtrn = path.getMatches(this);
-        return rtrn;
+        if(!search.contains("@") && !search.contains("/") && !search.contains("[")){
+            return Collections.unmodifiableList(namedTagChildren.get(search));
+        }else {
+            XmlPath path = XmlPath.parse(search);
+            List<Xml> rtrn = path.getMatches(this);
+            return rtrn;
+        }
     }
 
 
     public void addChild(Xml child){
-        int index = allChildren.size();
+
         allChildren.add(child);
         child.parent=this;
         if(child.getType().equals(Type.Text)){
             textChildren.add(child);
             addValue(child.getValue());
         }else if (child.getType().equals(Type.Tag)){
+            int tagIndex = tagChildren.size();
             tagChildren.add(child);
+            int namedIndex = namedTagChildren.get(child.getName()).size();
+            namedTagChildren.put(child.getName(),child);
+            child.setIndexes(tagIndex,namedIndex);
         }
     }
     public void setAttribute(Xml child){
@@ -195,6 +228,14 @@ public class Xml {
     public void removeChild(int index){
         allChildren.remove(index);
     }
+
+    private void setIndexes(int tagIndex,int namedIndex){
+        this.tagIndex = tagIndex;
+        this.namedIndex = namedIndex;
+    }
+
+    int tagIndex(){return tagIndex;}
+    int namedIndex(){return namedIndex;}
     private Type getType(){return type;}
     public String getName(){return name;}
     public String getValue(){
@@ -254,6 +295,35 @@ public class Xml {
         return Collections.unmodifiableMap(attributes);
     }
 
+    public Json toJson(){
+        Json rtrn = new Json();
+
+        Stack<Json> jsonTodo = new Stack<>();
+        Stack<Xml> xmlTodo = new Stack<>();
+
+        jsonTodo.push(rtrn);
+        xmlTodo.push(this);
+
+        while(!jsonTodo.isEmpty()){
+            Json json = jsonTodo.pop();
+            Xml xml = xmlTodo.pop();
+
+            xml.getAttributes().forEach((name,valueXml)->{
+                json.set("@"+name,valueXml.getValue());
+            });
+            if(xml.hasValue()){
+                json.set("text()",xml.getValue());
+            }
+            xml.getChildren().forEach(childXml->{
+                Json child = new Json();
+                json.add(childXml.getName(),child);
+                jsonTodo.push(child);
+                xmlTodo.push(childXml);
+            });
+        }
+
+        return rtrn;
+    }
 
     public boolean exists(){return !Type.Invalid.equals(getType());}
     public boolean isDocument(){
@@ -382,8 +452,10 @@ public class Xml {
                 sb.append(COMMENT_SUFFIX);
                 break;
         }
-
     }
+
+
+
 }
 
 
