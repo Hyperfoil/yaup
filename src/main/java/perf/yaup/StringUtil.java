@@ -40,8 +40,8 @@ public class StringUtil {
     public static int countOccurances(String target,String toFind){
 
         int count = 0;
-        int index = -1;
-        while( (index=target.indexOf(toFind,index+1))>-1){
+        int index = 0-toFind.length();
+        while( (index=target.indexOf(toFind,index+toFind.length()))>-1){
             count++;
         }
         return count;
@@ -148,9 +148,15 @@ public class StringUtil {
         return quote(value,"\"");
     }
     public static String quote(String value,String quoteMark){
+        if(value ==null){
+            value = "";
+        }
         return quoteMark+value.replaceAll(""+quoteMark+"(?<!\\\\"+quoteMark+")","\\\\"+quoteMark+"")+quoteMark;
     }
     public static String removeQuotes(String value){
+        if(value==null){
+            return null;
+        }
         String rtrn = value;
         if( (value.startsWith("\"")&& value.endsWith("\"")) || (value.startsWith("\'") && value.endsWith("\'"))) {
             rtrn =value.substring(1,value.length()-1);

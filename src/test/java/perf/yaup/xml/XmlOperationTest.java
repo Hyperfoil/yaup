@@ -102,7 +102,7 @@ public class XmlOperationTest {
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/bar "+FileUtility.SET_OPERATION+" buzz");
         op.apply(xml);
-        System.out.println(xml.documentString(2));
+
     }
     @Test
     public void applySetMissingTagWithAttribute(){
@@ -110,7 +110,6 @@ public class XmlOperationTest {
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/bar[@key='value' and @set] "+FileUtility.SET_OPERATION+" <hi>mom</hi>");
         op.apply(xml);
-        System.out.println(xml.documentString(2));
         assertFalse(xml.firstChild("bar").isEmpty());
         assertEquals("value",xml.firstChild("bar").attribute("key").toString());
         assertFalse(xml.firstChild("bar").attribute("set").isEmpty());

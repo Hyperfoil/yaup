@@ -41,6 +41,7 @@ public class XmlPath {
         return rtrn;
     }
 
+
     private static enum State {Path,Criteria,Function}
 
     private static XmlPath error(String error){
@@ -62,7 +63,7 @@ public class XmlPath {
         String operators = Arrays.asList(Method.values()).stream().map(m->m.getOperator()+"").collect(Collectors.joining(""));
         operators = StringUtil.escapeRegex(operators);
 
-        Matcher pathMatcher = Pattern.compile("(?<prefix>\\.{0,2}/{0,2})(?<attr>@?)(?<name>[^'\"\\s,/\\(\\[@"+operators+"]+)(?<suffix>[\\(\\[/]?).*").matcher(path);
+        Matcher pathMatcher = Pattern.compile("(?<prefix>\\.{0,2}/{0,2})(?<attr>@?)(?<name>[^'\"\\s,/\\(\\[\\]@"+operators+"]+)(?<suffix>[\\(\\[/]?).*").matcher(path);
 
         Set<Character> methodOperators = new HashSet<>();
         for(int i=0; i<Method.values().length;i++){
@@ -269,10 +270,53 @@ public class XmlPath {
         this.type = type;
         this.children = new ArrayList<>();
     }
+
     private XmlPath(String error){
         this(Type.Undefined);
         this.name="Error: ";
         this.value = error;
+    }
+    public XmlPath copy(){
+        if(!isValid()){
+            return new XmlPath(this.getValue());
+        }
+        XmlPath rtrn = new XmlPath(this.getType());
+        rtrn.setScope(this.getScope());
+        rtrn.setName(this.getName());
+        rtrn.setValue(this.getValue());
+        rtrn.setMethod(this.getMethod());
+        rtrn.isFirst = this.isFirst;
+        rtrn.isCriteria = this.isCriteria;
+
+        if(this.hasNext()){
+            rtrn.setNext(this.getNext().copy());
+        }
+        if(!this.getChildren().isEmpty()){
+            for(XmlPath child: getChildren()){
+                rtrn.addChild(child.copy());
+            }
+        }
+        return rtrn;
+    }
+
+    private Scope getScope(){return scope;}
+
+
+    public void dropNext(){
+        if(hasNext()){
+            if(this.getNext().hasParent()){
+                this.getNext().getParent().children.remove(this.getNext());
+            }
+            this.next = null;
+        }
+    }
+    public void drop(){
+        if(hasPrevious()){
+            getPrevious().next=null;
+        }
+        if(hasParent()){
+            getParent().children.remove(this);
+        }
     }
 
     private void setNext(XmlPath next){
@@ -324,6 +368,7 @@ public class XmlPath {
         child.setParent(this);
     }
 
+    public boolean hasChildren(){return !children.isEmpty();}
     public List<XmlPath> getChildren(){return Collections.unmodifiableList(children);}
 
     public boolean isDescendant(){return scope.equals(Scope.Descendant);}
@@ -349,8 +394,6 @@ public class XmlPath {
         append(sb,recursive);
         return sb.toString();
     }
-
-
 
     public List<Xml> getMatches(Xml xml){
         List<Xml> toMatch = new ArrayList<>();

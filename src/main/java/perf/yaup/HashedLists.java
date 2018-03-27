@@ -62,4 +62,8 @@ public class HashedLists<K,V> implements Serializable{
         sets.forEach(consumer);
     }
     public Stream<Map.Entry<K, List<V>>> stream(){return sets.entrySet().stream();}
+
+    public void clear(){
+        sets.clear();
+    }
 }

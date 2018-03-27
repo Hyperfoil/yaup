@@ -6,6 +6,14 @@ import static org.junit.Assert.*;
 
 public class StringUtilTest {
 
+
+    @Test
+    public void countOccurrances_nonOverlapping(){
+
+
+        assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
+    }
+
     @Test
     public void quoteReplaceWithEscaped(){
         String quoted = StringUtil.quote("foo\"bar");

@@ -21,7 +21,7 @@ public class XmlOperation {
     private static final String XPATH_ATTRIBUTE_CRITERIA_PATTERN="^\\s*@(?<name>[^\\s=\\]]+)\\s*";
 
 
-    private static enum Operation {None(""),Add(ADD_OPERATION),Set(SET_OPERATION),Delete(DELETE_OPERATION);
+    public static enum Operation {None(""),Add(ADD_OPERATION),Set(SET_OPERATION),Delete(DELETE_OPERATION);
         private String value;
         Operation(String value){
             this.value = value;
@@ -70,12 +70,17 @@ public class XmlOperation {
     public XmlOperation(String path,Operation operation,String value){
         this.path = path;
         this.operation = operation;
-        this.value = value;
+        this.value = StringUtil.removeQuotes(value);
     }
 
     public boolean isRead(){return Operation.None.equals(this.operation);}
     public boolean isSet(){return Operation.Set.equals(this.operation);}
     public boolean isAdd(){return Operation.Add.equals(this.operation);}
+    public boolean isDelete(){return Operation.Delete.equals(this.operation);}
+
+    public Operation getOperation() {
+        return operation;
+    }
 
     public String getPath(){return path;}
     public boolean hasValue(){return value!=null;}
