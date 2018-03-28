@@ -408,6 +408,10 @@ public class Xml {
         }
     }
 
+    public String apply(String xmlOperation){
+        XmlOperation toApply =XmlOperation.parse(xmlOperation);
+        return apply(toApply);
+    }
     public String apply(XmlOperation xmlOperation){
         if(!exists()){
             return null;
@@ -662,13 +666,6 @@ public class Xml {
                         sb.append(CLOSE_TAG_SUFFIX);
 
                     }
-//                    if(!getValue().isEmpty()){
-//                        if(increment>0) {
-//                            sb.append(System.lineSeparator());
-//                        }
-//                        pad(sb,indent+increment);
-//                        sb.append(getValue());
-//                    }
                 }
                 break;
             case Comment:
