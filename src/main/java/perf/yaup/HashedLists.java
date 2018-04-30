@@ -17,9 +17,15 @@ public class HashedLists<K,V> implements Serializable{
     }
 
     public void put(K name,V value){
-        if(!sets.containsKey(name)){
-            sets.put(name,new ArrayList<>());
+
+        if (!sets.containsKey(name)) {
+            synchronized (sets) {
+                if (!sets.containsKey(name)) {
+                    sets.put(name, new ArrayList<>());
+                }
+            }
         }
+
         sets.get(name).add(value);
     }
     public void putFirst(K name,V value){

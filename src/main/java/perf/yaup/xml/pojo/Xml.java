@@ -267,6 +267,10 @@ public class Xml {
     public String getValue(){
         return hasValue()?value:"";
     }
+    Xml getValueXml(){
+        //TODO should this be detached from parent so it cannot attempt to modify?
+        return new Xml(Type.Text,null,"#text",getValue());
+    }
     public boolean hasValue(){return value!=null;}
     private void addValue(String value){
         if(this.value==null){
@@ -371,7 +375,8 @@ public class Xml {
                 json.set("text()",xml.getValue());
             }
             xml.getChildren().forEach(childXml->{
-                Json child = new Json();
+                //Json(false) to prevent Json.add from treating it as an array for subsequent adds
+                Json child = new Json(false);
                 json.add(childXml.getName(),child);
                 jsonTodo.push(child);
                 xmlTodo.push(childXml);

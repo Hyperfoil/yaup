@@ -144,6 +144,16 @@ public class StringUtil {
         }
         return input.substring(0,index);
     }
+    public static String trimIndent(String input){
+        return input.replaceAll("^\\s*","");
+    }
+    public static String trimTrailing(String input){
+        return input.replaceAll("\\s*$","");
+    }
+    public static String removeSpace(String input){
+        return input.replaceAll("\\s+","");
+    }
+
     public static String quote(String value){
         return quote(value,"\"");
     }

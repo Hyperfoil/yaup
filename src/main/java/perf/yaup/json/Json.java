@@ -3,6 +3,9 @@ package perf.yaup.json;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -265,9 +268,7 @@ public class Json {
 
         if(to.isArray()){//going to be a HashArray
             if(from.isArray()){
-                from.values().forEach(fromValue->{
-                    to.add(fromValue);
-                });
+                from.values().forEach(to::add);
             }else{
                 to.add(from);
             }
@@ -404,7 +405,13 @@ public class Json {
                     rtrn.append(",");
                     //newline
                 }
-                rtrn.append(escape(value));
+                if(value instanceof String){
+                    rtrn.append("\"");
+                    rtrn.append(escape(value));
+                    rtrn.append("\"");
+                }else{
+                    rtrn.append(escape(value));
+                }
             }
             rtrn.append("]");
         }else{
@@ -435,7 +442,7 @@ public class Json {
     private String escape(Object o){
         if(o instanceof Json){
             return ((Json)o).toString();
-        }else {
+        } else {
             return o.toString().replaceAll("\"", "\\\\\"");
         }
     }
