@@ -9,9 +9,9 @@ import java.util.stream.Collectors;
 
 public class XmlPath {
 
-    private static enum Scope {Descendant,Absolute,Relative}
+    public static enum Scope {Descendant,Absolute,Relative}
 
-    private static enum Method {
+    public static enum Method {
         Undefined('?'),Equals('='),StartsWith('^'),EndsWith('$'),Contains('~'),GreaterThan('>'),LessThan('<');
 
         private char operator;
@@ -424,6 +424,7 @@ public class XmlPath {
     //becuase it treats all previous matches as being on the same level... maybe we add an index on the current?
     public void collectMatches(List<Xml> toCheck, List<Xml> matches){
 
+
         for (Xml xml : toCheck) {
             if (Type.Start.equals(getType())){
                 if(xml.isDocument()){
@@ -496,6 +497,36 @@ public class XmlPath {
                 }
             }else if (Type.Function.equals(getType())){
                 //yikes
+                if("text".equals(getName())){
+                    String xmlValue = xml.getValue();
+                    if(hasValue()){
+                        switch(getMethod()){
+                            case Contains:
+                                if(xmlValue.contains(getValue())){
+                                    matches.add(xml.getValueXml());
+                                }
+                                break;
+                            case Equals://technically different than Xpath spec which would use contains
+                                if(xmlValue.equals(getValue())){
+                                    matches.add(xml.getValueXml());
+                                }
+                                break;
+                            case StartsWith:
+                                if(xmlValue.startsWith(getValue())){
+                                    matches.add(xml.getValueXml());
+                                }
+                            case EndsWith:
+                                if(xmlValue.endsWith(getValue())){
+                                    matches.add(xml.getValueXml());
+                                }
+                                break;
+                            default:
+                                System.out.println("text does not support method="+getMethod());
+                        }
+                    }else{
+                        matches.add(xml.getValueXml());
+                    }
+                }
             }
         }
     }
@@ -523,15 +554,46 @@ public class XmlPath {
     }
 
     private void append(StringBuilder sb,boolean recursive){
-        sb.append("{");
-        sb.append(""+(isFirst?"^":"")+scope+":"+getType()+":");
+//        sb.append("{");
+//        sb.append(""+(isFirst?"^":"")+scope+":"+getType()+":");
         if(Type.Attribute.equals(getType())){
             sb.append("@");
+        }else if (Type.Tag.equals(getType())){
+            if(isFirst()){
+                if(Scope.Descendant.equals(getScope())){
+                    sb.append("//");
+                }else{
+                    sb.append("/");
+                }
+            }else{
+                if(Scope.Descendant.equals(getScope())){
+                    sb.append("//");
+                }else{
+                    sb.append("/");
+                }
+            }
+        }else if (Type.Function.equals(getType())){
+            if(isFirst()){
+                if(Scope.Descendant.equals(getScope())){
+                    sb.append("//");
+                }else{
+                    sb.append("/");
+                }
+            }else{
+                if(Scope.Descendant.equals(getScope())){
+                    sb.append("//");
+                }else{
+                    sb.append("/");
+                }
+            }
         }
-        sb.append(getName());
+        if(!Type.Start.equals(getType())) {
+            sb.append(getName());
+        }
         List<XmlPath> children = getChildren();
+        String childWrap = Type.Function.equals(getType()) ? "()" : "[]";
         if(!children.isEmpty()){
-            sb.append("[ ");
+            sb.append(childWrap.charAt(0));
             for(int i=0; i<children.size(); i++){
                 if (i > 0) {
                     sb.append(" and ");
@@ -539,7 +601,9 @@ public class XmlPath {
                 XmlPath child = children.get(i);
                 child.append(sb,recursive);
             }
-            sb.append("]");
+            sb.append(childWrap.charAt(1));;
+        }else if (Type.Function.equals(getType())){
+            sb.append("()");//no children but still a function
         }
         if(hasValue()){
             sb.append(" ");
@@ -547,7 +611,7 @@ public class XmlPath {
             sb.append(" ");
             sb.append(getValue());
         }
-        sb.append("} ");
+//        sb.append("} ");
         if(recursive && hasNext()){
             getNext().append(sb,recursive);
         }

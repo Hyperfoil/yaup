@@ -5,11 +5,18 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class XmlPathTest {
+
+    @Test
+    public void parseFunction(){
+        XmlPath path = XmlPath.parse("/text()");
+        assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
+        assertTrue(path.hasNext());
+        path = path.getNext();
+        assertTrue(XmlPath.Type.Function.equals(path.getType()));
+    }
 
     @Test
     public void parseDescendant(){
@@ -150,6 +157,34 @@ public class XmlPathTest {
         assertTrue(value.getType().equals(XmlPath.Type.Attribute));
 
     }
+    @Test
+    public void matchTextFunctionCriteria(){
+        Xml xml = Xml.parse("<foo><bar>biz<f/>buz<f/>fuz</bar><bar>buz</bar></foo>");
+        XmlPath path = XmlPath.parse("/foo/bar[text()=\'buz']");
+        System.out.println(path);
+        List<Xml> matches = path.getMatches(xml);
+        System.out.println(matches);
+        assertEquals("match count\n"+matches.toString(),1,matches.size());
+        Xml m = matches.get(0);
+        assertNotNull("has parent"+m,m.parent());
+        assertEquals("value "+m,"buz",m.getValue());
+    }
+    @Test
+    public void matchTextFunction(){
+        Xml xml = Xml.parse("<foo><bar>biz<f/>buz<f/>fuz</bar><bar>buz</bar></foo>");
+        XmlPath path = XmlPath.parse("/foo/bar/text()");
+        List<Xml> matches = path.getMatches(xml);
+        assertEquals("match count\n"+matches.toString(),2,matches.size());
+        Xml m = matches.get(0);
+        assertTrue("expect text",m.isText());
+        assertNull("no parent"+m,m.parent());
+        assertEquals("value "+m,"bizbuzfuz",m.getValue());
+        m = matches.get(1);
+        assertTrue("expect text",m.isText());
+        assertNull("no parent"+m,m.parent());
+        assertEquals("value "+m,"buz",m.getValue());
+
+    }
 
 
     @Test
@@ -225,13 +260,7 @@ public class XmlPathTest {
         XmlPath path = XmlPath.parse("/foo/bar/buz");
         List<Xml> matches = path.getMatches(xml);
 
-        System.out.println(matches);
 
-    }
-    @Test
-    public void textFunction(){
-        XmlPath path = XmlPath.parse("/a/text()");
-        System.out.println(path);
     }
 
     @Test
