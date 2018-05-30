@@ -14,6 +14,44 @@ public class StringUtil {
     public static char randNameChar(){
         return VALID_REGEX_NAME_CHARS.charAt(ThreadLocalRandom.current().nextInt(0,  VALID_REGEX_NAME_CHARS.length()));
     }
+    public static String greatestCommonSubstring(String first, String second){
+        int firstLength = first.length();
+        int secondLength = second.length();
+        int maxIndex = -1;
+        int max = 0;
+
+        int[][] dp = new int[firstLength][secondLength];
+
+        for(int f=0; f<firstLength; f++){
+            for(int s=0; s<secondLength; s++){
+                if(first.charAt(f) == second.charAt(s)){
+                    if(f==0 || s==0){
+                        dp[f][s]=1;
+                    }else{
+                        dp[f][s] = dp[f-1][s-1]+1;
+                    }
+                    if(max < dp[f][s]) {
+                        max = dp[f][s];
+                        maxIndex = f;
+                    }
+                }
+
+            }
+        }
+        if(max>0) {
+            return first.substring(maxIndex - max+1, maxIndex+1);
+        }else{
+            return "";
+        }
+    }
+
+    public static int commonPrefixLength(String a,String b){
+        int rtrn = 0;
+        while(a.length()>rtrn && b.length()>rtrn && a.charAt(rtrn) == b.charAt(rtrn)){
+            rtrn++;
+        }
+        return rtrn;
+    }
 
     public static String generateRegexNameSubstitute(String input){
         if(input==null){return "";}
@@ -97,6 +135,30 @@ public class StringUtil {
                 costs[s2.length()] = lastValue;
         }
         return costs[s2.length()];
+    }
+
+    public static int findAny(String input,String toFind){
+        int index=-1;
+        HashSet<Character> chars = new HashSet<>();
+        boolean stop=false;
+        if(toFind!=null){
+            char charArray[] = toFind.toCharArray();
+            for(int i=0; i<charArray.length; i++){
+                chars.add(charArray[i]);
+            }
+        }
+        while(index<input.length() && !stop){
+            index++;
+            if(index>=input.length()){
+                stop=true;
+            }else if(chars.contains(input.charAt(index))){
+                stop=true;
+            }
+        }
+        if(index >= input.length()){
+            index = -1;
+        }
+        return index;
     }
 
     /**

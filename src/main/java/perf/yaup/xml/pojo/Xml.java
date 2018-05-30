@@ -1,7 +1,5 @@
 package perf.yaup.xml.pojo;
 
-//import com.sun.xml.internal.stream.events.StartDocumentEvent;
-
 import perf.yaup.HashedLists;
 import perf.yaup.StringUtil;
 import perf.yaup.json.Json;
@@ -138,7 +136,9 @@ public class Xml {
                 }
             }
         }catch (XMLStreamException e) {
-            e.printStackTrace();
+            System.out.println("XMLSException "+e.getMessage());
+            parentStack.forEach(entry-> System.out.println(entry.getName()+" "+entry.getType()+" "+entry.getChildren().size()));
+            //e.printStackTrace();
         }
 
         return rtrn;
@@ -177,7 +177,7 @@ public class Xml {
         //detect simple attribute or child search and use attribute / firstChild
         if (!search.contains("/") && !search.contains("[") && search.startsWith("@")) {
             //just an attribute
-            return attribute(search);
+            return attribute(search.substring(1));
         } else if ( !search.contains("@") && search.lastIndexOf("/")<=0 && !search.contains("[")) {
             //just a tag
             return firstChild(search);

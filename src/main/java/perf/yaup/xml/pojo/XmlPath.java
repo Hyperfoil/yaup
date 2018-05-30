@@ -15,31 +15,13 @@ public class XmlPath {
         Undefined('?'),Equals('='),StartsWith('^'),EndsWith('$'),Contains('~'),GreaterThan('>'),LessThan('<');
 
         private char operator;
-        private Method(char operator){
+        Method(char operator){
             this.operator = operator;
         }
 
         public char getOperator(){return operator;}
     }
-    public static enum Type {Undefined,Start,Tag,Attribute,Function,Index}
-
-    public int size(){
-        int rtrn = 1;//for this
-        XmlPath target = this;
-        while(target.hasNext()){
-            target = target.getNext();
-            rtrn++;
-        }
-        return rtrn;
-    }
-
-    public XmlPath getTail(){
-        XmlPath rtrn = this;
-        while(rtrn.hasNext()){
-            rtrn = rtrn.getNext();
-        }
-        return rtrn;
-    }
+    public enum Type {Undefined,Start,Tag,Attribute,Function,Index}
 
 
     private static enum State {Path,Criteria,Function}
@@ -109,15 +91,12 @@ public class XmlPath {
                 }
                 parentStack.peek().setMethod(method);
 
-
                 int nonSpaceIndex = StringUtil.indexNotMatching(path, "     ", index + 1);
                 index = nonSpaceIndex;
             }else if (path.startsWith("[",index)){
                 //index
                 int closeIndex = StringUtil.indexNotMatching(path,"1234567890",index+1);
-
-
-                //Still not supported
+                //TODO Still not supported
 
             }else if (path.startsWith("'",index) || path.startsWith("\"",index)){
                 if(Type.Start.equals(parentStack.peek().getType())){
@@ -175,10 +154,13 @@ public class XmlPath {
                     }
                 }else if("//".equals(prefix)){
                     scope = Scope.Descendant;
-                }else if("".equals(prefix)){
+                }else if("".equals(prefix)) {
+
                     //relative start
+                }else if("./".equals(prefix)){
+                    //TODO handle this scope for children of current node
+                    return error("unsupported scope=["+prefix+"] @ "+index+" in "+path);
                 }else {
-                    //TODO handle this scope
                     return error("unsupported scope=["+prefix+"] @ "+index+" in "+path);
                 }
 
@@ -276,6 +258,25 @@ public class XmlPath {
         this.name="Error: ";
         this.value = error;
     }
+
+    public int size(){
+        int rtrn = 1;//for this
+        XmlPath target = this;
+        while(target.hasNext()){
+            target = target.getNext();
+            rtrn++;
+        }
+        return rtrn;
+    }
+
+    public XmlPath getTail(){
+        XmlPath rtrn = this;
+        while(rtrn.hasNext()){
+            rtrn = rtrn.getNext();
+        }
+        return rtrn;
+    }
+
     public XmlPath copy(){
         if(!isValid()){
             return new XmlPath(this.getValue());
@@ -396,6 +397,7 @@ public class XmlPath {
     }
 
     public List<Xml> getMatches(Xml xml){
+
         List<Xml> toMatch = new ArrayList<>();
         List<Xml> tmp;
         List<Xml> matches = new ArrayList<>();
@@ -421,15 +423,17 @@ public class XmlPath {
     }
 
     //right now we merge all matches into the same array, this wont' work with index [0] references
-    //becuase it treats all previous matches as being on the same level... maybe we add an index on the current?
+    //because it treats all previous matches as being on the same level... maybe we add an index on the current?
     public void collectMatches(List<Xml> toCheck, List<Xml> matches){
-
 
         for (Xml xml : toCheck) {
             if (Type.Start.equals(getType())){
                 if(xml.isDocument()){
                     matches.addAll(xml.getChildren());
                 }else{
+                    //not a document so could be the result of previous match?
+                    //how do we know when the input path wants to match against a child not this?
+                    //TODO when was this necessary?
                     matches.add(xml);
                     //matches.addAll(xml.getChildren());
                 }

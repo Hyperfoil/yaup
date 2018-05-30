@@ -19,10 +19,30 @@ import java.util.*;
 
 /**
  * Created by wreicher
+ *
+ * What I want
+ * Search:
+ * //foo.txt
+ * ./foo/bar//biz.txt
+ * myEar.ear#/myWar.war#myJar.jar#entry.xml>xpath
+ * myEar.ear#/myWar.war#myJar.jar#entry.json>jsonPath
+ * myArchive.jar#//findMeAnywhereIncludingNestedArchives.txt
+ *
+ * thoughts on how to do it:
+ * need some way to treat a File and an ArchiveInputStream the same way (wrapper around F.getFiles() and AIS.getNextEntry()
+ * AIS flattens all paths
+ *  /foo//bar needs to be applied as a single match rule or we getAllEntires into a list and pass to /foo, then //bar
+ *  using the list works well with getFiles() but is inefficient use of memory
+ *  split search pattern like XmlPath?
  */
 public class FileUtility {
 
+    private class Child {
+        private File file;
+        private ArchiveEntry archiveEntry;
 
+
+    }
 
     public static final String ARCHIVE_KEY = "#";
     public static final String SEARCH_KEY = ">";
@@ -154,6 +174,45 @@ public class FileUtility {
         }
         return 0;
     }
+    public static List<String> lines(String fullPath){
+        String content = readFile(fullPath);
+        return new ArrayList<>(Arrays.asList(content.split("\r?\n")));
+    }
+    public static String readHead(String fullPath,int lines){
+        StringBuilder sb = new StringBuilder();
+        InputStream stream = getInputStream(fullPath);
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+
+        try {
+            for (int i = 0; i < lines; i++) {
+                if (i > 0) {
+                    sb.append(System.lineSeparator());
+                }
+                sb.append(reader.readLine());
+            }
+        }catch(IOException e){
+            //TODO handle IOE
+        }
+        return sb.toString();
+    }
+    public static String readFile(String fullPath){
+        InputStream stream = getInputStream(fullPath);
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        int nRead;
+        byte[] data = new byte[16384];
+
+        try {
+            while ((nRead = stream.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+            }
+            buffer.flush();
+        } catch (IOException e) {
+            //TODO handle IOE
+        }
+
+        return new String(buffer.toByteArray());
+
+    }
     public static InputStream getInputStream(String fullPath){
         InputStream rtrn = null;
         String archivePath = fullPath;
@@ -184,7 +243,7 @@ public class FileUtility {
                 rtrn = new TarArchiveInputStream(new BZip2CompressorInputStream(rtrn));
             }else if (archivePath.endsWith(".bz2")){
                 rtrn = new BZip2CompressorInputStream(rtrn);
-            }else if (archivePath.endsWith(".jar")){
+            }else if (archivePath.endsWith(".jar") || archivePath.endsWith(".war") || archivePath.endsWith(".ear")){
                 rtrn = new JarArchiveInputStream(rtrn);
             }
             if(!entryPath.isEmpty()){

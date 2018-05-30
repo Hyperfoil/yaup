@@ -110,4 +110,23 @@ public class XmlTest {
         assertEquals("should find 1 entry:\n"+found,1,found.size());
         assertEquals("bar should contain bizz","bizz",found.get(0).getValue());
     }
+    @Test
+    public void get_attribute(){
+        String xmlContent = "<foo bar=\"bar\"></foo>";
+        Xml xml = Xml.parse(xmlContent);
+        Xml found = xml.get("@bar");
+        assertTrue("@bar exists",found.exists());
+        assertEquals("bar",found.getValue());
+    }
+    @Test
+    public void get_tag_get_attribute(){
+        String xmlContent = "<foo><bar bar=\"bar\"></bar></foo>";
+        Xml xml = Xml.parse(xmlContent);
+        Xml foo = xml.get("foo");
+        System.out.println("foo.isDocument="+foo.isDocument());
+        Xml bar = foo.get("bar/@bar");
+        System.out.println(foo.exists()+" "+foo.documentString(0));
+        System.out.println(bar.exists()+" "+bar.documentString(0));
+
+    }
 }
