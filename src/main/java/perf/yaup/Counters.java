@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Created by wreicher
@@ -31,6 +33,15 @@ public class Counters<T> implements Serializable{
         counts.clear();
     }
 
+    public void forEach(Consumer<T> consumer){
+        counts.keySet().forEach(consumer);
+    }
+    public void forEach(BiConsumer<T,Integer> consumer){
+        counts.forEach((t,a)->{
+            consumer.accept(t,a.get());
+        });
+    }
+
     public boolean contains(T t) {
         return counts.containsKey(t);
     }
@@ -42,6 +53,7 @@ public class Counters<T> implements Serializable{
             return 0;
         }
     }
+    public boolean isEmpty(){return counts.isEmpty();}
     public int sum(){return sum.get();}
     public int size(){return counts.size();}
     public List<T> entries(){

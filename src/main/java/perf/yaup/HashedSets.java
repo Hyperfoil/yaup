@@ -66,7 +66,9 @@ public class HashedSets<K,V> implements Serializable{
             throws ObjectStreamException {
 
     }
-
+    public void clear(){
+        sets.clear();
+    }
     public void forEach(BiConsumer<K,Set<V>> consumer){
         sets.forEach(consumer);
     }
