@@ -5,7 +5,27 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class JsonTest {
+
+
+    @Test
+    public void fromJs_array(){
+        Json json = Json.fromJs("[one,2,three]");
+        assertTrue("json is an array",json.isArray());
+        assertEquals("json.size ==3",3,json.size());
+    }
+
+    @Test
+    public void fromJs_map(){
+        Json json = Json.fromJs("{key:value}");
+        assertTrue("json is a map",!json.isArray());
+        assertEquals("json.size ==1",1,json.size());
+        assertEquals("json[key]=value","value",json.get("key"));
+    }
+
 
     @Test
     public void quotesInValue(){
@@ -38,7 +58,7 @@ public class JsonTest {
         a.getJson("child").getJson(1).getJson(0).add("key","y");
         a.getJson("child").getJson(1).getJson(0).add("value","Yankee");
         a.getJson("child").getJson(1).add(new Json());
-        a.getJson("child").getJson(1).getJson(1).add("key","z");
+        a.getJson("child").getJson(1).getJson(1).add("key","Z");
         a.getJson("child").getJson(1).getJson(1).add("value","Zulu");
 
 
@@ -63,18 +83,18 @@ public class JsonTest {
 
         b.getJson("child").getJson(1).add(new Json());
         b.getJson("child").getJson(1).getJson(1).add("value","Zulu");
-        b.getJson("child").getJson(1).getJson(1).add("key","z");
+        b.getJson("child").getJson(1).getJson(1).add("key","Z");
 
 
-        Assert.assertTrue("a json should be equal to itself",a.equals(a));
-        Assert.assertTrue("a should equal b",a.equals(b));
-        Assert.assertTrue("b should equal a",b.equals(a));
+        assertTrue("a json should be equal to itself",a.equals(a));
+        assertTrue("a should equal b",a.equals(b));
+        assertTrue("b should equal a",b.equals(a));
 
     }
 
     @Test @Ignore
     public void fromString(){
-        Json expected = Json.fromString("[{\"comment\":\"comment1\"},{\"comment\":\"comment2\"},{\"key\":\"0Level1\"},{\"value\":\"hasValue\",\"key\":\"0Level1\",\"child\":[[{\"value\":\"normal\",\"key\":\"1\"},{\"value\":\"quoted[{]}\\\\\\\"Value\",\"key\":\"1\",\"child\":[[{\"value\":\"one\",\"key\":\"1.1\"},{\"value\":\"Alpha\",\"key\":\"1.1.a\"},{\"value\":\"Bravo\",\"key\":\"1.1.b\"}],[{\"value\":\"two\",\"key\":\"1.2\"},{\"value\":\"Yankee\",\"key\":\"1.2.y\"}],[{\"value\":\"Zulu\",\"key\":\"1.2.z\"}]]}]]},{\"comment\":\"inlineComment\",\"key\":\"0Level2\",\"child\":[[{\"key\":\"1\",\"child\":[[{\"key\":\"first\"},{\"key\":\"second\"},{\"key\":\"quoted\\\\\\\" :,[{]\"},{\"key\":\"other\"},[[{\"key\":\"subOne\"},{\"key\":\"subTwo\"}]],[[{\"value\":\"subValue\",\"key\":\"subKey\"}]],{\"key\":\"zed\"}]]},{\"value\":\"bar\",\"key\":\"2\"}]]}]\n");
+        Json expected = Json.fromString("[{\"comment\":\"comment1\"},{\"comment\":\"comment2\"},{\"key\":\"0Level1\"},{\"value\":\"hasValue\",\"key\":\"0Level1\",\"child\":[[{\"value\":\"normal\",\"key\":\"1\"},{\"value\":\"quoted[{]}\\\\\\\"Value\",\"key\":\"1\",\"child\":[[{\"value\":\"one\",\"key\":\"1.1\"},{\"value\":\"Alpha\",\"key\":\"1.1.a\"},{\"value\":\"Bravo\",\"key\":\"1.1.b\"}],[{\"value\":\"two\",\"key\":\"1.2\"},{\"value\":\"Yankee\",\"key\":\"1.2.y\"}],[{\"value\":\"Zulu\",\"key\":\"1.2.Z\"}]]}]]},{\"comment\":\"inlineComment\",\"key\":\"0Level2\",\"child\":[[{\"key\":\"1\",\"child\":[[{\"key\":\"first\"},{\"key\":\"second\"},{\"key\":\"quoted\\\\\\\" :,[{]\"},{\"key\":\"other\"},[[{\"key\":\"subOne\"},{\"key\":\"subTwo\"}]],[[{\"value\":\"subValue\",\"key\":\"subKey\"}]],{\"key\":\"zed\"}]]},{\"value\":\"bar\",\"key\":\"2\"}]]}]\n");
 
     }
 

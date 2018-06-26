@@ -1,9 +1,15 @@
 package perf.yaup.json;
 
+import jdk.nashorn.api.scripting.JSObject;
+import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import perf.yaup.StringUtil;
 
+import javax.script.*;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
@@ -48,9 +54,7 @@ public class Json {
             }
         }
         @Override
-        public void add(Object value){
-            System.out.println("HashJson.add("+value+")");
-        }
+        public void add(Object value){}
     }
     private static class HashArray extends Json {
         HashMap<String,Json> seen;
@@ -245,6 +249,134 @@ public class Json {
         //TODO test this
         return rtrn;
     }
+    public static Json fromBindings(Bindings bindings){
+        Json rtrn = new Json();
+
+        Queue<Json> targets = new LinkedList<>();
+        Queue<Bindings> todo = new LinkedList<>();
+
+        todo.add(bindings);
+        targets.add(rtrn);
+
+        while(!todo.isEmpty()){
+            Json js = targets.remove();
+            Bindings bs = todo.remove();
+            boolean isArray = bindings.keySet().stream().allMatch(s->s.matches("\\d+"));
+
+            for(String key : bs.keySet()){
+
+                Object value = bs.get(key);
+                if(value instanceof Bindings){
+                    Json newTarget = new Json();
+                    js.set(key,newTarget);
+                    targets.add(newTarget);
+                    todo.add((Bindings)value);
+                }else{
+                    js.set( isArray ? Integer.parseInt(key) : key,value);
+                }
+            }
+        }
+        return rtrn;
+    }
+    public static Json fromJs(String js){
+        Json rtrn = new Json();
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+        ScriptContext defaultContext = engine.getContext();
+        ScriptContext context = new ScriptContext(){
+            @Override
+            public void setBindings(Bindings bindings, int i) {
+                defaultContext.setBindings(bindings,i);
+            }
+
+            @Override
+            public Bindings getBindings(int i) {
+                return defaultContext.getBindings(i);
+            }
+
+            @Override
+            public void setAttribute(String s, Object o, int i) {
+                defaultContext.setAttribute(s,o,i);
+            }
+
+            @Override
+            public Object getAttribute(String s, int i) {
+                if(i!=ENGINE_SCOPE && i!=GLOBAL_SCOPE){
+                    return s;
+                }
+                if(defaultContext.getAttribute(s,i)!=null){
+                    return defaultContext.getAttribute(s,i);
+                }
+                return s;
+            }
+
+            @Override
+            public Object removeAttribute(String s, int i) {
+                return defaultContext.removeAttribute(s,i);
+            }
+
+            @Override
+            public Object getAttribute(String s) {
+                if(defaultContext.getAttribute(s)!=null){
+                    return defaultContext.getAttribute(s);
+                }
+
+                return s;
+            }
+
+            @Override
+            public int getAttributesScope(String s) {
+                return 0;
+            }
+
+            @Override
+            public Writer getWriter() {
+                return defaultContext.getWriter();
+            }
+
+            @Override
+            public Writer getErrorWriter() {
+                return defaultContext.getErrorWriter();
+            }
+
+            @Override
+            public void setWriter(Writer writer) {
+                defaultContext.setWriter(writer);
+            }
+
+            @Override
+            public void setErrorWriter(Writer writer) {
+                defaultContext.setErrorWriter(writer);
+            }
+
+            @Override
+            public Reader getReader() {
+                return defaultContext.getReader();
+            }
+
+            @Override
+            public void setReader(Reader reader) {
+                defaultContext.setReader(reader);
+            }
+
+            @Override
+            public List<Integer> getScopes() {
+                return defaultContext.getScopes();
+            }
+        };
+        try {
+            Object foo = engine.eval("var rtrn = "+js+"; rtrn",context);
+
+            if(foo instanceof ScriptObjectMirror){
+                ScriptObjectMirror scriptObjectMirror = (ScriptObjectMirror)foo;
+                rtrn = fromBindings(scriptObjectMirror);
+            }
+
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+
+        return rtrn;
+    }
 
     public static Json typeStructure(Json target){
         Json rtrn ;
@@ -258,14 +390,16 @@ public class Json {
                 Json valueStructure = typeStructure((Json)value);
                 rtrn.add(key,valueStructure);
             }else{
-                rtrn.add(key,value.getClass().getSimpleName());
+                if(value instanceof Number){
+                    rtrn.add(key,"Number");
+                }else {
+                    rtrn.add(key, value.getClass().getSimpleName());
+                }
             }
         });
         return rtrn;
     }
     private static void mergeStructure(Json to,Json from){
-
-
         if(to.isArray()){//going to be a HashArray
             if(from.isArray()){
                 from.values().forEach(to::add);
@@ -357,8 +491,9 @@ public class Json {
 
     @Override
     public int hashCode(){
-        return super.hashCode();
+        return toString().hashCode();
     }
+
     @Override
     public boolean equals(Object obj){
         if(obj !=null && obj instanceof Json){
