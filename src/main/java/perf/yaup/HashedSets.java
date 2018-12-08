@@ -5,6 +5,7 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
@@ -13,28 +14,22 @@ import java.util.stream.Stream;
  */
 public class HashedSets<K,V> implements Serializable{
 
-    private HashMap<K,HashSet<V>> sets;
+    private Map<K,HashSet<V>> sets;
     private Set<V> empty;
     private boolean linked;
     public HashedSets(){
-        this(true);
-    }
-    public HashedSets(boolean linked){
-        sets = linked ? new LinkedHashMap<>() : new HashMap<>();
+        sets = new ConcurrentHashMap<>();
         empty = Collections.unmodifiableSet( new HashSet<>() );
         this.linked = linked;
     }
     public void put(K name, V value){
         if(!sets.containsKey(name)){
-            sets.put(name,linked ? new LinkedHashSet<>() : new HashSet<>());
+            sets.putIfAbsent(name,linked ? new LinkedHashSet<>() : new HashSet<>());
         }
         sets.get(name).add(value);
     }
     public void putAll(K name, Collection<V> values){
-        if(!sets.containsKey(name)){
-            sets.put(name, linked ? new LinkedHashSet<V>() : new HashSet<V>());
-        }
-        sets.get(name).addAll(values);
+        sets.computeIfAbsent(name, (k) -> {return linked ? new LinkedHashSet<V>() : new HashSet<V>();}).addAll(values);
     }
     public Set<V> get(K key){
         if(sets.containsKey(key)){

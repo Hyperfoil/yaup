@@ -69,7 +69,6 @@ public class Timer {
             this.milliStart = milli;
             this.nanoStart = nano;
         }
-
         //creates a gap but more accurately reflects time being measured by ignoring time taken to stop
         milli = System.currentTimeMillis();
         nano = System.nanoTime();

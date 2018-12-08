@@ -10,6 +10,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.compress.compressors.z.ZCompressorInputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import perf.yaup.HashedLists;
 import perf.yaup.Sets;
 
 import java.io.*;
@@ -40,9 +41,56 @@ public class FileUtility {
     private class Child {
         private File file;
         private ArchiveEntry archiveEntry;
+    }
+
+    public enum Format {bz2,gz,tar,zip, Z, tarZ,rar, sevenZ,xz};
+
+    private static final HashedLists<Format,int[]> magic_numbers = new HashedLists<>();
+
+    static {//https://en.wikipedia.org/wiki/List_of_file_signatures
+        magic_numbers.put(Format.gz,new int[]{0x1F,0x8B});
+        magic_numbers.put(Format.tar,new int[]{0x75,0x73,0x74,0x61,0x72});
+        magic_numbers.putAll(Format.zip,Arrays.asList(
+            new int[]{0x50,0x4B,0x03,0x04},
+            new int[]{0x50,0x4B,0x05,0x06},
+            new int[]{0x50,0x4B,0x07,0x08}
+        ));
+        magic_numbers.putAll(Format.Z,Arrays.asList(
+            new int[]{0x1F,0x9D},
+            new int[]{0x1F,0xA0}
+        ));
+        magic_numbers.put(Format.tarZ,new int[]{0x1F,0xA0});
+        magic_numbers.put(Format.bz2,new int[]{0x42,0x5A,0x68});
+        magic_numbers.putAll(Format.rar,Arrays.asList(
+            new int[]{0x52,0x61,0x72,0x21,0x1A,0x07,0x00},
+            new int[]{0x52,0x61,0x72,0x21,0x1A,0x07,0x01,0x00}
+        ));
+        magic_numbers.put(Format.sevenZ,new int[]{0x37,0x7A,0xBC,0xAF,0x72,0x1C});
+        magic_numbers.put(Format.xz,new int[]{0xFD,0x37,0x7A,0x58,0x5A,0x00,0x00});
+
+    }
+
+    public static void main(String[] args) {
+        String path = "/tmp/foo.tar.gz";
+
+        try(BufferedInputStream stream = new BufferedInputStream(new FileInputStream(path));
+            BufferedInputStream tais = new BufferedInputStream(new GzipCompressorInputStream(new FileInputStream(path)))){
+            System.out.println(stream.markSupported());
+            System.out.println(tais.markSupported());
+            stream.mark(10);
+            boolean b = isZip(tais);
+
+            stream.reset();
+            b = isZip(stream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
 
     }
+
 
     public static final String ARCHIVE_KEY = "#";
     public static final String SEARCH_KEY = ">";
@@ -89,9 +137,7 @@ public class FileUtility {
         }
         File parentFile = new File(fileName.substring(0,fileName.indexOf(ARCHIVE_KEY)));
         File tmpFile = new File(fileName);
-
         return (!tmpFile.exists() && parentFile.exists());
-
     }
 
     /**
@@ -532,5 +578,32 @@ public class FileUtility {
             return true;
         }
         return false;
+    }
+
+
+    public static boolean isZip(InputStream stream){
+        boolean rtrn = false;
+
+        if(stream.markSupported()) {
+            stream.mark(10);
+        }
+        try {
+            for(int i=0; i<10; i++){
+                int val = stream.read();
+                System.out.printf("%3d %x%n",i,val);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if(stream.markSupported()){
+            try {
+                stream.reset();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        return rtrn;
     }
 }
