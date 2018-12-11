@@ -1,11 +1,14 @@
 package perf.yaup.xml.pojo;
 
+import org.apache.commons.cli.*;
 import perf.yaup.AsciiArt;
+import perf.yaup.JarMain;
 import perf.yaup.Sets;
 import perf.yaup.StringUtil;
 import perf.yaup.linux.Local;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -166,81 +169,129 @@ public class XmlComparison {
 
     private boolean ordered = false;
 
-    public static void main(String[] vargs) {
-        boolean color = false;
-        List<String> args = new ArrayList<>(Arrays.asList(vargs));
+
+    public static void main(String[] args) {
+        Options options = new Options();
+
+        options.addOption(Option.builder("C")
+            .longOpt("color")
+            .hasArg(false)
+            .desc("use terminal colored output")
+            .build()
+        );
+        options.addOption(Option.builder("S")
+            .longOpt("standalone")
+            .hasArg(false)
+            .desc("use standalone.xml criteria")
+            .build()
+        );
+        options.addOption(Option.builder("D")
+            .longOpt("domain")
+            .hasArg(false)
+            .desc("use domain.xml criteria")
+            .build()
+        );
+        options.addOption(Option.builder("W")
+            .longOpt("web")
+            .hasArg(false)
+            .desc("use web.xml criteria")
+            .build()
+        );
+        options.addOption(Option.builder("X")
+            .argName("criteria=#")
+            .hasArg()
+            .desc("criteria=edit_distance")
+            .valueSeparator()
+            .build()
+        );
 
         List<String> toDelete = new LinkedList<>();
 
         XmlComparison comp = new XmlComparison();
 
-        while(!args.isEmpty()){
-            String arg = args.remove(0);
-            switch (arg){
-                case "-C":
-                case "--color":
-                    color = true;
-                    break;
-                case "-S":
-                case "--standalone":
-                    standaloneXml(comp);
-                    break;
-                case "-D":
-                case "--domain":
-                    domainXml(comp);
-                    break;
-                case "-W":
-                case "--web":
-                    webXml(comp);
-                    break;
-                default:
-                    if(arg.startsWith("-X")){
-                        String path = arg.substring("-X".length());
-                        int value = 0;
-                        if(path.contains("=")){
-                            if(path.startsWith("=") || path.endsWith("=")){
-                                //ERROR
-                            }
-                            try {
-                                value = Integer.parseInt(path.substring(path.indexOf("=")));
-                            }catch(NumberFormatException e){
-                                //Error
-                            }
-                            path = path.substring(0,path.indexOf("=")+1);
+        CommandLineParser parser = new DefaultParser();
+        HelpFormatter formatter = new HelpFormatter();
+        CommandLine cmd;
 
-                            comp.addCriteria(path,value);
-                        }
-                    }else {
-                        String name = "";
-                        String path = "";
-                        if (arg.contains("=")) {
-                            if(arg.endsWith("=") || arg.startsWith("=")){
-                                //ERROR
-                            }
-                            name = arg.substring(0, arg.indexOf("="));
-                            path = arg.substring(arg.indexOf("=") + 1);
-                        } else {
-                            name = ""+comp.xmlCount();
-                            path = arg;
-                        }
+        String cmdLineSyntax =
+            "java -jar " +
+            (new File(XmlComparison.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .getPath()
+            )).getName() +
+            " " +
+            "[options] [name=file...]";
 
-                        if(path.contains(":")){
-                            Local local = new Local();
-                            try {
-                                File tmp = File.createTempFile("xmlComp-",".xml");
-                                System.out.println("downloading "+path+" to "+tmp.getPath());
-                                local.download(tmp.getPath(),path);
-                                toDelete.add(tmp.getPath());
-                                path = tmp.getPath();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                        comp.load(name,Xml.parseFile(path));
-
-                    }
-            }
+        try{
+            cmd = parser.parse(options,args);
+        } catch (ParseException e) {
+            formatter.printHelp(cmdLineSyntax,options);
+            System.exit(1);
+            return;
         }
+
+        if(cmd.hasOption("standalone")){
+            standaloneXml(comp);
+        }
+        if(cmd.hasOption("domain")){
+            domainXml(comp);
+        }
+        if(cmd.hasOption("web")){
+            webXml(comp);
+        }
+        Properties criteria = cmd.getOptionProperties("X");
+        if(!criteria.isEmpty()){
+            criteria.forEach((k,v)->{
+                comp.addCriteria(k.toString(),Integer.parseInt(v.toString()));
+            });
+        }
+        List<String> paths = cmd.getArgList();
+        if(paths.isEmpty()){
+            System.out.println("Missing file(s)");
+            formatter.printHelp(cmdLineSyntax,options);
+            System.exit(1);
+            return;
+        }
+        paths.forEach(arg->{
+            String name = "";
+            String path = "";
+            if (arg.contains("=")) {
+                if(arg.endsWith("=") || arg.startsWith("=")){
+                    //ERROR
+                }
+                name = arg.substring(0, arg.indexOf("="));
+                path = arg.substring(arg.indexOf("=") + 1);
+            } else {
+                name = ""+comp.xmlCount();
+                path = arg;
+            }
+
+            if(path.contains(":")){
+                Local local = new Local();
+                try {
+                    File tmp = File.createTempFile("xmlComp-",".xml");
+                    System.out.println("downloading "+path+" to "+tmp.getPath());
+                    local.download(tmp.getPath(),path);
+                    toDelete.add(tmp.getPath());
+                    path = tmp.getPath();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    formatter.printHelp(cmdLineSyntax,options);
+                    System.exit(1);
+                }
+            }
+            Xml toLoad = Xml.parseFile(path);
+            if(toLoad.exists()){
+                comp.load(name, Xml.parseFile(path));
+            }else{
+                System.out.println(toLoad.getName());
+                formatter.printHelp(cmdLineSyntax,options);
+                System.exit(1);
+            }
+
+        });
 
         if(comp.criteriaCount() == 0){
             standaloneXml(comp);
@@ -250,7 +301,7 @@ public class XmlComparison {
 
         int nameWidth = comp.xmlNames().stream().mapToInt(String::length).max().orElse(1);
 
-        boolean c = color;
+        boolean c = cmd.hasOption("color");
         diffs.forEach(entry->{
             System.out.printf("%s%s%s%n",
                 c ? AsciiArt.ANSI_LIGHT_BLUE : "",
