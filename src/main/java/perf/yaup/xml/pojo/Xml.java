@@ -36,12 +36,14 @@ public class Xml {
     public static final String ATTRIBUTE_WRAPPER="\"";
 
 
+
+
     public static Xml parseFile(String path){
         Xml rtrn = null;
         try {
             rtrn = parse(new FileInputStream(path));
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            rtrn = new Xml(Type.Invalid,null,e.getMessage());
         }
         if(rtrn == null){
             rtrn = new Xml(Type.Document,null,"xml");
