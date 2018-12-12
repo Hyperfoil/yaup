@@ -7,9 +7,14 @@ import perf.yaup.Sets;
 import perf.yaup.StringUtil;
 import perf.yaup.linux.Local;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
@@ -267,19 +272,37 @@ public class XmlComparison {
                 name = ""+comp.xmlCount();
                 path = arg;
             }
-
             if(path.contains(":")){
-                Local local = new Local();
-                try {
-                    File tmp = File.createTempFile("xmlComp-",".xml");
-                    System.out.println("downloading "+path+" to "+tmp.getPath());
-                    local.download(tmp.getPath(),path);
-                    toDelete.add(tmp.getPath());
-                    path = tmp.getPath();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    formatter.printHelp(cmdLineSyntax,options);
-                    System.exit(1);
+                if(path.startsWith("http")){
+                    try {
+                        File tmp = File.createTempFile("xmlComp-", ".xml");
+                        URL url = new URL(path);
+                        ReadableByteChannel readableByteChannel = Channels.newChannel(url.openStream());
+                        FileOutputStream fileOutputStream = new FileOutputStream(tmp.getAbsolutePath());
+                        FileChannel fileChannel = fileOutputStream.getChannel();
+                        fileOutputStream.getChannel()
+                                .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+
+                        toDelete.add(tmp.getPath());
+                        path = tmp.getPath();
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                } else {
+                    Local local = new Local();
+                    try {
+                        File tmp = File.createTempFile("xmlComp-", ".xml");
+                        System.out.println("downloading " + path + " to " + tmp.getPath());
+                        local.download(tmp.getPath(), path);
+                        toDelete.add(tmp.getPath());
+                        path = tmp.getPath();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        formatter.printHelp(cmdLineSyntax, options);
+                        System.exit(1);
+                    }
                 }
             }
             Xml toLoad = Xml.parseFile(path);
