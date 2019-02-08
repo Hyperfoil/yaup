@@ -1,15 +1,81 @@
 package perf.yaup;
 
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by wreicher
  */
 public class StringUtil {
+    private static final String PATTERN_PREFIX = "${{";
+    private static final String PATTERN_SUFFIX = "}}";
+    private static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^${}:]+):?(?<default>[^}]*)}}");
 
+    private static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
     private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    public static final List<String> getCaptureNames(String pattern) {
+        Matcher fieldMatcher = NAMED_CAPTURE.matcher(pattern);
+        List<String> names = new LinkedList<>();
+        while (fieldMatcher.find()) {
+            names.add(fieldMatcher.group(1));
+        }
+        return names;
+    }
+
+    public static String populatePattern(String pattern, Map<Object,Object> map){
+        if(!pattern.contains(PATTERN_PREFIX)){
+            return pattern;
+        }
+        String rtrn = pattern;
+        int previous = 0;
+        Matcher matcher = STATE_PATTERN.matcher(rtrn);
+        while(matcher.find()){
+            int findIndex = matcher.start();
+            String name = matcher.group("name");
+            String defaultValue = matcher.group("default");
+            String value = null;
+            if(map.containsKey(name)){
+                value = map.get(name).toString();
+            }else{
+                value = defaultValue;
+            }
+            previous = matcher.end();
+            if(value!=null){
+                rtrn = rtrn.replace(rtrn.substring(findIndex,previous),value);
+                matcher.reset(rtrn);
+            }
+        }
+        return rtrn;
+    }
+
+    public static <T extends Enum<?>> T getEnum(String input,Class<T> clazz){
+        return getEnum(input,clazz,null);
+    }
+    /**
+     * Finds the nearest matching enum ignoring case and removing - or _'s.
+     * @param input the name of an enum instance
+     * @param clazz the enum class
+     * @param defaultValue return value if a match is not found. null is acceptable
+     * @param <T>
+     * @return
+     */
+    public static <T extends Enum<?>> T getEnum(String input,Class<T> clazz,T defaultValue){
+        if(input==null || input.isEmpty()){
+            return defaultValue;
+        }
+        input = input.replaceAll("[\\-_]","");
+        for(T t : clazz.getEnumConstants()){
+            if(input.equalsIgnoreCase(t.name())){
+                return t;
+            }
+        }
+        return defaultValue;
+    }
 
     public static char randNameChar(){
         return VALID_REGEX_NAME_CHARS.charAt(ThreadLocalRandom.current().nextInt(0,  VALID_REGEX_NAME_CHARS.length()));

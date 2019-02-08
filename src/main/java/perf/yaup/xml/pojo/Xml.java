@@ -2,20 +2,21 @@ package perf.yaup.xml.pojo;
 
 import perf.yaup.HashedLists;
 import perf.yaup.StringUtil;
+import perf.yaup.file.FileUtility;
 import perf.yaup.json.Json;
 import perf.yaup.xml.XmlOperation;
 
-import javax.xml.stream.*;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.*;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static perf.yaup.xml.XmlOperation.*;
-import static perf.yaup.xml.XmlOperation.Operation.*;
+import static perf.yaup.xml.XmlOperation.Operation;
+import static perf.yaup.xml.XmlOperation.Operation.Add;
 
 public class Xml {
 
@@ -40,11 +41,7 @@ public class Xml {
 
     public static Xml parseFile(String path){
         Xml rtrn = null;
-        try {
-            rtrn = parse(new FileInputStream(path));
-        } catch (FileNotFoundException e) {
-            rtrn = new Xml(Type.Invalid,null,e.getMessage());
-        }
+        rtrn = parse(FileUtility.getInputStream(path));
         if(rtrn == null){
             rtrn = new Xml(Type.Document,null,"xml");
         }
@@ -439,7 +436,6 @@ public class Xml {
                 xmlPath = xmlPath.copy();
                 XmlPath tail = xmlPath.getTail();
                 tail.drop();
-
                 if(XmlPath.Type.Attribute.equals(tail.getType())){
                     //change to add and re-try only if tail doesn't have children
                     if(!tail.hasChildren() && xmlOperation.isSet()){
@@ -447,7 +443,6 @@ public class Xml {
                         value = ATTRIBUTE_PREFIX+tail.getName()+Xml.ATTRIBUTE_VALUE_PREFIX+xmlOperation.getValue();
                         found = xmlPath.getMatches(this);
                     }
-
                 }else if (XmlPath.Type.Tag.equals(tail.getType())){
                     if(xmlOperation.isSet()){
                         opp = Add;
@@ -484,8 +479,6 @@ public class Xml {
                 }else{
                     System.out.println("unsupported type = "+tail.getType());
                 }
-
-
             }
         }
         String finalValue = value.trim();

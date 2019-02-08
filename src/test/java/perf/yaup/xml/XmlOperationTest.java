@@ -121,7 +121,7 @@ public class XmlOperationTest {
 
         String replaced = XmlOperation.replaceXmlnsAttribute(search);
 
-
+        System.out.println(replaced);
 
         assertFalse("should not find @xmlns but found: "+replaced,replaced.contains("@xmlns"));
         assertEquals("shoudl replace both references",

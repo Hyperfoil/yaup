@@ -2,6 +2,6 @@ package perf.yaup.yaml;
 
 import java.util.Map;
 
-public interface Mapping {
-    Map<Object,Object> getMap(Object data);
+public interface Mapping<T> {
+    Map<Object,Object> getMap(T data);
 }

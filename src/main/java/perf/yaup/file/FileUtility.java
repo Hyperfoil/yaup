@@ -17,6 +17,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Created by wreicher
@@ -70,28 +71,6 @@ public class FileUtility {
 
     }
 
-    public static void main(String[] args) {
-        String path = "/tmp/foo.tar.gz";
-
-        try(BufferedInputStream stream = new BufferedInputStream(new FileInputStream(path));
-            BufferedInputStream tais = new BufferedInputStream(new GzipCompressorInputStream(new FileInputStream(path)))){
-            System.out.println(stream.markSupported());
-            System.out.println(tais.markSupported());
-            stream.mark(10);
-            boolean b = isZip(tais);
-
-            stream.reset();
-            b = isZip(stream);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-    }
-
-
     public static final String ARCHIVE_KEY = "#";
     public static final String SEARCH_KEY = ">";
     public static final String REMOTE_KEY = ":";
@@ -140,6 +119,28 @@ public class FileUtility {
         return (!tmpFile.exists() && parentFile.exists());
     }
 
+    private static InputStream wrapStream(InputStream stream,String path) throws IOException {
+        InputStream rtrn = stream;
+        if(path.endsWith(".tar.gz") || path.endsWith(".tgz")) {
+            rtrn = new TarArchiveInputStream(new GzipCompressorInputStream(stream));
+        }else if (path.endsWith((".gz"))){
+            rtrn = new GzipCompressorInputStream(stream);
+        }else if (path.endsWith(".tar")){
+            rtrn = new TarArchiveInputStream(stream);
+        }else if (path.endsWith(".zip")){
+            rtrn = new ZipArchiveInputStream(stream);
+        }else if (path.endsWith(".Z")){
+            rtrn = new ZCompressorInputStream(stream);
+        }else if (path.endsWith(".tar.bz2") || path.endsWith("tbz2")){
+            rtrn = new TarArchiveInputStream(new BZip2CompressorInputStream(stream));
+        }else if (path.endsWith(".bz2")){
+            rtrn = new BZip2CompressorInputStream(stream);
+        }else if (path.endsWith(".jar") || path.endsWith(".war") || path.endsWith(".ear")){
+            rtrn = new JarArchiveInputStream(stream);
+        }
+        return rtrn;
+    }
+
     /**
      * Get an input stream for the file path which can contain an optional achive entry subPath
      * @param fullPath the path for the file with an optional archive entry subPaths for archive files (e.g. jars)
@@ -173,7 +174,7 @@ public class FileUtility {
                 rtrn = new TarArchiveInputStream(new BZip2CompressorInputStream(rtrn));
             } else if (archivePath.endsWith(".bz2")) {
                 rtrn = new BZip2CompressorInputStream(rtrn);
-            } else if (archivePath.endsWith(".jar")) {
+            } else if (archivePath.endsWith(".jar") || archivePath.endsWith(".ear") || archivePath.endsWith(".war")) {
                 rtrn = new JarArchiveInputStream(rtrn);
             } else { //just a file
                 return archiveFile.length();
@@ -224,6 +225,9 @@ public class FileUtility {
         String content = readFile(fullPath);
         return new ArrayList<>(Arrays.asList(content.split("\r?\n")));
     }
+    public static Stream<String> stream(String path){
+        return new BufferedReader(new InputStreamReader(FileUtility.getInputStream(path))).lines();
+    }
     public static String readHead(String fullPath,int lines){
         StringBuilder sb = new StringBuilder();
         InputStream stream = getInputStream(fullPath);
@@ -259,6 +263,43 @@ public class FileUtility {
         return new String(buffer.toByteArray());
 
     }
+    private static InputStream getInputStream(ArchiveInputStream inputStream,String currentPath) throws IOException {
+        String entryPath = currentPath;
+        String remainder = "";
+        if(currentPath.contains(ARCHIVE_KEY)){
+            entryPath = getArchiveFilePath(currentPath);
+            remainder = getArchiveEntrySubPath(currentPath);
+        }
+
+        if(entryPath.startsWith("./")){
+            entryPath = entryPath.substring(2);
+        }
+        if(entryPath.startsWith("/")){
+            entryPath = entryPath.substring(1);
+        }
+
+        ArchiveEntry entry;
+        InputStream rtrn = null;
+        while( (entry = inputStream.getNextEntry()) != null ){
+            String name = entry.getName();
+            if(name.startsWith("./")){
+                name = name.substring(2);
+            }
+            if(name.startsWith("/")){
+                name = name.substring(1);
+            }
+            if(name.equals(entryPath)){
+                rtrn = wrapStream(inputStream,entryPath);
+                if(!remainder.isEmpty() && isArchive(entryPath)){
+                    if(rtrn instanceof ArchiveInputStream){
+                        rtrn = getInputStream((ArchiveInputStream)rtrn,remainder);
+                    }
+                }
+                break;
+            }
+        }
+        return rtrn;
+    }
     public static InputStream getInputStream(String fullPath){
         InputStream rtrn = null;
         String archivePath = fullPath;
@@ -274,59 +315,11 @@ public class FileUtility {
                 rtrn = null;
                 throw new RuntimeException("Cannot find "+archivePath+" on local file system");
             }
-            rtrn = new FileInputStream(archivePath);
-            if(archivePath.endsWith(".tar.gz") || archivePath.endsWith(".tgz")) {
-                rtrn = new TarArchiveInputStream(new GzipCompressorInputStream(rtrn));
-            }else if (archivePath.endsWith((".gz"))){
-                rtrn = new GzipCompressorInputStream(rtrn);
-            }else if (archivePath.endsWith(".tar")){
-                rtrn = new TarArchiveInputStream(rtrn);
-            }else if (archivePath.endsWith(".zip")){
-                rtrn = new ZipArchiveInputStream(rtrn);
-            }else if (archivePath.endsWith(".Z")){
-                rtrn = new ZCompressorInputStream(rtrn);
-            }else if (archivePath.endsWith(".tar.bz2") || archivePath.endsWith("tbz2")){
-                rtrn = new TarArchiveInputStream(new BZip2CompressorInputStream(rtrn));
-            }else if (archivePath.endsWith(".bz2")){
-                rtrn = new BZip2CompressorInputStream(rtrn);
-            }else if (archivePath.endsWith(".jar") || archivePath.endsWith(".war") || archivePath.endsWith(".ear")){
-                rtrn = new JarArchiveInputStream(rtrn);
+            rtrn = new BufferedInputStream(new FileInputStream(archivePath));
+            rtrn = wrapStream(rtrn,archivePath);
+            if( !entryPath.isEmpty() && rtrn instanceof ArchiveInputStream ) {
+                rtrn = getInputStream((ArchiveInputStream)rtrn,entryPath);
             }
-            if(!entryPath.isEmpty()){
-                if(rtrn instanceof ArchiveInputStream){
-                    ArchiveInputStream ais = (ArchiveInputStream) rtrn;
-                    ArchiveEntry ae = null;
-                    InputStream entryStream = null;
-                    while( (ae = ais.getNextEntry()) != null ){
-
-                        String aeName = ae.getName();
-                        if(aeName.startsWith("./")){
-                            aeName = aeName.substring(2);
-                        }else if (aeName.startsWith("/")){
-                            aeName = aeName.substring(1);
-                        }
-                        if(entryPath.startsWith("./")){
-                            entryPath = entryPath.substring(2);
-                        }else if (entryPath.startsWith("/")){
-                            entryPath = entryPath.substring(1);
-                        }
-
-                        if(aeName.equals(entryPath)){
-                            ae.getSize();
-                            entryStream = (rtrn);
-                            break;
-                        }
-                    }
-                    if(entryStream == null){
-                        throw new RuntimeException("Could not find "+entryPath+" in "+archivePath+" on local file system");
-                    }else{
-                        rtrn = entryStream;
-                    }
-                }else {
-                    throw new RuntimeException("Could not find "+entryPath+" in "+archivePath+" because it is not an archive collection");
-                }
-            }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -339,24 +332,35 @@ public class FileUtility {
      * @param archivePath
      * @return a List containing all the named entires in the archive or an empty list
      */
-    public static List<String> getArchiveEntries(String archivePath){
+    public static List<String> getArchiveEntries(String archivePath) {
+        return getArchiveEntries(archivePath,false);
+    }
+    public static List<String> getArchiveEntries(String archivePath,boolean deep){
         InputStream is = getInputStream(archivePath);
         List<String> rtrn = new LinkedList<String>();
-        if(is !=null && is instanceof ArchiveInputStream){
-            ArchiveInputStream ais = (ArchiveInputStream)is;
-            ArchiveEntry ae = null;
-            InputStream entryStream = null;
+        if(is !=null && is instanceof ArchiveInputStream) {
             try {
-                while( (ae = ais.getNextEntry()) != null ){
-                    rtrn.add(ae.getName());
-                }
-            } catch (IOException e) {
+                addEntries((ArchiveInputStream) is, "", rtrn, deep);
+            }catch (IOException e){
                 e.printStackTrace();
-                //TODO log the error
             }
-
         }
         return Collections.unmodifiableList(rtrn);
+    }
+    private static void addEntries(ArchiveInputStream inputStream, String prefix, List<String> rtrn,boolean recursive) throws IOException {
+        if(inputStream!=null){
+            ArchiveEntry entry = null;
+            while( (entry=inputStream.getNextEntry())!=null ){
+                String name = entry.getName();
+                rtrn.add(prefix+name);
+                if(recursive && isArchive(name)){
+                    InputStream wrappedStream = wrapStream(inputStream,name);
+                    if(wrappedStream instanceof ArchiveInputStream){
+                        addEntries((ArchiveInputStream)wrappedStream,prefix+name+ARCHIVE_KEY,rtrn,recursive);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -367,7 +371,7 @@ public class FileUtility {
     public static String getArchiveEntrySubPath(String archiveEntryPath) {
         if (archiveEntryPath == null || archiveEntryPath.isEmpty())
             return "";
-        if (isArchiveEntryPath(archiveEntryPath))
+        if (archiveEntryPath.contains(ARCHIVE_KEY))
             return archiveEntryPath.substring(archiveEntryPath
                     .indexOf(ARCHIVE_KEY) + ARCHIVE_KEY.length());
 
@@ -382,7 +386,7 @@ public class FileUtility {
     public static String getArchiveFilePath(String archiveEntryPath) {
         if (archiveEntryPath == null || archiveEntryPath.isEmpty())
             return "";
-        if (isArchiveEntryPath(archiveEntryPath))
+        if (archiveEntryPath.contains(ARCHIVE_KEY))
             return archiveEntryPath.substring(0,
                     archiveEntryPath.indexOf(ARCHIVE_KEY));
 
@@ -574,6 +578,8 @@ public class FileUtility {
             || n.endsWith(".tgz")
             || n.endsWith(".Z")
             || n.endsWith(".jar")
+            || n.endsWith(".ear")
+            || n.endsWith(".war")
             || n.endsWith(".bzip2") ) {
             return true;
         }
@@ -590,7 +596,6 @@ public class FileUtility {
         try {
             for(int i=0; i<10; i++){
                 int val = stream.read();
-                System.out.printf("%3d %x%n",i,val);
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -38,17 +38,12 @@ public class HashedList<V> {
         }
     }
     public boolean add(V value){
-        if(seen.contains(value)){
-            return false;
-        }
-        synchronized (this){
-            if(seen.contains(value)){
-                return false;
-            }
-            seen.add(value);
+        boolean rtrn = false;
+        if(seen.add(value)){
             data.add(value);
-            return true;
+            rtrn =true;
         }
+        return rtrn;
     }
     public boolean removeAll(Collection<V> values){
         boolean rtrn = true;
@@ -62,7 +57,7 @@ public class HashedList<V> {
 
     public boolean remove(V value){
         if(seen.contains(value)){
-            synchronized (this) {
+            synchronized (seen) {
                 seen.remove(value);
                 data.remove(value);
             }

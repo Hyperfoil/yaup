@@ -1,20 +1,18 @@
 package perf.yaup.json;
 
-import jdk.nashorn.api.scripting.JSObject;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import perf.yaup.StringUtil;
+import perf.yaup.file.FileUtility;
 
 import javax.script.*;
-import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -96,6 +94,27 @@ public class Json {
         }
     }
 
+    public static Map<Object,Object> toObjectMap(Json json){
+        Map<Object,Object> rtrn = new LinkedHashMap<>();
+        json.forEach((k,v)->{
+            if(v instanceof Json){
+                rtrn.put(k,toObjectMap((Json)v));
+            }else{//scalar
+                rtrn.put(k,v);
+            }
+        });
+        return rtrn;
+    }
+    private static Object toObject(Json json){
+        if(json.isArray()){
+            List<Object> rtrn = new LinkedList<>();
+            json.forEach((entry)->((LinkedList) rtrn).add(entry));
+            return rtrn;
+        }else{
+             return toObjectMap(json);
+        }
+    }
+
     public static JSONArray toJSONArray(Json json){
         JSONArray rtrn = new JSONArray();
         if(json.isArray()){
@@ -173,6 +192,74 @@ public class Json {
 
         }
         return rtrn;
+    }
+
+    /**
+     * Split the keys by non-slash escaped dots (. not \.)
+     * @param keys
+     * @return
+     */
+    public static List<String> toChain(String keys){
+        return new ArrayList<>(
+                Arrays.asList(keys.split("\\.(?<!\\\\\\.)"))
+        );
+    }
+    public static void chainSet(Json target,String prefix,Object value){
+        List<String> chain = toChain(prefix);
+        String key = chain.remove(chain.size()-1);
+        for(String id : chain){
+            id = id.replaceAll("\\\\\\.", ".");
+            if (!id.isEmpty()) {
+                if (!target.has(id)) {
+                    synchronized (target) {
+                        if (!target.has(id)) {
+                            target.set(id, new Json());
+                        }
+                    }
+                }
+                if (!(target.get(id) instanceof Json)) {//this should never happen for our use case
+                    synchronized (target) {
+                        if (!(target.get(id) instanceof Json)) {
+                            Object existing = target.get(id);
+                            target.set(id, new Json());
+                            target.getJson(id).add(existing);
+                        }
+                    }
+                }
+                target = target.getJson(id);
+            }
+        }
+        if(!target.has(key)){
+            target.set(key,value);
+        }else{
+            if(target.get(key) instanceof Json){
+                Json existing = target.getJson(key);
+                if(existing.isArray()){
+                    existing.add(value);
+                }else{
+                    if(value instanceof Json){
+                        Json valueJson = (Json)value;
+                        valueJson.forEach((k,v)->{
+                            existing.add(k,v);
+                        });
+                    }else{
+                        //TODO what key to use for new value that isn't json?
+                        System.out.println("Error: cannot set value="+value+" in target="+target);
+                    }
+                }
+            }else{
+                Object existing = target.get(key);
+                Json newArray = new Json(true);
+                newArray.add(existing);
+                newArray.add(value);
+                target.set(key,newArray);
+            }
+        }
+    }
+
+    public static Json fromFile(String path){
+        String content = FileUtility.readFile(path);
+        return Json.fromString(content);
     }
     public static Json fromString(String json){
         Json rtrn = null;
@@ -277,6 +364,44 @@ public class Json {
             }
         }
         return rtrn;
+    }
+    public static Json fromJbossCli(String output){
+        boolean wrap = false;
+        StringBuilder sb = new StringBuilder();
+        Matcher address = Pattern.compile("(?<spacing>\\s*)\\(\"(?<key>[^\"]+)\"\\s+=>\\s+\"(?<value>[^\"]+)\"\\)(?<suffix>[,]?)").matcher("");
+        Matcher L = Pattern.compile("(?<spacing>\\s*)\"(?<key>[^\"]+)\"\\s+=>\\s+(?<value>\\d+)L(?<suffix>[,]?)").matcher("");
+        //build a Json compliant string line by line
+        String previousLine = "";
+        for(String line : output.split("\r?\n")) {
+            if (address.reset(line).matches()) {
+                sb.append(address.group("spacing"));
+                sb.append("{\"key\":\"");
+                sb.append(address.group("key"));
+                sb.append("\",\"value\":\"");
+                sb.append(address.group("value"));
+                sb.append("\"}");
+                sb.append(address.group("suffix"));
+            } else if (L.reset(line).matches()){
+                sb.append(L.group("spacing"));
+                sb.append("\"");
+                sb.append(L.group("key"));
+                sb.append("\":");
+                sb.append(L.group("value"));
+                sb.append(L.group("suffix"));
+            }else {
+              if(line.startsWith("{")){//multiple cli method calls do not have , separation
+                  if ( previousLine.endsWith("}")) {
+                      sb.append(",");
+                      wrap = true;
+                  }
+              }
+              sb.append(line.replaceAll("=> ",":"));
+            }
+            sb.append(System.lineSeparator());
+            previousLine = line;
+        }
+        String toParse = (wrap?"[":"")+sb.toString()+(wrap?"]":"");
+        return Json.fromString(toParse);
     }
     public static Json fromJs(String js){
         Json rtrn = new Json();
@@ -516,6 +641,16 @@ public class Json {
             return false;
         }
     }
+    public void merge(Json toMerge){
+        merge(toMerge,true);
+    }
+    public void merge(Json toMerge,boolean override){
+        toMerge.forEach((key,value)->{
+            if(override || !has(key)) {
+                set(key, value);
+            }
+        });
+    }
     public Json clone(){
         Json rtrn = new Json();
         for(Object key : data.keySet()){
@@ -575,13 +710,27 @@ public class Json {
         return rtrn.toString();
     }
     private String escape(Object o){
-        if(o instanceof Json){
+        if(o == null){
+            return "";
+        }else if(o instanceof Json){
             return ((Json)o).toString();
         } else {
             return o.toString().replaceAll("\"", "\\\\\"");
         }
     }
 
+    public void remove(Object key){
+        if(isArray() && key instanceof Integer){
+            int index = (Integer)key;
+            int size = size();
+            for(int i=index; i<size-1; i++){
+                set(i,get(i+1));
+            }
+            data.remove(size-1);
+        }else{
+            data.remove(key);
+        }
+    }
     public void set(Object key, Object value){
         if(key instanceof Integer){
             key = ((Number)key).intValue();
@@ -671,7 +820,7 @@ public class Json {
 
     public boolean getBoolean(Object key) { return getBoolean(key,false);}
     public boolean getBoolean(Object key,boolean defaultValue){
-        return has(key) ? (Boolean)data.get(key) : defaultValue;
+        return has(key) ? data.get(key) instanceof Boolean ? (Boolean)data.get(key) : Boolean.parseBoolean(data.get(key).toString()): defaultValue;
     }
     public Optional<Boolean> optBoolean(Object key){
         return Optional.ofNullable(getBoolean(key));
@@ -689,7 +838,7 @@ public class Json {
 
     public Json getJson(Object key){ return getJson(key,null); }
     public Json getJson(Object key,Json defaultValue){
-        return has(key) ? (Json)data.get(key) : defaultValue;
+        return has(key) && data.get(key) instanceof Json ? (Json)data.get(key) : defaultValue;
     }
     public Optional<Json> optJson(Object key){
         return Optional.ofNullable(getJson(key));

@@ -10,7 +10,21 @@ import static org.junit.Assert.*;
 public class XmlPathTest {
 
     @Test
-    public void parseFunction(){
+    public void parse_reveredCriteria(){ // Not supported
+        XmlPath path = XmlPath.parse("/foo/bar[text() = 'fiz' and 'buz' = text()]");
+        assertTrue(XmlPath.Type.Undefined.equals(path.getType()));
+        XmlPath work = XmlPath.parse("/foo/bar[text() = 'fiz' and text() = 'buz']");
+        System.out.println(work);
+    }
+
+    @Test
+    public void parse_nestedCriteria(){
+        XmlPath path = XmlPath.parse("/foo[/bar[/biz = 'buz']]");
+        System.out.println(path);
+    }
+
+    @Test
+    public void parse_function(){
         XmlPath path = XmlPath.parse("/text()");
         assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
         assertTrue(path.hasNext());
@@ -19,7 +33,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void parseDescendant(){
+    public void parse_descendant(){
         XmlPath path = XmlPath.parse("//foo");
         assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
         assertTrue(path.hasNext());
@@ -27,7 +41,7 @@ public class XmlPathTest {
         assertTrue(path.isDescendant());
     }
     @Test
-    public void parseSecondDescendant(){
+    public void parse_secondDescendant(){
         XmlPath path = XmlPath.parse("/foo//bar");
         assertTrue("xmlpaths still start with start",XmlPath.Type.Start.equals(path.getType()));
         assertTrue(path.hasNext());
@@ -39,19 +53,45 @@ public class XmlPathTest {
         assertEquals("bar",path.getName());
     }
 
+
     @Test @Ignore
-    public void parseChildIndex(){
-        XmlPath path = XmlPath.parse("/foo/[2]");
-        assertEquals("/[#] is not a valid xpath",XmlPath.Type.Undefined,path.getType());
-    }
-    @Test @Ignore
-    public void parseTagIndex(){
-        XmlPath path = XmlPath.parse("/foo/bar[2]");
+    public void match_childIndex(){
+        XmlPath path = XmlPath.parse("/foo/[1]");
+        Xml xml = Xml.parse("<foo><first/><second/><third/></foo>");
         System.out.println(path);
+
+        List<Xml> matches = path.getMatches(xml);
+
+        System.out.println(matches);
+
+        //assertEquals("/[#] is not a valid xpath",XmlPath.Type.Undefined,path.getType());
+    }
+    @Test
+    public void match_tagIndex(){
+        XmlPath path = XmlPath.parse("/foo/bar[1]");
+        Xml xml = Xml.parse("<foo><biz/><bar>one</bar><bar>two</bar><bar>three</bar></foo>");
+        System.out.println(path);
+        List<Xml> matches = path.getMatches(xml);
+
+        matches.forEach(match->{
+            System.out.println(match.documentString(2));
+        });
+
+    }
+    @Test
+    public void match_position(){
+        XmlPath path = XmlPath.parse("/foo/bar[/position() > 0 and /position() < 3]");
+        Xml xml = Xml.parse("<foo><biz/><bar>one</bar><bar>two</bar><bar>three</bar></foo>");
+        System.out.println(path);
+        List<Xml> matches = path.getMatches(xml);
+        matches.forEach(match->{
+            System.out.println(match.documentString(2));
+        });
+
     }
 
     @Test
-    public void parsePath(){
+    public void parse_path(){
         XmlPath path = XmlPath.parse("/foo/bar");
 
         assertTrue(path.hasNext());
@@ -68,7 +108,7 @@ public class XmlPathTest {
         assertFalse(path.hasNext());
     }
     @Test
-    public void parsePathWithAttribute(){
+    public void parse_pathWithAttribute(){
         XmlPath path = XmlPath.parse("/foo/@bar");
         assertTrue(path.hasNext());
         path = path.getNext();
@@ -85,7 +125,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void parseAttributeCriteria(){
+    public void parse_attributeCriteria(){
         XmlPath path = XmlPath.parse("/foo[@name=\"value\" and @key=\"bar\"]");
         assertTrue(path.hasNext());
         path = path.getNext();
@@ -107,7 +147,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void parsePathCriteria(){
+    public void parse_pathCriteria(){
         XmlPath path = XmlPath.parse("/foo[/bar/biz = \"fun\"]");
         assertTrue(path.hasNext());
         path = path.getNext();
@@ -127,7 +167,7 @@ public class XmlPathTest {
 
     }
     @Test
-    public void parseTwoPathCriteria(){
+    public void parse_twoPathCriteria(){
         XmlPath path = XmlPath.parse("/foo[ /bar = \"fun\" and /buz[@value=\"bee\"] ]");
         assertTrue(path.hasNext());
         path = path.getNext();
@@ -158,9 +198,9 @@ public class XmlPathTest {
 
     }
     @Test
-    public void matchTextFunctionCriteria(){
+    public void getMatches_textFunctionCriteria(){
         Xml xml = Xml.parse("<foo><bar>biz<f/>buz<f/>fuz</bar><bar>buz</bar></foo>");
-        XmlPath path = XmlPath.parse("/foo/bar[text()=\'buz']");
+        XmlPath path = XmlPath.parse("/foo/bar[text()='buz']");
         System.out.println(path);
         List<Xml> matches = path.getMatches(xml);
         System.out.println(matches);
@@ -170,7 +210,7 @@ public class XmlPathTest {
         assertEquals("value "+m,"buz",m.getValue());
     }
     @Test
-    public void matchTextFunction(){
+    public void getMatches_textFunction(){
         Xml xml = Xml.parse("<foo><bar>biz<f/>buz<f/>fuz</bar><bar>buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar/text()");
         List<Xml> matches = path.getMatches(xml);
@@ -188,7 +228,7 @@ public class XmlPathTest {
 
 
     @Test
-    public void matchTags(){
+    public void getMatches_tag(){
         Xml xml = Xml.parse("<foo><bar>biz</bar><bar>buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar");
         List<Xml> matches = path.getMatches(xml);
@@ -197,7 +237,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void matchAttribute(){
+    public void getMatches_attribute(){
         Xml xml = Xml.parse("<foo><bar>biz</bar><bar key=\"one\">buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar/@key");
         List<Xml> matches = path.getMatches(xml);
@@ -209,7 +249,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void matchAttributeEquals(){
+    public void getMatches_attributeEquals(){
         Xml xml = Xml.parse("<foo><bar>biz</bar><bar key=\"one\">buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar[@key='one']");
         List<Xml> matches = path.getMatches(xml);
@@ -220,7 +260,7 @@ public class XmlPathTest {
 
     }
     @Test
-    public void matchAttributeStartsWith(){
+    public void getMatches_attributeStartsWith(){
         Xml xml = Xml.parse("<foo><bar>biz</bar><bar key=\"one\">buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar[@key^'one']");
         List<Xml> matches = path.getMatches(xml);
@@ -232,7 +272,7 @@ public class XmlPathTest {
     }
 
     @Test
-    public void matchTagTextEquals(){
+    public void getMatches_tagTextEquals(){
         Xml xml = Xml.parse("<foo><bar key=\"one\">biz</bar><bar key=\"two\">buz</bar></foo>");
         XmlPath path = XmlPath.parse("/foo/bar = 'biz'");
 
@@ -255,12 +295,20 @@ public class XmlPathTest {
 
     @Test @Ignore
     public void childIndex(){
-        Xml xml = Xml.parse("<foo><bar key=\"1\"><buz key=\"1\"/><buz key=\"2\"/></bar><bar key=\"2\"><buz key=\"1\"/><buz key=\"2\"/></bar></foo>");
-
+        Xml xml = Xml.parse(
+                "<foo>" +
+                "   <bar key=\"1\">" +
+                "       <buz key=\"1\"/>" +
+                "       <buz key=\"2\"/>" +
+                "   </bar>" +
+                "   <bar key=\"2\">" +
+                "       <buz key=\"1\"/>" +
+                "       <buz key=\"2\"/>" +
+                "   </bar>" +
+                "</foo>");
         XmlPath path = XmlPath.parse("/foo/bar/buz");
         List<Xml> matches = path.getMatches(xml);
-
-
+        assertEquals("/foo/bar/buz should match 4 entries:\n"+xml.documentString(2),4,matches.size());
     }
 
     @Test

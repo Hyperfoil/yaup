@@ -32,5 +32,11 @@ public class Sets {
         rtrn.removeAll(b);
         return rtrn;
     }
+    public static <T> Set<T> join(Set<T> a, Set<T> b){
+        Set<T> rtrn = new LinkedHashSet<>();
+        rtrn.addAll(a);
+        rtrn.addAll(b);
+        return rtrn;
+    }
 
 }

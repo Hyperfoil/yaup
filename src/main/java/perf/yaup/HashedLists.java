@@ -3,6 +3,8 @@ package perf.yaup;
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -11,40 +13,24 @@ import java.util.stream.Stream;
 public class HashedLists<K,V> implements Serializable{
     private LinkedHashMap<K,List<V>> sets;
     private transient List<V> empty;
+    private final Function<K,List<V>> supplier;
     public HashedLists(){
         sets = new LinkedHashMap<>();
         empty = Collections.unmodifiableList( new ArrayList<>() );
+        supplier = (k)->new ArrayList<V>();
     }
 
     public void put(K name,V value){
-
-        if (!sets.containsKey(name)) {
-            synchronized (sets) {
-                if (!sets.containsKey(name)) {
-                    sets.put(name, new ArrayList<>());
-                }
-            }
-        }
-
-        sets.get(name).add(value);
+        sets.computeIfAbsent(name, supplier).add(value);
     }
     public void putFirst(K name,V value){
-        if(!sets.containsKey(name)){
-            sets.put(name,new ArrayList<>());
-        }
-        sets.get(name).add(0,value);
+        sets.computeIfAbsent(name, supplier).add(0,value);
     }
     public void putAll(K name,Collection<V> values){
-        if(!sets.containsKey(name)){
-            sets.put(name,new ArrayList<V>());
-        }
-        sets.get(name).addAll(values);
+        sets.computeIfAbsent(name, supplier).addAll(values);
     }
     public void putAllFirst(K name,Collection<V> values){
-        if(!sets.containsKey(name)){
-            sets.put(name,new ArrayList<V>());
-        }
-        sets.get(name).addAll(0,values);
+        sets.computeIfAbsent(name, supplier).addAll(0,values);
     }
     public List<V> get(K name){
         if(sets.containsKey(name)){

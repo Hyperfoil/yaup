@@ -7,6 +7,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * supported:
+ * /absolute/path/to/node
+ * /node//findInScope
+ * /node/@attribute
+ * /node/foo[/criteria]
+ * /node/foo[/criteria = 'value']
+ * /node/foo[/criteria ^ 'value']
+ * /node/foo[/criteria $ 'value']
+ * /node/text()
+ * /node/foo/position()
+ * /node/foo[1]
+ * /node/foo/[1]
+ */
 public class XmlPath {
 
     public static enum Scope {Descendant,Absolute,Relative}
@@ -96,30 +110,45 @@ public class XmlPath {
             }else if (path.startsWith("[",index)){
                 //index
                 int closeIndex = StringUtil.indexNotMatching(path,"1234567890",index+1);
-                //TODO Still not supported
+                String criteria = path.substring(index+1,closeIndex);
+                if(!criteria.isEmpty() && criteria.matches("\\d+")){
+                    XmlPath childIndex = new XmlPath(Type.Index);
+                    childIndex.setMethod(Method.Equals);
+                    childIndex.setName(criteria);
+                    parentStack.peek().setNext(childIndex);
+                    parentStack.push(childIndex);
+                    index = closeIndex+1;
+                }
 
-            }else if (path.startsWith("'",index) || path.startsWith("\"",index)){
-                if(Type.Start.equals(parentStack.peek().getType())){
-                    return error("unexpected string constant @ "+index+" in "+path);
+            }else if (path.startsWith("'",index) || path.startsWith("\"",index)) {
+                if (Type.Start.equals(parentStack.peek().getType())) {
+                    return error("unexpected string constant @ " + index + " in " + path);
                 }
 
                 char quoteChar = path.charAt(index);
-                int closeIndex = index+1;
-                while(closeIndex < path.length() && quoteChar != path.charAt(closeIndex) || (closeIndex>1 && '/' == path.charAt(closeIndex-1))){
+                int closeIndex = index + 1;
+                while (closeIndex < path.length() && quoteChar != path.charAt(closeIndex) || (closeIndex > 1 && '/' == path.charAt(closeIndex - 1))) {
                     closeIndex++;
 
                 }
 
-                if(closeIndex == path.length()){
-                    return error("failed to find closing "+quoteChar+" which starts @ "+index+" in "+path);
+                if (closeIndex == path.length()) {
+                    return error("failed to find closing " + quoteChar + " which starts @ " + index + " in " + path);
                 }
-                String quotedValue = path.substring(index+1,closeIndex);
+                String quotedValue = path.substring(index + 1, closeIndex);
                 closeIndex++;//to include the trailing quote
 
                 parentStack.peek().setValue(quotedValue);
 
-                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",closeIndex);
+                int nonSpaceIndex = StringUtil.indexNotMatching(path, "     ", closeIndex);
                 index = nonSpaceIndex;
+            }else if ( State.Criteria.equals(state.peek()) && "0123456789".contains(""+path.charAt(index)) ){
+                int nonDigit = StringUtil.indexNotMatching(path,"1234567890",index);
+                String digits = path.substring(index,nonDigit);
+                parentStack.peek().setValue(digits);
+                index = nonDigit;
+                int notSpace = StringUtil.indexNotMatching(path,"   ",index);
+                index = notSpace;
             }else if ( State.Criteria.equals(state.peek()) &&
                     (path.startsWith("and",index) || path.startsWith("AND",index)) ) {
 
@@ -129,7 +158,7 @@ public class XmlPath {
                 parentStack.peek().addChild(newStart);
                 parentStack.push(newStart);
 
-                int nonSpaceIndex =StringUtil.indexNotMatching(path,"     ",index+"and".length());
+                int nonSpaceIndex = StringUtil.indexNotMatching(path,"     ",index+"and".length());
                 index = nonSpaceIndex;
             }else if(pathMatcher.reset(path.substring(index)).matches()){
                 String prefix = pathMatcher.group("prefix");
@@ -175,29 +204,27 @@ public class XmlPath {
                     int suffixIndex = index + pathMatcher.end("suffix");
                     int closeIndex = path.indexOf("]",suffixIndex);
 
-                    //still not sure I'm going to add this
-                    //TODO index should always be a criteria and use parent name?
-                    if(false && closeIndex>suffixIndex && path.substring(suffixIndex,closeIndex).matches("\\d+")){
 
+                    if(closeIndex>suffixIndex && path.substring(suffixIndex,closeIndex).matches("\\d+")){
                         String criteria = path.substring(suffixIndex,closeIndex);
 
                         XmlPath childIndex = new XmlPath(Type.Index);
-                        childIndex.setName(parentStack.peek().getName());
-                        childIndex.setValue(criteria);
+                        //childIndex.setName(parentStack.peek().getName());
+                        childIndex.setName(criteria);
 
                         index+=closeIndex-suffixIndex+"]".length();
-                        parentStack.peek().setNext(childIndex);
+                        parentStack.peek().addChild(childIndex);
                         parentStack.pop();
                         parentStack.push(childIndex);
 
                     }else {
-
                         XmlPath newStart = new XmlPath(Type.Start);
                         parentStack.peek().addChild(newStart);
                         parentStack.push(newStart);
                         state.push(State.Criteria);
                     }
                 }else if ("(".equals(suffix)){
+
                     if(index+pathMatcher.end("suffix") < path.length() && ')'==path.charAt(index+pathMatcher.end("suffix"))){
                         index++;
                     }else {
@@ -530,6 +557,41 @@ public class XmlPath {
                     }else{
                         matches.add(xml.getValueXml());
                     }
+                } else if ("position".equals(getName())){
+                    int position = xml.tagIndex();
+                    if (getValue().matches("\\d+") ){
+                        int valueInt = Integer.parseInt(getValue());
+                        switch (getMethod()){
+                            case Equals:
+                                if(position == valueInt){
+                                    matches.add(xml);
+                                }
+                                break;
+                            case GreaterThan:
+                                if(position > valueInt){
+                                    matches.add(xml);
+                                }
+                                break;
+                            case LessThan:
+                                if(position < valueInt){
+                                    matches.add(xml);
+                                }
+                                break;
+                        }
+                    }
+                }
+            } else if (Type.Index.equals(getType())){
+
+                int targetIndex = Integer.parseInt(getName());
+                if(isChild()){
+                    if(targetIndex == xml.namedIndex()){
+                        matches.add(xml);
+                    }
+                }else{
+                    //xml is the parent
+                    if(xml.getChildren().size()>targetIndex){
+                        matches.add(xml.getChildren().get(targetIndex));
+                    }
                 }
             }
         }
@@ -558,8 +620,6 @@ public class XmlPath {
     }
 
     private void append(StringBuilder sb,boolean recursive){
-//        sb.append("{");
-//        sb.append(""+(isFirst?"^":"")+scope+":"+getType()+":");
         if(Type.Attribute.equals(getType())){
             sb.append("@");
         }else if (Type.Tag.equals(getType())){
@@ -590,6 +650,10 @@ public class XmlPath {
                     sb.append("/");
                 }
             }
+        }else if (Type.Index.equals(getType())){
+            if(!isChild()) {
+                sb.append("/[");
+            }
         }
         if(!Type.Start.equals(getType())) {
             sb.append(getName());
@@ -608,6 +672,11 @@ public class XmlPath {
             sb.append(childWrap.charAt(1));;
         }else if (Type.Function.equals(getType())){
             sb.append("()");//no children but still a function
+        }
+        if(Type.Index.equals(getType())){
+            if(!isChild()){
+                sb.append("]");
+            }
         }
         if(hasValue()){
             sb.append(" ");

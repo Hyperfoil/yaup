@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -16,20 +17,22 @@ public class HashedSets<K,V> implements Serializable{
 
     private Map<K,HashSet<V>> sets;
     private Set<V> empty;
-    private boolean linked;
-    public HashedSets(){
+    private final boolean linked;
+    private final Function<K,HashSet<V>> supplier;
+    public HashedSets() {
+        this(true);
+    }
+    public HashedSets(boolean linked){
         sets = new ConcurrentHashMap<>();
         empty = Collections.unmodifiableSet( new HashSet<>() );
         this.linked = linked;
+        this.supplier = (k) -> linked ? new LinkedHashSet<V>() : new HashSet<V>();
     }
     public void put(K name, V value){
-        if(!sets.containsKey(name)){
-            sets.putIfAbsent(name,linked ? new LinkedHashSet<>() : new HashSet<>());
-        }
-        sets.get(name).add(value);
+        sets.computeIfAbsent(name, supplier).add(value);
     }
     public void putAll(K name, Collection<V> values){
-        sets.computeIfAbsent(name, (k) -> {return linked ? new LinkedHashSet<V>() : new HashSet<V>();}).addAll(values);
+        sets.computeIfAbsent(name, supplier).addAll(values);
     }
     public Set<V> get(K key){
         if(sets.containsKey(key)){

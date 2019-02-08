@@ -9,6 +9,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -65,12 +66,23 @@ public class Xml {
         ArrayList<Xml> rtrn = new ArrayList<>();
         XPath xPath = xPathFactory.newXPath();
 
+
         try {
-            NodeList nodeList = (NodeList) xPath.compile(search).evaluate(node, XPathConstants.NODESET);
-            for(int i=0; i<nodeList.getLength(); i++){
-                Node node = nodeList.item(i);
-                rtrn.add(new Xml(node));
+            Object resultObj = xPath.compile(search).evaluate(node,XPathConstants.NODESET);
+            if(resultObj instanceof NodeList) {
+                NodeList nodeList = (NodeList) resultObj;
+                for (int i = 0; i < nodeList.getLength(); i++) {
+                    Node node = nodeList.item(i);
+                    rtrn.add(new Xml(node));
+                }
+            }else if (resultObj instanceof String){
+                System.out.println("String |"+resultObj+"|");
+                rtrn.add(new Xml(node.getOwnerDocument().createTextNode((String)resultObj)));
+            }else{
+                System.out.println("resultObject is "+resultObj.getClass());
             }
+
+
         } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
