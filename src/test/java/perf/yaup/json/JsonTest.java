@@ -10,6 +10,34 @@ import static org.junit.Assert.assertTrue;
 
 public class JsonTest {
 
+    @Test
+    public void chainSet_existing(){
+        Json root = new Json();
+        root.set("first","uno");
+        Json.chainSet(root,"first","dos");
+
+        System.out.println(root);
+    }
+
+    @Test
+    public void chainSet_existingPath(){
+        Json root = new Json();
+        root.set("first",new Json());
+        Json second = new Json();
+        root.getJson("first").set("second",second);
+
+        Json.chainSet(root,"first.second.third",10);
+
+        assertTrue("second shoudl have 1 entry",second.size()==1);
+        assertTrue("second[third] should exist",second.has("third"));
+        assertEquals("second[third] should be 10",10, second.get("third"));
+
+        Json.chainSet(root,"first.second.fourth",20);
+        assertTrue("second[fourth] should exist\n"+second.toString(2),second.has("fourth"));
+        assertEquals("second[fourth] should be 20",20, second.get("fourth"));
+
+
+    }
 
     @Test
     public void fromJs_array(){
@@ -25,10 +53,17 @@ public class JsonTest {
         assertEquals("json.size ==1",1,json.size());
         assertEquals("json[key]=value","value",json.get("key"));
     }
-
+    @Test
+    public void fromJs_array_of_objects(){
+        Json json = Json.fromJs("[{value:'one'},{value:'two'},{value:'three'}]");
+        assertTrue("json !=null",json != null);
+        assertTrue("json is an array\n"+json.toString(2),json.isArray());
+        assertEquals("json.size() == 3\n"+json.toString(2),3,json.size());
+        assertTrue("json[0] should be json",json.get(0) instanceof Json);
+    }
 
     @Test
-    public void quotesInValue(){
+    public void toString_quotesInValue(){
         Json json = new Json();
         json.set("key","\"quoted\" value");
         try {

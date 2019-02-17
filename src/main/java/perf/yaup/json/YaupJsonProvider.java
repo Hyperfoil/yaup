@@ -1,13 +1,11 @@
 package perf.yaup.json;
 
-import com.jayway.jsonpath.*;
+import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.JsonPathException;
 import com.jayway.jsonpath.spi.json.JsonProvider;
-import perf.yaup.StringUtil;
-import perf.yaup.file.FileUtility;
 
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -77,7 +75,6 @@ public class YaupJsonProvider implements JsonProvider {
         }else{
             throw new JsonPathException("cannot get keys of "+o);
         }
-
     }
 
     @Override

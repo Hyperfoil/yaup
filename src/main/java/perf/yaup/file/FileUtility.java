@@ -93,6 +93,7 @@ public class FileUtility {
                                         boolean recursive) {
         return search(baseDir, nameSubstring, recursive, true, false, false);
     }
+
     /**
      * Get a <code>List</code> of all the directories in baseDir that contain nameSubstring
      * @param baseDir the full path to the directory to start the search
@@ -439,6 +440,8 @@ public class FileUtility {
                             if (sub.getName().contains(nameSubstring) /*&& !isArchive(sub)*/ ) {
                                 rtrn.add(sub.getAbsolutePath());
                             }
+                        }else{
+                            rtrn.add(sub.getAbsolutePath());
                         }
                     }
                     if (inArchive && sub.isFile() && isArchive(sub)) {

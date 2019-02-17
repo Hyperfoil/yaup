@@ -6,12 +6,18 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Timer {
+/**
+ * A SystemTimer based on System.currentTimeMillis and System.nanoTime that supports sequential or parallel children timers.
+ * Using System.currentTimeMillis is not suitable for short lived tasks
+ * This is not for performance testing
+ * This is for timing tasks in a long process
+ */
+public class SystemTimer {
 
-    // A black hole to avoid returning null in current
-    private static final Timer NULL = new Timer("NULL"){
+    // A black hole to avoid returning null for SystemTimer.current()
+    private static final SystemTimer NULL = new SystemTimer("NULL"){
         @Override
-        public Timer start(String name){return this;}
+        public SystemTimer start(String name, boolean parallel){return this;}
         @Override
         public boolean isActive(){return false;}
     };
@@ -22,15 +28,15 @@ public class Timer {
     private long milliStop;
     private String name;
 
-    private LinkedList<Timer> children;
+    private LinkedList<SystemTimer> children;
 
 
-    public Timer(String name){
+    public SystemTimer(String name){
         this(name,0,0);
     }
-    public Timer(String name, long milli, long nano){
-        name = name;
-        children = new LinkedList<>();
+    public SystemTimer(String name, long milli, long nano){
+        this.name = name;
+        this.children = new LinkedList<>();
         this.milliStart = milli;
         this.nanoStart = nano;
     }
@@ -47,7 +53,9 @@ public class Timer {
         this.nanoStart = System.nanoTime();
         return true;
     }
-    public boolean isActive(){return milliStop<=0;}
+    public boolean isStopped(){return isStarted() && milliStop > 0;}
+    public boolean isStarted(){return milliStart > 0;}
+    public boolean isActive(){return isStarted() && !isStopped();}
     public long getStart() {return milliStart;}
     public long getStop() {return milliStop;}
     public String getName() {return name;}
@@ -55,24 +63,31 @@ public class Timer {
     public long nanoTime(){return nanoStop-nanoStart;}
     public long milliTime(){return milliStop-milliStart;}
 
+
+    public SystemTimer start(String name){
+        return start(name,false);
+    }
     /**
-     * Starts a new child timer and ends the current child timer.
+     * Starts a new child timer and ends the current child timer if !parallel.
      * @param name the name of the new timer. Names are not unique
      * @return
      */
-    public Timer start(String name){
+    public SystemTimer start(String name, boolean parallel){
         long milli = System.currentTimeMillis();
         long nano = System.nanoTime();
         if(isActive()) {
-            current().stop(milli, nano);
+            if(!parallel) {
+                stopChildren(milli,nano);
+            }
         }else{
             this.milliStart = milli;
             this.nanoStart = nano;
+
         }
         //creates a gap but more accurately reflects time being measured by ignoring time taken to stop
         milli = System.currentTimeMillis();
         nano = System.nanoTime();
-        Timer newTimer =new Timer(name,milli,nano);
+        SystemTimer newTimer =new SystemTimer(name,milli,nano);
         children.push(newTimer);
         return newTimer;
     }
@@ -81,46 +96,49 @@ public class Timer {
      * Stop this timer and all descendant timers
      */
     public void stop(){
-        long milli = System.currentTimeMillis();
-        long nano = System.nanoTime();
-        this.stop(milli,nano);
+        if(isActive()) {
+            long milli = System.currentTimeMillis();
+            long nano = System.nanoTime();
+            this.stop(milli, nano);
+        }
     }
     public boolean hasChildren(){return !children.isEmpty();}
-    public List<Timer> getChildren(){
+    public List<SystemTimer> getChildren(){
         return Collections.unmodifiableList(children);
     }
 
-    private Timer current(){
+    private SystemTimer current(){
         if(!children.isEmpty()){
             return children.getLast();
         }else{
-            return NULL;
+            return NULL;//TODO return this instead of NULL?
         }
     }
     private void stop(long milliStop,long nanoStop){
         if(isActive()) {
             this.milliStop = milliStop;
             this.nanoStop = nanoStop;
-            current().stop(milliStop,nanoStop);
+            stopChildren(milliStop,nanoStop);
         }
+    }
+    private void stopChildren(long milliStop,long nanoStop){
+        children.forEach(child->child.stop(milliStop,nanoStop));
     }
 
     public Json getJson(){
         Json rtrn = new Json();
-
-        rtrn.set(name,getName());
+        rtrn.set("name",getName());
         rtrn.set("start",getStart());
         rtrn.set("stop",getStop());
         rtrn.set("nanos",nanoTime());
+        rtrn.set("millis",milliTime());
         if(hasChildren()){
             Json childrenJson = new Json();
-            for(Timer child : children){
+            for(SystemTimer child : children){
                 childrenJson.add(child.getJson());
             }
             rtrn.set("timers",childrenJson);
         }
-
-
         return rtrn;
     }
 

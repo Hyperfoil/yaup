@@ -1,7 +1,12 @@
 package perf.yaup.json;
 
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.ReadContext;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import perf.yaup.file.FileUtility;
 
@@ -15,6 +20,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * Created by wreicher
@@ -232,28 +239,30 @@ public class Json {
         if(!target.has(key)){
             target.set(key,value);
         }else{
-            if(target.get(key) instanceof Json){
-                Json existing = target.getJson(key);
-                if(existing.isArray()){
-                    existing.add(value);
-                }else{
-                    if(value instanceof Json){
-                        Json valueJson = (Json)value;
-                        valueJson.forEach((k,v)->{
-                            existing.add(k,v);
-                        });
-                    }else{
-                        //TODO what key to use for new value that isn't json?
-                        System.out.println("Error: cannot set value="+value+" in target="+target);
-                    }
-                }
-            }else{
-                Object existing = target.get(key);
-                Json newArray = new Json(true);
-                newArray.add(existing);
-                newArray.add(value);
-                target.set(key,newArray);
-            }
+            target.set(key,value);
+            //set means ignore existing values? chainAdd or chainMerge?
+//            if(target.get(key) instanceof Json){
+//                Json existing = target.getJson(key);
+//                if(existing.isArray()){
+//                    existing.add(value);
+//                }else{
+//                    if(value instanceof Json){
+//                        Json valueJson = (Json)value;
+//                        valueJson.forEach((k,v)->{
+//                            existing.add(k,v);
+//                        });
+//                    }else{
+//                        //TODO what key to use for new value that isn't json?
+//                        System.out.println("Error: cannot set value="+value+" in target="+target);
+//                    }
+//                }
+//            }else{
+//                Object existing = target.get(key);
+//                Json newArray = new Json(true);
+//                newArray.add(existing);
+//                newArray.add(value);
+//                target.set(key,newArray);
+//            }
         }
     }
 
@@ -262,19 +271,61 @@ public class Json {
         return Json.fromString(content);
     }
     public static Json fromString(String json){
-        Json rtrn = null;
+        return fromString(json,null);
+    }
+    public static Json fromString(String json,Json defaultValue){
+        Json rtrn = defaultValue;
         json = json.trim();
-        if(json.startsWith("[")){
-            JSONArray jsonArray = new JSONArray(json);
-            rtrn = fromJSONArray(jsonArray);
-        }else if (json.startsWith("{")){
-            JSONObject jsonObject = new JSONObject(json);
-            rtrn = fromJSONObject(jsonObject);
+        try {
+            if (json.startsWith("[")) {
+                JSONArray jsonArray = new JSONArray(json);
+                rtrn = fromJSONArray(jsonArray);
+            } else if (json.startsWith("{")) {
+                JSONObject jsonObject = new JSONObject(json);
+                rtrn = fromJSONObject(jsonObject);
+            } else {
+                rtrn = new Json();
+            }
+        }catch(JSONException e){
+            //log failed to parse json
+        }
+        return rtrn;
+    }
+
+    public static Optional<Json> optional(String json){
+        if(isJsonLike(json)){
+            try{
+                Json created = Json.fromString(json);
+                return Optional.ofNullable(created);
+            }catch (RuntimeException e){//RuntimeExceptions from parsing the json
+                return Optional.ofNullable(null);
+            }
         }else{
-            rtrn = new Json();
+            return Optional.ofNullable(null);
+        }
+    }
+
+    /**
+     * A very simple check to see if the string looks like it could be json.
+     * Currently just checks that for [...] or {...}
+     * @param input
+     * @return
+     */
+    public static boolean isJsonLike(String input){
+        if(input == null || input.trim().isEmpty()){
+            return false;
         }
 
-        return rtrn;
+        char firstChar = input.trim().charAt(0);
+        char lastChar = input.trim().charAt(input.trim().length()-1);
+        switch (firstChar){
+            case '{':
+                return lastChar=='}';
+            case '[':
+                return lastChar==']';
+            default:
+                return false;
+        }
     }
     public static Json fromJSONArray(JSONArray json){
         Json rtrn = new Json();
@@ -348,14 +399,12 @@ public class Json {
         while(!todo.isEmpty()){
             Json js = targets.remove();
             Bindings bs = todo.remove();
-            boolean isArray = bindings.keySet().stream().allMatch(s->s.matches("\\d+"));
-
+            boolean isArray = bs.keySet().stream().allMatch(s->s.matches("\\d+"));
             for(String key : bs.keySet()){
-
                 Object value = bs.get(key);
                 if(value instanceof Bindings){
                     Json newTarget = new Json();
-                    js.set(key,newTarget);
+                    js.set(isArray ? Integer.parseInt(key) : key,newTarget);
                     targets.add(newTarget);
                     todo.add((Bindings)value);
                 }else{
@@ -585,6 +634,33 @@ public class Json {
             }
         });
         sb.append("]");
+    }
+    private static Configuration yaup = Configuration.builder().jsonProvider(new YaupJsonProvider()).options(Option.SUPPRESS_EXCEPTIONS,Option.DEFAULT_PATH_LEAF_TO_NULL).build();
+
+    public static Object find(Json input,String jsonPath){
+        return find(input,jsonPath,null);
+    }
+    public static Object find(Json input,String jsonPath,Object defaultValue){
+        //TODO cache this and make an immutable json immutable?
+        ReadContext ctx = JsonPath.parse(input,yaup);
+        JsonPath path = JsonPath.compile(jsonPath);
+        Object results = ctx.read(path);
+        if(jsonPath.contains("..") && results!=null && results instanceof Json){
+            Json resultJson = (Json)results;
+            if(resultJson.isArray() && resultJson.size()==1){
+                results = resultJson.get(0);
+            }else if (resultJson.size()==0){
+                results = null;
+            }
+        }
+        return results == null ? defaultValue : results;
+    }
+    public static <T> T findT(Json input,String jsonPath,T defaultValue){
+
+
+        System.out.println("componentType="+Json.class.getComponentType());
+
+        return null;
     }
 
     private LinkedHashMap<Object,Object> data;
@@ -823,7 +899,7 @@ public class Json {
         return has(key) ? data.get(key) instanceof Boolean ? (Boolean)data.get(key) : Boolean.parseBoolean(data.get(key).toString()): defaultValue;
     }
     public Optional<Boolean> optBoolean(Object key){
-        return Optional.ofNullable(getBoolean(key));
+        return ofNullable(getBoolean(key));
     }
 
     public String getString(Object key){
@@ -833,7 +909,7 @@ public class Json {
         return has(key) ? data.get(key).toString() : defaultValue;
     }
     public Optional<String> optString(Object key){
-        return Optional.ofNullable(getString(key));
+        return ofNullable(getString(key));
     }
 
     public Json getJson(Object key){ return getJson(key,null); }
@@ -841,7 +917,7 @@ public class Json {
         return has(key) && data.get(key) instanceof Json ? (Json)data.get(key) : defaultValue;
     }
     public Optional<Json> optJson(Object key){
-        return Optional.ofNullable(getJson(key));
+        return ofNullable(getJson(key));
     }
 
     public long getLong(Object key){
@@ -851,17 +927,30 @@ public class Json {
         return has(key) && data.get(key) instanceof Number ? ((Number) data.get(key)).longValue() : defaultValue;
     }
     public Optional<Long> optLong(Object key){
-        return Optional.ofNullable(has(key) && get(key) instanceof Long ? getLong(key) : null);
+        return ofNullable(has(key) && get(key) instanceof Long ? getLong(key) : null);
     }
 
     public double getDouble(Object key){
         return getDouble(key,0);
     }
     public double getDouble(Object key,double defaultValue){
-        return has(key) ? (Double)data.get(key) : defaultValue;
+        if( has(key) ){
+            Object value = get(key);
+            if(value instanceof Double){
+                return (Double)value;
+            }else if (value instanceof Long){
+                return 1.0*((Long)value);
+            }else if (value instanceof String && ((String) value).matches("-?\\d+\\.?\\d*")){
+                return Double.parseDouble((String)value);
+            }else{
+                return defaultValue;
+            }
+        }else{
+            return defaultValue;
+        }
     }
     public Optional<Double> optDouble(Object key){
-        return Optional.ofNullable(has(key) && get(key) instanceof Long ? getDouble(key) : null);
+        return ofNullable(has(key) && get(key) instanceof Double ? getDouble(key) : null);
     }
 
     public Set<Object> keySet(){return data.keySet();}

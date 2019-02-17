@@ -26,7 +26,12 @@ public class StringUtil {
         }
         return names;
     }
+    /*
 
+     */
+
+
+    //TODO this doesn't handle nested patterns, create a template Map->String with internal state of either string, or key + template
     public static String populatePattern(String pattern, Map<Object,Object> map){
         if(!pattern.contains(PATTERN_PREFIX)){
             return pattern;
@@ -228,10 +233,10 @@ public class StringUtil {
     }
 
     /**
-     * Find the first occurance of a character in toFind that is not wrapped in ' or "
+     * Find the first occurrence of a character in toFind that is not wrapped in ' or "
      * @param input
      * @param toFind
-     * @return
+     * @return the substring up to the first matched char or all of input
      */
     public static String findNotQuoted(String input,String toFind){
         //validity traps
