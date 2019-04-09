@@ -57,6 +57,35 @@ public class StringUtil {
         }
         return rtrn;
     }
+    public static long parseKMG(String kmg){
+        Matcher m = java.util.regex.Pattern.compile("(?<number>\\d+\\.?\\d*)\\s?(?<kmg>[kmgtpezyKMGTPEZY]*)(?<bB>[bB]*)").matcher(kmg);
+        if(m.matches()){
+
+            double mult = 1;
+
+            switch(m.group("kmg").toUpperCase()){
+                case "Y": mult*=1024;//8
+                case "Z": mult*=1024;//7
+                case "E": mult*=1024;//6
+                case "P": mult*=1024;//5
+                case "T": mult*=1024;//4
+                case "G": mult*=1024;//3
+                case "M": mult*=1024;//2
+                case "K": mult*=1024;//1
+                case "B": mult*=1; // included for completeness
+            }
+            double bytes = m.group("bB").equals("b") ? 1.0/8 : 1;
+            Double v =Double.parseDouble(m.group("number"))*mult*bytes;
+            return v.longValue();
+        }else{
+            if(kmg.equals("-")){//trap for when dstat has a - value for a field (no idea why that happens but it does
+                return 0;
+            } else {
+                throw new IllegalArgumentException(kmg + " does not match expected pattern for KMG");
+            }
+        }
+    }
+
 
     public static <T extends Enum<?>> T getEnum(String input,Class<T> clazz){
         return getEnum(input,clazz,null);

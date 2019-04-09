@@ -29,7 +29,7 @@ import static java.util.Optional.ofNullable;
  */
 public class Json {
 
-    private static class HashJson extends Json {
+    public static class HashJson extends Json {
 
         public HashJson(){
             super(false);
@@ -61,7 +61,7 @@ public class Json {
         @Override
         public void add(Object value){}
     }
-    private static class HashArray extends Json {
+    public static class HashArray extends Json {
         HashMap<String,Json> seen;
         public HashArray(){
             seen = new HashMap<>();
@@ -201,17 +201,50 @@ public class Json {
         return rtrn;
     }
 
-    /**
-     * Split the keys by non-slash escaped dots (. not \.)
-     * @param keys
-     * @return
-     */
-    public static List<String> toChain(String keys){
-        return new ArrayList<>(
-                Arrays.asList(keys.split("\\.(?<!\\\\\\.)"))
-        );
+
+    public static interface JsonAction {
+
+        void accept(Json target,String key,Object value);
     }
-    public static void chainSet(Json target,String prefix,Object value){
+    public static JsonAction ADD_ACTION = (target,key,value)->{
+        if(!target.has(key)){
+            target.set(key,new Json());
+        }
+        target.getJson(key).add(value);
+    };
+    public static JsonAction SET_ACTION = (target,key,value)->{
+        target.set(key,value);
+    };
+    public static JsonAction MERGE_ACTION = (target,key,value)->{
+        if(!target.has(key)){
+            target.set(key,value);
+        }else{
+            if(target.get(key) instanceof Json){
+                Json existing = target.getJson(key);
+                if(existing.isArray()){
+                    if(value instanceof Json && ((Json)value).isArray()){
+                        ((Json)value).forEach(v->existing.add(v));
+                    }else{
+                        existing.add(value);
+                    }
+                }else{
+                    if(value instanceof Json && !((Json)value).isArray()){
+                        existing.merge((Json)value,false);
+                    }else{//key already exissts, points to an object, and we want to add some random value into it? this is probably by mistake
+                        System.out.println("MERGE_ACTION unexpected value type for existing json object @ key="+key+" value="+value);
+                        existing.add(value);
+                    }
+                }
+            }else{
+                Json newArray = new Json(true);
+                newArray.add(target.get(key));
+                newArray.add(value);
+                target.set(key,newArray);
+            }
+        }
+    };
+
+    public static void chainAct(Json target,String prefix,Object value,JsonAction action){
         List<String> chain = toChain(prefix);
         String key = chain.remove(chain.size()-1);
         for(String id : chain){
@@ -236,34 +269,16 @@ public class Json {
                 target = target.getJson(id);
             }
         }
-        if(!target.has(key)){
-            target.set(key,value);
-        }else{
-            target.set(key,value);
-            //set means ignore existing values? chainAdd or chainMerge?
-//            if(target.get(key) instanceof Json){
-//                Json existing = target.getJson(key);
-//                if(existing.isArray()){
-//                    existing.add(value);
-//                }else{
-//                    if(value instanceof Json){
-//                        Json valueJson = (Json)value;
-//                        valueJson.forEach((k,v)->{
-//                            existing.add(k,v);
-//                        });
-//                    }else{
-//                        //TODO what key to use for new value that isn't json?
-//                        System.out.println("Error: cannot set value="+value+" in target="+target);
-//                    }
-//                }
-//            }else{
-//                Object existing = target.get(key);
-//                Json newArray = new Json(true);
-//                newArray.add(existing);
-//                newArray.add(value);
-//                target.set(key,newArray);
-//            }
-        }
+        action.accept(target,key,value);
+    }
+    public static void chainAdd(Json target,String prefix,Object value){
+        chainAct(target,prefix,value,ADD_ACTION);
+    }
+    public static void chainMerge(Json target,String prefix,Object value){
+        chainAct(target,prefix,value,MERGE_ACTION);
+    }
+    public static void chainSet(Json target,String prefix,Object value){
+        chainAct(target,prefix,value,SET_ACTION);
     }
 
     public static Json fromFile(String path){
@@ -674,6 +689,21 @@ public class Json {
                         .collect(Collectors.toList())
         );
     }
+    /**
+     * Split the keys by non-slash escaped dots (. not \.)
+     * @param keys
+     * @return
+     */
+    public static List<String> toChain(String keys){
+        if(!keys.contains(".")){
+            ArrayList<String> rtrn = new ArrayList();
+            rtrn.add(keys);
+            return rtrn;
+        }
+        return new ArrayList<>(
+           Arrays.asList(keys.split("\\.(?<!\\\\\\.)"))
+        );
+    }
 
     public Json(){
         this(true);
@@ -724,6 +754,12 @@ public class Json {
         toMerge.forEach((key,value)->{
             if(override || !has(key)) {
                 set(key, value);
+            }else{
+                if(has(key)){
+                    if(get(key) instanceof Json){
+
+                    }
+                }
             }
         });
     }

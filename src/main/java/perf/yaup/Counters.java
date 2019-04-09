@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -13,32 +14,30 @@ import java.util.function.Consumer;
  */
 public class Counters<T> implements Serializable{
 
-    private ConcurrentHashMap<T,AtomicInteger> counts;
-    private AtomicInteger sum;
+    private ConcurrentHashMap<T, LongAdder> counts;
+    private LongAdder sum;
     public Counters() {
-        counts = new ConcurrentHashMap<>();sum = new AtomicInteger(0);
+        counts = new ConcurrentHashMap<>();sum = new LongAdder();
     }
     public void add(T t) {
         add(t,1);
     }
-    public void add(T t,int amount) {
-        if(!contains(t)) {
-            counts.put(t,new AtomicInteger(0));
-        }
-        counts.get(t).addAndGet(amount);
-        sum.addAndGet(amount);
+    public void add(T t,long amount) {
+        counts.computeIfAbsent(t,(v)->new LongAdder());
+        counts.get(t).add(amount);
+        sum.add(amount);
     }
     public void clear(){
-        sum.set(0);
+        sum.reset();
         counts.clear();
     }
 
     public void forEach(Consumer<T> consumer){
         counts.keySet().forEach(consumer);
     }
-    public void forEach(BiConsumer<T,Integer> consumer){
+    public void forEach(BiConsumer<T,Long> consumer){
         counts.forEach((t,a)->{
-            consumer.accept(t,a.get());
+            consumer.accept(t,a.longValue());
         });
     }
 
@@ -46,15 +45,15 @@ public class Counters<T> implements Serializable{
         return counts.containsKey(t);
     }
 
-    public int count(T t) {
+    public long count(T t) {
         if(contains(t)) {
-            return counts.get(t).get();
+            return counts.get(t).longValue();
         } else {
             return 0;
         }
     }
     public boolean isEmpty(){return counts.isEmpty();}
-    public int sum(){return sum.get();}
+    public long sum(){return sum.longValue();}
     public int size(){return counts.size();}
     public List<T> entries(){
         return Arrays.asList(((T[]) counts.keySet().toArray()));
