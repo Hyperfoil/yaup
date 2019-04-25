@@ -184,6 +184,29 @@ public class StringUtil {
         }
         return count;
     }
+    public static String toHms(long duration){
+        String rtrn = "";
+        long ms =  duration % 1000;
+        duration = duration / 1000;
+        if(ms>0){
+            return ""+duration;
+        }else{
+            rtrn = (duration%60)+"s";
+            duration = duration/60;
+            if(duration==0){return rtrn;}
+
+            rtrn = (duration%60)+"m"+rtrn;
+            duration = duration/60;
+            if(duration==0){return rtrn;}
+
+            rtrn = (duration%24)+"h"+rtrn;
+            duration = duration/24;
+            if(duration==0){return rtrn;}
+
+            rtrn = duration+"d"+rtrn;
+        }
+        return rtrn;
+    }
     public static String durationToString(long duration){
 
         long _ms = duration % 1000;

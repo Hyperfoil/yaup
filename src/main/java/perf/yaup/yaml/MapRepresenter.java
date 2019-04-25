@@ -22,7 +22,10 @@ public class MapRepresenter extends Representer implements Defer {
         if(clazz!=null && encoders.containsKey(clazz)){
             rtrn = encoders.get(clazz).apply(obj);
         }else{
-            rtrn = encoders.keySet().stream().filter(e -> e.isInstance(obj)).map(e -> encoders.get(e).apply(obj)).findFirst().orElse(null);
+            Function<Object,Object> encoder = encoders.keySet().stream().filter(e -> e.isInstance(obj)).map(e -> encoders.get(e)).findFirst().orElse(null);
+            if(encoder!=null){
+                rtrn = encoder.apply(obj);
+            }
         }
         return rtrn;
     }
@@ -90,6 +93,6 @@ public class MapRepresenter extends Representer implements Defer {
     }
 
     protected void addRepresent(Class<?> clazz,Represent represent){
-        representers.put(clazz,represent);
+        representers.putIfAbsent(clazz,represent);
     }
 }

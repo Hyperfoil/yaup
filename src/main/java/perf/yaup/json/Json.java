@@ -29,6 +29,39 @@ import static java.util.Optional.ofNullable;
  */
 public class Json {
 
+    public static class MapBuilder {
+        private final Json json = new Json();
+
+        public MapBuilder set(String key,Object value){
+            json.set(key,value);
+            return this;
+        }
+        public MapBuilder add(String key,Object value){
+            json.add(key,value);
+            return this;
+        }
+        public Json build(){
+            return json;
+        }
+    }
+    public static class ArrayBuilder {
+        private final Json json = new Json();
+
+        public ArrayBuilder add(Object obj){
+            json.add(obj);
+            return this;
+        }
+        public Json build(){
+            return json;
+        }
+    }
+    public static MapBuilder map(){
+        return new MapBuilder();
+    }
+    public static ArrayBuilder array(){
+        return new ArrayBuilder();
+    }
+
     public static class HashJson extends Json {
 
         public HashJson(){

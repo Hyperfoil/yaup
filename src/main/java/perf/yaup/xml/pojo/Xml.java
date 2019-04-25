@@ -20,6 +20,9 @@ import static perf.yaup.xml.XmlOperation.Operation.Add;
 
 public class Xml {
 
+    public static final String JSON_ATTRIBUTE_PREFIX = "@";
+    public static final String JSON_VALUE_KEY = "text()";
+
     public static final int INLINE_LENGTH = 120;
 
     public static final Xml INVALID = new Xml(Type.Invalid,null,"","");
@@ -355,6 +358,9 @@ public class Xml {
     }
 
     public Json toJson(){
+       return toJson(JSON_ATTRIBUTE_PREFIX,JSON_VALUE_KEY);
+    }
+    public Json toJson(String attributePrefix,String valueKey){
         Json rtrn = new Json();
 
         Stack<Json> jsonTodo = new Stack<>();
@@ -368,10 +374,10 @@ public class Xml {
             Xml xml = xmlTodo.pop();
 
             xml.getAttributes().forEach((name,valueXml)->{
-                json.set("@"+name,valueXml.getValue());
+                json.set(attributePrefix+name,valueXml.getValue());
             });
             if(xml.hasValue()){
-                json.set("text()",xml.getValue());
+                json.set(valueKey,xml.getValue());
             }
             xml.getChildren().forEach(childXml->{
                 //Json(false) to prevent Json.add from treating it as an array for subsequent adds

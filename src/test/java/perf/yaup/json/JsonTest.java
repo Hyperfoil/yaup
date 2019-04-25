@@ -5,10 +5,18 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class JsonTest {
+
+
+    @Test
+    public void find_key_chain(){
+        Json target = Json.fromJs("{FOO:{biz:{buz:'one'}}}");
+        Object found = Json.find(target,"$.FOO.biz.buz");
+        System.out.println(found);
+        assertNotNull(found);
+    }
 
     @Test
     public void chainSet_existing(){
