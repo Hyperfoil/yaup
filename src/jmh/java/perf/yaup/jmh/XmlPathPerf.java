@@ -18,9 +18,7 @@ public class XmlPathPerf {
     perf.yaup.xml.Xml nodeXml = new perf.yaup.xml.XmlLoader().loadXml(Paths.get("<todo:addfile/>"));
 
     @Setup(Level.Iteration)
-    public void doSetup(){
-        System.out.println("scanner--------------");
-    }
+    public void doSetup(){}
 
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
