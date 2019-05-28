@@ -11,10 +11,24 @@ public class JsonTest {
 
 
     @Test
+    public void find_single_value_search_expression(){
+        Json target = Json.fromJs("{one:[{name:'foo',value:'bar'}]}");
+        Object found = Json.find(target,"$.one[?(@.name=='foo')].value");
+        assertTrue("found should be a string but was: "+found,found instanceof String);
+        assertEquals("should find bar","bar",found);
+    }
+    @Test
+    public void find_single_value_search_deepScan(){
+        Json target = Json.fromJs("{one:[{name:'foo',value:'bar'}]}");
+        Object found = Json.find(target,"$.one..value");
+        assertTrue("found should be a string but was: "+found,found instanceof String);
+        assertEquals("should find bar","bar",found);
+    }
+
+    @Test
     public void find_key_chain(){
         Json target = Json.fromJs("{FOO:{biz:{buz:'one'}}}");
         Object found = Json.find(target,"$.FOO.biz.buz");
-        System.out.println(found);
         assertNotNull(found);
     }
 
@@ -24,7 +38,7 @@ public class JsonTest {
         root.set("first","uno");
         Json.chainSet(root,"first","dos");
 
-        System.out.println(root);
+        //System.out.println(root);
     }
 
     @Test

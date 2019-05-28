@@ -279,7 +279,7 @@ public class Json {
 
     public static void chainAct(Json target,String prefix,Object value,JsonAction action){
         List<String> chain = toChain(prefix);
-        String key = chain.remove(chain.size()-1);
+        String key = chain.remove(chain.size()-1).replaceAll("\\\\\\.", ".");
         for(String id : chain){
             id = id.replaceAll("\\\\\\.", ".");
             if (!id.isEmpty()) {
@@ -693,7 +693,7 @@ public class Json {
         ReadContext ctx = JsonPath.parse(input,yaup);
         JsonPath path = JsonPath.compile(jsonPath);
         Object results = ctx.read(path);
-        if(jsonPath.contains("..") && results!=null && results instanceof Json){
+        if((jsonPath.contains("..") || jsonPath.contains("?(") )&& results!=null && results instanceof Json){
             Json resultJson = (Json)results;
             if(resultJson.isArray() && resultJson.size()==1){
                 results = resultJson.get(0);

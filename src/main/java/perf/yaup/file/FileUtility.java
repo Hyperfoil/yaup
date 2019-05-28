@@ -425,31 +425,34 @@ public class FileUtility {
             String next = toParse.remove(0);
             File f = new File(next);
             if (f.exists() && f.isDirectory()) {
-                for (File sub : f.listFiles()) {
-                    if (recursive && sub.isDirectory()) {
-                        if (depthFirst)
-                            toParse.add(0, sub.getAbsolutePath());
-                        else
-                            toParse.add(sub.getAbsolutePath());
-                    }
-                    // probably don't need both boolean comparisons but I'm
-                    // curious if isFile!=isDirectory is a contract
-                    if (sub.isFile() == wantFiles && sub.isDirectory() != wantFiles) {
-                        // if there is name filtering
-                        if (nameSubstring != null && !nameSubstring.isEmpty()) {
-                            if (sub.getName().contains(nameSubstring) /*&& !isArchive(sub)*/ ) {
+                File subs[] = f.listFiles();
+                if(subs!=null) {
+                    for (File sub : subs) {
+                        if (recursive && sub.isDirectory()) {
+                            if (depthFirst)
+                                toParse.add(0, sub.getAbsolutePath());
+                            else
+                                toParse.add(sub.getAbsolutePath());
+                        }
+                        // probably don't need both boolean comparisons but I'm
+                        // curious if isFile!=isDirectory is a contract
+                        if (sub.isFile() == wantFiles && sub.isDirectory() != wantFiles) {
+                            // if there is name filtering
+                            if (nameSubstring != null && !nameSubstring.isEmpty()) {
+                                if (sub.getName().contains(nameSubstring) /*&& !isArchive(sub)*/) {
+                                    rtrn.add(sub.getAbsolutePath());
+                                }
+                            } else {
                                 rtrn.add(sub.getAbsolutePath());
                             }
-                        }else{
-                            rtrn.add(sub.getAbsolutePath());
                         }
-                    }
-                    if (inArchive && sub.isFile() && isArchive(sub)) {
+                        if (inArchive && sub.isFile() && isArchive(sub)) {
 
-                        List<String> entries = getArchiveEntries(sub.getPath());
-                        for(String entry : entries){
-                            if(entry.contains(nameSubstring)){
-                                rtrn.add(entry);
+                            List<String> entries = getArchiveEntries(sub.getPath());
+                            for (String entry : entries) {
+                                if (entry.contains(nameSubstring)) {
+                                    rtrn.add(entry);
+                                }
                             }
                         }
                     }

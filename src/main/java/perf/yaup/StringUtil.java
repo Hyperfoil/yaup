@@ -339,12 +339,21 @@ public class StringUtil {
         return input.replaceAll("\\s+","");
     }
 
+    public static boolean isQuoted(String value){
+        if(value == null){
+            return false;
+        }
+        return (value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("\'") && value.endsWith("\'"));
+    }
     public static String quote(String value){
         return quote(value,"\"");
     }
     public static String quote(String value,String quoteMark){
         if(value ==null){
             value = "";
+        }
+        if(isQuoted(value)){
+            return value;
         }
         return quoteMark+value.replaceAll(""+quoteMark+"(?<!\\\\"+quoteMark+")","\\\\"+quoteMark+"")+quoteMark;
     }
@@ -353,7 +362,7 @@ public class StringUtil {
             return null;
         }
         String rtrn = value;
-        if( (value.startsWith("\"")&& value.endsWith("\"")) || (value.startsWith("\'") && value.endsWith("\'"))) {
+        if( isQuoted(value)) {
             rtrn =value.substring(1,value.length()-1);
         }
         return rtrn;
