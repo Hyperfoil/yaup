@@ -318,6 +318,35 @@ public class Json {
         String content = FileUtility.readFile(path);
         return Json.fromString(content);
     }
+    public static Json fromThrowable(Throwable e){
+        Json rtrn = new Json();
+        fromThrowable(e,rtrn);
+        return rtrn;
+    }
+    public static void fromThrowable(Throwable e,Json target){
+        if(e!=null){
+            target.set("class",e.getClass().toString());
+            if(e.getMessage()!=null){
+                target.set("message",e.getMessage());
+            }
+            if(e.getStackTrace()!=null){
+                target.set("stack",new Json());
+                Arrays.asList(e.getStackTrace()).forEach(ste->{
+                    Json frame = new Json();
+                    frame.set("class",ste.getClassName());
+                    frame.set("method",ste.getMethodName());
+                    frame.set("line",ste.getLineNumber());
+                    frame.set("file",ste.getFileName());
+                    target.getJson("stack").add(frame);
+                });
+            }
+            if(e.getCause()!=null){
+                Json causedBy = new Json();
+                target.set("causedBy",causedBy);
+                fromThrowable(e.getCause(),causedBy);
+            }
+        }
+    }
     public static Json fromString(String json){
         return fromString(json,null);
     }
