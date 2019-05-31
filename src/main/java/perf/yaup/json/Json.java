@@ -5,6 +5,8 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Value;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -28,6 +30,7 @@ import static java.util.Optional.ofNullable;
  * A javascript object representation that can be either an Array or Object.
  */
 public class Json {
+
 
     public static class MapBuilder {
         private final Json json = new Json();
@@ -529,7 +532,35 @@ public class Json {
         String toParse = (wrap?"[":"")+sb.toString()+(wrap?"]":"");
         return Json.fromString(toParse);
     }
-    public static Json fromJs(String js){
+    public static Json fromJs(String js) {
+        Json rtrn = new Json();
+        try (Context context = Context.newBuilder("js").allowAllAccess(true).allowHostAccess(true).build()) {
+            context.enter();
+            try {
+               Value obj = context.eval("js", "const walker = (parent,key,value)=>{\n" +
+                   "if( Array.isArray(value) ){ value.forEach((entry,index)=>walker(value,index,entry)) }\n" +
+                   "else if (typeof value === 'function'){ parent[key]=value.toString() }\n" +
+                   "else if (value instanceof Date){ parent[key]=value.toISOString() }\n" +
+                   "else if (typeof value === 'object'){ Object.keys(value).forEach(k=>walker(value,k,value[k])) }\n" +
+                   "else{ }\n" +
+                   "};\n" +
+                   "const walk = (obj)=>{\n" +
+                   "  if( Array.isArray(obj) ){ obj.forEach((entry,index)=>walker(obj,index,entry)) }\n" +
+                   "  else{ Object.keys(obj).forEach(k=>{ walker(obj,k,obj[k]); return obj; }) }\n" +
+                   "  return obj;\n" +
+                   "};\n" +
+                   "walk( (()=>(" + js + "))() )");
+                Object converted = ValueConverter.convert(obj);
+                if(converted instanceof Json){
+                    rtrn = (Json)converted;
+                }
+            } finally {
+                context.leave();
+            }
+        }
+        return rtrn;
+    }
+    public static Json fromJsScriptEngine(String js){
         Json rtrn = new Json();
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
         ScriptContext defaultContext = engine.getContext();
