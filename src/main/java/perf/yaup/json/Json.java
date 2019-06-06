@@ -31,7 +31,6 @@ import static java.util.Optional.ofNullable;
  */
 public class Json {
 
-
     public static class MapBuilder {
         private final Json json = new Json();
 
@@ -531,6 +530,9 @@ public class Json {
         }
         String toParse = (wrap?"[":"")+sb.toString()+(wrap?"]":"");
         return Json.fromString(toParse);
+    }
+    public static Json fromJs(String...js){
+        return fromJs(Arrays.asList(js).stream().collect(Collectors.joining("\n")));
     }
     public static Json fromJs(String js) {
         Json rtrn = new Json();

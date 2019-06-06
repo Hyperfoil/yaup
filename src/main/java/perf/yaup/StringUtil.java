@@ -46,9 +46,13 @@ public class StringUtil {
             String value = null;
             if(map.containsKey(name)){
                 value = map.get(name).toString();
+                if(value.isEmpty() && defaultValue!=null){
+                    value = defaultValue;
+                }
             }else{
                 value = defaultValue;
             }
+
             previous = matcher.end();
             if(value!=null){
                 rtrn = rtrn.replace(rtrn.substring(findIndex,previous),value);
