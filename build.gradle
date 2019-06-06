@@ -1,4 +1,4 @@
-group 'perf'
+group 'io.hyperfoil.tools'
 version '0.2-SNAPSHOT'
 
 apply plugin: 'java'
