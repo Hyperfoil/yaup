@@ -1,5 +1,6 @@
 package perf.yaup;
 
+import io.hyperfoil.tools.yaup.StringUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -43,6 +44,6 @@ public class StringUtilTest {
     @Test
     public void escapeRegex(){
 
-        assertEquals(". literals","foo\\.bar\\.biz\\.buz",StringUtil.escapeRegex("foo.bar.biz.buz"));
+        assertEquals(". literals","foo\\.bar\\.biz\\.buz", StringUtil.escapeRegex("foo.bar.biz.buz"));
     }
 }

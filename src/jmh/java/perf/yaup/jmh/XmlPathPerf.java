@@ -1,5 +1,7 @@
 package perf.yaup.jmh;
 
+import io.hyperfoil.tools.yaup.xml.Xml;
+import io.hyperfoil.tools.yaup.xml.XmlLoader;
 import org.openjdk.jmh.annotations.*;
 
 import java.nio.file.Paths;
@@ -14,8 +16,8 @@ public class XmlPathPerf {
     public String path;
     */
 
-    perf.yaup.xml.pojo.Xml pojoXml = perf.yaup.xml.pojo.Xml.parseFile("<todo:addfile/>");
-    perf.yaup.xml.Xml nodeXml = new perf.yaup.xml.XmlLoader().loadXml(Paths.get("<todo:addfile/>"));
+    io.hyperfoil.tools.yaup.xml.pojo.Xml pojoXml = io.hyperfoil.tools.yaup.xml.pojo.Xml.parseFile("<todo:addfile/>");
+    Xml nodeXml = new XmlLoader().loadXml(Paths.get("<todo:addfile/>"));
 
     @Setup(Level.Iteration)
     public void doSetup(){}
@@ -24,7 +26,7 @@ public class XmlPathPerf {
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public Object pojoXmlns(){
-        List<perf.yaup.xml.pojo.Xml> found = pojoXml.getAll("/server/profile/subsystem[@xmlns='urn:jboss:domain:deployment-scanner:2.0']");
+        List<io.hyperfoil.tools.yaup.xml.pojo.Xml> found = pojoXml.getAll("/server/profile/subsystem[@xmlns='urn:jboss:domain:deployment-scanner:2.0']");
         assert found.size()==1;
         return found;
     }
@@ -33,7 +35,7 @@ public class XmlPathPerf {
     @BenchmarkMode(Mode.AverageTime)
     @OutputTimeUnit(TimeUnit.NANOSECONDS)
     public Object nodeXmlns(){
-        List<perf.yaup.xml.Xml> found = nodeXml.getAll("/server/profile/subsystem[starts-with(namespace::*[name()=''],'urn:jboss:domain:deployment-scanner:2.0')]");
+        List<Xml> found = nodeXml.getAll("/server/profile/subsystem[starts-with(namespace::*[name()=''],'urn:jboss:domain:deployment-scanner:2.0')]");
         assert found.size()==1;
         return found;
 

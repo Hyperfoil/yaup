@@ -1,5 +1,7 @@
 package perf.yaup.xml;
 
+import io.hyperfoil.tools.yaup.xml.Xml;
+import io.hyperfoil.tools.yaup.xml.XmlLoader;
 import org.junit.Ignore;
 import org.junit.Test;
 

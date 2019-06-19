@@ -1,5 +1,7 @@
 package perf.yaup.xml.pojo;
 
+import io.hyperfoil.tools.yaup.xml.pojo.Xml;
+import io.hyperfoil.tools.yaup.xml.pojo.XmlComparison;
 import org.junit.Test;
 
 import java.util.List;
@@ -25,7 +27,7 @@ public class XmlComparisonTest {
 
         XmlComparison comparison = new XmlComparison();
 
-        comparison.load("1",Xml.parse(HEADER+xml1));
+        comparison.load("1", Xml.parse(HEADER+xml1));
         comparison.load("2",Xml.parse(HEADER+xml2));
 
         List<XmlComparison.Entry> diffs = comparison.getDiffs();

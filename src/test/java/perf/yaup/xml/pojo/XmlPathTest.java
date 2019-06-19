@@ -1,5 +1,7 @@
 package perf.yaup.xml.pojo;
 
+import io.hyperfoil.tools.yaup.xml.pojo.Xml;
+import io.hyperfoil.tools.yaup.xml.pojo.XmlPath;
 import org.junit.Ignore;
 import org.junit.Test;
 

@@ -1,5 +1,6 @@
 package perf.yaup;
 
+import io.hyperfoil.tools.yaup.HashedList;
 import org.junit.Assert;
 import org.junit.Test;
 

@@ -1,5 +1,6 @@
 package perf.yaup.json;
 
+import io.hyperfoil.tools.yaup.json.Json;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Ignore;

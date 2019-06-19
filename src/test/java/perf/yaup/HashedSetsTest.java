@@ -1,6 +1,6 @@
 package perf.yaup;
 
-import org.junit.Rule;
+import io.hyperfoil.tools.yaup.HashedSets;
 import org.junit.Test;
 
 import java.util.ArrayList;

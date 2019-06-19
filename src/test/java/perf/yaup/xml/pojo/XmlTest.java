@@ -1,8 +1,9 @@
 package perf.yaup.xml.pojo;
 
+import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 import org.junit.Test;
-import perf.yaup.file.FileUtility;
-import perf.yaup.xml.XmlOperation;
+import io.hyperfoil.tools.yaup.file.FileUtility;
+import io.hyperfoil.tools.yaup.xml.XmlOperation;
 
 import java.util.List;
 

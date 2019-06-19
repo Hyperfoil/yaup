@@ -1,7 +1,10 @@
 package perf.yaup.xml;
 
+import io.hyperfoil.tools.yaup.xml.Xml;
+import io.hyperfoil.tools.yaup.xml.XmlLoader;
+import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import org.junit.Test;
-import perf.yaup.file.FileUtility;
+import io.hyperfoil.tools.yaup.file.FileUtility;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
