@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public class StringUtil {
     private static final String PATTERN_PREFIX = "${{";
     private static final String PATTERN_SUFFIX = "}}";
-    private static final Pattern STATE_PATTERN = Pattern.compile("\\$\\{\\{(?<name>[^${}:]+):?(?<default>[^}]*)}}");
+    private static final String PATTERN_DEFAULT_SEPARATOR = ":";
 
     private static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
     private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -30,37 +30,54 @@ public class StringUtil {
 
      */
 
-
-    //TODO this doesn't handle nested patterns, create a template Map->String with internal state of either string, or key + template
     public static String populatePattern(String pattern, Map<Object,Object> map){
-        if(!pattern.contains(PATTERN_PREFIX)){
-            return pattern;
-        }
         String rtrn = pattern;
-        int previous = 0;
-        Matcher matcher = STATE_PATTERN.matcher(rtrn);
-        while(matcher.find()){
-            int findIndex = matcher.start();
-            String name = matcher.group("name");
-            String defaultValue = matcher.group("default");
-            String value = null;
-            if(map.containsKey(name)){
-                value = map.get(name).toString();
-                if(value.isEmpty() && defaultValue!=null){
-                    value = defaultValue;
-                }
-            }else{
-                value = defaultValue;
-            }
+        boolean replaced = false;
+        do {
+            replaced = false;
+            int nameStart=-1;
+            int nameEnd=-1;
+            int defaultStart=-1;
+            int defaultEnd=-1;
+            int count=0;
+            for(int i=0; i<rtrn.length(); i++){
+                if(rtrn.startsWith(PATTERN_PREFIX,i)){
+                    if(count==0){
+                        nameStart=i;
+                    }
+                    count++;
+                    i+=PATTERN_SUFFIX.length()-1;
+                }else if (rtrn.startsWith(PATTERN_DEFAULT_SEPARATOR,i)){
+                    if(count==1){
+                        nameEnd=i;
+                        defaultStart=i;
+                    }
 
-            previous = matcher.end();
-            if(value!=null){
-                rtrn = rtrn.replace(rtrn.substring(findIndex,previous),value);
-                matcher.reset(rtrn);
+                }else if (rtrn.startsWith(PATTERN_SUFFIX,i)){
+                    count--;
+                    if(count==0){
+                        if(nameEnd>-1 && defaultStart>-1){
+                            defaultEnd=i;
+                        }else{
+                            nameEnd=i;
+                        }
+                        i=rtrn.length();//end the loop
+                    }
+                    i+=PATTERN_SUFFIX.length()-1;//skip the rest of suffix
+                }
             }
-        }
+            if(nameStart>-1 && count == 0){
+                replaced = true;
+                String name = rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd);
+                String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+PATTERN_DEFAULT_SEPARATOR.length(),defaultEnd):"";
+                String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
+                int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
+                rtrn = rtrn.substring(0,nameStart) + replacement + rtrn.substring(end);
+            }
+        }while(replaced);
         return rtrn;
     }
+
     public static long parseKMG(String kmg){
         Matcher m = java.util.regex.Pattern.compile("(?<number>\\d+\\.?\\d*)\\s?(?<kmg>[kmgtpezyKMGTPEZY]*)(?<bB>[bB]*)").matcher(kmg);
         if(m.matches()){

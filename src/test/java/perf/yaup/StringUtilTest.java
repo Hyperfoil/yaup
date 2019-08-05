@@ -3,6 +3,9 @@ package perf.yaup;
 import io.hyperfoil.tools.yaup.StringUtil;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.*;
 
 public class StringUtilTest {
@@ -13,6 +16,32 @@ public class StringUtilTest {
 
 
         assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
+    }
+
+
+    @Test
+    public void populatePattern_two_values(){
+        Map<Object,Object> map = new HashMap<>();
+        map.put("FOO","foo");
+        map.put("BAR","bar");
+        String response  = StringUtil.populatePattern("${{FOO}}${{BAR}}",map);
+        assertEquals("foobar",response);
+    }
+    @Test
+    public void populatePattern_default_is_pattern(){
+        Map<Object,Object> map = new HashMap<>();
+        map.put("FOO","foo");
+        map.put("BAR","bar");
+        String response  = StringUtil.populatePattern("${{BIZ:${{FOO}}}}${{BAR}}",map);
+        assertEquals("foobar",response);
+    }
+    @Test
+    public void populatePattern_name_and_default_patterns(){
+        Map<Object,Object> map = new HashMap<>();
+        map.put("FOO","${{BAR}}");
+        map.put("BAR","bar");
+        String response  = StringUtil.populatePattern("${{FOO:${{BIZ:biz}}}}${{BIZ:${{BAR}}}}",map);
+        assertEquals("barbar",response);
     }
 
     @Test
