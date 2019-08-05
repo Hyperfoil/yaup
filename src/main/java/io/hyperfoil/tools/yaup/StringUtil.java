@@ -1,5 +1,10 @@
 package io.hyperfoil.tools.yaup;
 
+import io.hyperfoil.tools.yaup.json.NashornMapContext;
+
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -71,6 +76,26 @@ public class StringUtil {
                 String name = rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+PATTERN_DEFAULT_SEPARATOR.length(),defaultEnd):"";
                 String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
+                if(replacement.isEmpty() && !defaultValue.isEmpty()){
+                    replacement = defaultValue;
+                }
+                if(StringUtil.findAny(name,"()/*^+-") > -1 ){
+                    String value = null;
+                    ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+                    try {
+                        engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
+                        engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
+                        Object nashonVal = engine.eval(name,new NashornMapContext(map,engine.getContext()));
+                        value = nashonVal.toString();
+                        if(value.endsWith(".0")){
+                            value = value.substring(0,value.length()-2);
+                        }
+                        replacement = value;
+                    } catch (ScriptException e) {
+                        e.printStackTrace();
+                    }
+
+                }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 rtrn = rtrn.substring(0,nameStart) + replacement + rtrn.substring(end);
             }

@@ -43,6 +43,22 @@ public class StringUtilTest {
         String response  = StringUtil.populatePattern("${{FOO:${{BIZ:biz}}}}${{BIZ:${{BAR}}}}",map);
         assertEquals("barbar",response);
     }
+    @Test
+    public void populatePattern_use_default(){
+        Map<Object,Object> map = new HashMap<>();
+        map.put("FOO","foo");
+        map.put("BAR","bar");
+        String response  = StringUtil.populatePattern("${{FOO}}.${{BAR}}.${{BIZ:biz}}",map);
+        assertEquals("foo.bar.biz",response);
+    }
+    @Test
+    public void populatePattern_default_over_empty_value(){
+        Map<Object,Object> map = new HashMap<>();
+        map.put("FOO","");
+        String response = StringUtil.populatePattern("${{FOO:foo}}",map);
+        assertEquals("foo",response);
+
+    }
 
     @Test
     public void quoteReplaceWithEscaped(){
