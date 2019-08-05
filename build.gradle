@@ -75,7 +75,7 @@ task uberJar(type: Jar,dependsOn:[':build']){
                 'Implementation-Version' : version,
                 'Main-Class': 'io.hyperfoil.tools.yaup.JarMain'
     }
-    archiveFileName "yaup-uber.jar"
+    archiveName "yaup-uber.jar"
     with jar
 }
 //uploadArchives {
