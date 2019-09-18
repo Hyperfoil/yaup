@@ -18,6 +18,20 @@ public class StringUtilTest {
         assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
     }
 
+    @Test
+    public void populatePattern_missing_not_replace(){
+       Map<Object,Object> map = new HashMap<>();
+       String response = StringUtil.populatePattern("${{FOO}}",map,false);
+
+       assertEquals("expect to not replace the pattern","${{FOO}}",response);
+    }
+
+    @Test
+    public void populatePattern_arithmetic_missing_value(){
+       Map<Object,Object> map = new HashMap<>();
+       String response = StringUtil.populatePattern("${{ 2*MISSING :-1}}",map);
+       assertEquals("expected default value when missing value","-1",response);
+    }
 
     @Test
     public void populatePattern_two_values(){
@@ -51,6 +65,14 @@ public class StringUtilTest {
         String response  = StringUtil.populatePattern("${{FOO}}.${{BAR}}.${{BIZ:biz}}",map);
         assertEquals("foo.bar.biz",response);
     }
+   @Test
+   public void populatePattern_use_js_on_value(){
+      Map<Object,Object> map = new HashMap<>();
+      map.put("FOO","foo");
+      String response  = StringUtil.populatePattern("${{\"${{FOO}}\".toUpperCase()}}",map);
+      assertEquals("FOO",response);
+   }
+
     @Test
     public void populatePattern_default_over_empty_value(){
         Map<Object,Object> map = new HashMap<>();

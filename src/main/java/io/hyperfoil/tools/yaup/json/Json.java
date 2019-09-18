@@ -1,9 +1,6 @@
 package io.hyperfoil.tools.yaup.json;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.ReadContext;
+import com.jayway.jsonpath.*;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -753,15 +750,20 @@ public class Json {
     public static Object find(Json input,String jsonPath,Object defaultValue){
         //TODO cache this and make an immutable json immutable?
         ReadContext ctx = JsonPath.parse(input,yaup);
-        JsonPath path = JsonPath.compile(jsonPath);
-        Object results = ctx.read(path);
-        if((jsonPath.contains("..") || jsonPath.contains("?(") )&& results!=null && results instanceof Json){
-            Json resultJson = (Json)results;
-            if(resultJson.isArray() && resultJson.size()==1){
-                results = resultJson.get(0);
-            }else if (resultJson.size()==0){
-                results = null;
+        Object results = null;
+        try {
+            JsonPath path = JsonPath.compile(jsonPath);
+            results = ctx.read(path);
+            if ((jsonPath.contains("..") || jsonPath.contains("?(")) && results != null && results instanceof Json) {
+                Json resultJson = (Json) results;
+                if (resultJson.isArray() && resultJson.size() == 1) {
+                    results = resultJson.get(0);
+                } else if (resultJson.size() == 0) {
+                    results = null;
+                }
             }
+        } catch (InvalidPathException e){
+            //TODO report invalid path or just keep it as "not found"
         }
         return results == null ? defaultValue : results;
     }

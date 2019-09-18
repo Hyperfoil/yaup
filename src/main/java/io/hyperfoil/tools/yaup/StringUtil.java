@@ -34,10 +34,13 @@ public class StringUtil {
     /*
 
      */
-
     public static String populatePattern(String pattern, Map<Object,Object> map){
+        return populatePattern(pattern,map,true);
+    }
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
         String rtrn = pattern;
         boolean replaced = false;
+        int skip=0;
         do {
             replaced = false;
             int nameStart=-1;
@@ -45,7 +48,7 @@ public class StringUtil {
             int defaultStart=-1;
             int defaultEnd=-1;
             int count=0;
-            for(int i=0; i<rtrn.length(); i++){
+            for(int i=skip; i<rtrn.length(); i++){
                 if(rtrn.startsWith(PATTERN_PREFIX,i)){
                     if(count==0){
                         nameStart=i;
@@ -73,10 +76,16 @@ public class StringUtil {
             }
             if(nameStart>-1 && count == 0){
                 replaced = true;
-                String name = rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd);
+                String name = populatePattern(rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd),map);
+
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+PATTERN_DEFAULT_SEPARATOR.length(),defaultEnd):"";
-                String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
-                if(replacement.isEmpty() && !defaultValue.isEmpty()){
+                //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
+
+                String replacement = null;
+                if(map.containsKey(name)){
+                   replacement = map.get(name).toString();
+                }
+                if(replacement == null && defaultValue!=null && !defaultValue.isEmpty()){
                     replacement = defaultValue;
                 }
                 if(StringUtil.findAny(name,"()/*^+-") > -1 ){
@@ -92,12 +101,21 @@ public class StringUtil {
                         }
                         replacement = value;
                     } catch (ScriptException e) {
-                        e.printStackTrace();
+                        //e.printStackTrace();
+                    } catch (IllegalArgumentException e){
+                        //e.printStackTrace(); //occurs when missing value in map passed to nashorn
                     }
 
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
-                rtrn = rtrn.substring(0,nameStart) + replacement + rtrn.substring(end);
+                if(replacement == null && replaceMissing == false){
+                    skip = end;
+                }else {
+                    if(replacement==null){
+                        replacement="";
+                    }
+                    rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
+                }
             }
         }while(replaced);
         return rtrn;

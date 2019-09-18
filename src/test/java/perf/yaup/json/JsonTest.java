@@ -12,6 +12,13 @@ public class JsonTest {
 
 
     @Test
+    public void find_exp_InvalidPathException(){
+        Json target = Json.fromJs("{one:[{name:'foo',value:'bar'}]}");
+        Object found = Json.find(target,"$. (2*FOO)+'m' ");
+        assertNull("should not throw an exception or find the path",found);
+    }
+
+    @Test
     public void find_single_value_search_expression(){
         Json target = Json.fromJs("{one:[{name:'foo',value:'bar'}]}");
         Object found = Json.find(target,"$.one[?(@.name=='foo')].value");
@@ -38,8 +45,6 @@ public class JsonTest {
         Json root = new Json();
         root.set("first","uno");
         Json.chainSet(root,"first","dos");
-
-        //System.out.println(root);
     }
 
     @Test
