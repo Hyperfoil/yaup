@@ -82,7 +82,6 @@ public class Json {
                         super.set(key, newEntry);
                     } else {
                         if (get(key) instanceof Json) {
-                            System.out.println("key(" + key + ") is a " + get(key).getClass().getSimpleName());
                         }
                     }
                 }
@@ -556,6 +555,8 @@ public class Json {
             } finally {
                 context.leave();
             }
+        }catch(IllegalArgumentException e){//com.oracle.truffle.polyglot.PolyglotIllegalArgumentException
+            rtrn = fromJsScriptEngine(js);
         }
         return rtrn;
     }
