@@ -82,7 +82,7 @@ public class StringUtil {
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
                 String replacement = null;
-                if(map.containsKey(name)){
+                if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
                    replacement = map.get(name).toString();
                 }
                 if(replacement == null && defaultValue!=null && !defaultValue.isEmpty()){

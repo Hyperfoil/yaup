@@ -49,7 +49,7 @@ dependencies {
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.yaml:snakeyaml:1.23'
     compile 'com.jayway.jsonpath:json-path:2.4.0'
-
+    
     compile 'org.graalvm.sdk:graal-sdk:1.0.0-rc14'
     compile 'org.graalvm.js:js:1.0.0-rc14'
 
