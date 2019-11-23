@@ -12,6 +12,19 @@ public class JsonTest {
 
 
     @Test
+    public void fromString_empty_object(){
+        Json json = Json.fromString("{}");
+        assertNotNull(json);
+        assertFalse("json should not be an array",json.isArray());
+
+        json = Json.fromString("{\"foo\":{}}");
+        assertNotNull(json);
+        assertTrue("json.foo should exist and be a json",json.has("foo") && json.get("foo") instanceof Json);
+        Json foo = json.getJson("foo");
+        assertFalse("json.foo should not be an array",foo.isArray());
+    }
+
+    @Test
     public void find_exp_InvalidPathException(){
         Json target = Json.fromJs("{one:[{name:'foo',value:'bar'}]}");
         Object found = Json.find(target,"$. (2*FOO)+'m' ");

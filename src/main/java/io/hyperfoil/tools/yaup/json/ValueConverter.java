@@ -5,8 +5,12 @@ import org.graalvm.polyglot.Value;
 public class ValueConverter {
 
    public static Object convert(Value value){
-      if(value == null || value.isNull()){
+      if(value == null || value.isNull()) {
          return "";
+      }else if (value.isProxyObject()){
+         return value.asProxyObject();
+      }else if (value.isHostObject()){
+         return value.asHostObject();
       }else if (value.isBoolean()){
          return value.asBoolean();
       }else if (value.isNumber()){

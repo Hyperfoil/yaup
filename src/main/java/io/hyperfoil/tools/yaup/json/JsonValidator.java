@@ -28,6 +28,4 @@ public class JsonValidator {
       return rtrn == null ? new Json() : rtrn;
    }
    public Json getSchema(){return schemaJson;}
-
-
 }

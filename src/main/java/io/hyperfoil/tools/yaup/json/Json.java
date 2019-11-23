@@ -345,11 +345,20 @@ public class Json {
             }
         }
     }
+    public static Json fromGraalvm(Value value){
+        return ValueConverter.convertMapping(value);
+    }
     public static Json fromString(String json){
         return fromString(json,null);
     }
     public static Json fromString(String json,Json defaultValue){
+        return fromString(json,defaultValue,false);
+    }
+    public static Json fromString(String json,Json defaultValue,boolean debug){
         Json rtrn = defaultValue;
+        if(json == null){
+            return rtrn;
+        }
         json = json.trim();
         try {
             if (json.startsWith("[")) {
@@ -359,9 +368,12 @@ public class Json {
                 JSONObject jsonObject = new JSONObject(json);
                 rtrn = fromJSONObject(jsonObject);
             } else {
-                rtrn = new Json();
+                rtrn = defaultValue;
             }
         }catch(JSONException e){
+            if(debug){
+                e.printStackTrace();
+            }
             //log failed to parse json
         }
         return rtrn;
@@ -403,7 +415,7 @@ public class Json {
         }
     }
     public static Json fromJSONArray(JSONArray json){
-        Json rtrn = new Json();
+        Json rtrn = new Json(true);
         for(int i=0; i<json.length(); i++){
             Object obj = json.get(i);
             if(obj instanceof JSONArray){
@@ -417,7 +429,7 @@ public class Json {
         return rtrn;
     }
     public static Json fromJSONObject(JSONObject json){
-        Json rtrn = new Json();
+        Json rtrn = new Json(false);
 
         Queue<Json> jsonList = new LinkedList<>();
         jsonList.add(rtrn);
@@ -433,7 +445,7 @@ public class Json {
                 jsonObject.keySet().forEach(key->{
                     Object keyValue = jsonObject.get(key);
                     if(keyValue instanceof JSONObject || keyValue instanceof JSONArray){
-                        Json newJson = new Json();
+                        Json newJson = new Json(keyValue instanceof JSONArray);
                         currentJson.add(key,newJson);
 
                         jsonList.add(newJson);
@@ -448,7 +460,7 @@ public class Json {
                 for(int i=0; i<jsonArray.length(); i++){
                     Object arrayEntry = jsonArray.get(i);
                     if(arrayEntry instanceof JSONObject || arrayEntry instanceof JSONArray){
-                        Json newJson = new Json();
+                        Json newJson = new Json(arrayEntry instanceof JSONArray);
                         currentJson.add(newJson);
 
                         jsonList.add(newJson);
@@ -769,10 +781,7 @@ public class Json {
         return results == null ? defaultValue : results;
     }
     public static <T> T findT(Json input,String jsonPath,T defaultValue){
-
-
         System.out.println("componentType="+Json.class.getComponentType());
-
         return null;
     }
 
@@ -854,8 +863,8 @@ public class Json {
                 set(key, value);
             }else{
                 if(has(key)){
-                    if(get(key) instanceof Json){
-
+                    if(get(key) instanceof Json && value instanceof Json){
+                       ((Json)get(key)).merge((Json)value,override);
                     }
                 }
             }

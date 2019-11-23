@@ -1,6 +1,7 @@
 package perf.yaup;
 
 import io.hyperfoil.tools.yaup.StringUtil;
+import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -16,6 +17,18 @@ public class StringUtilTest {
 
 
         assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
+    }
+
+    @Test
+    public void populatePattern_javascript_lambda_string_literal(){
+       Map<Object,Object> map = new HashMap();
+       Json list = new Json(true);
+       list.add("one");
+       list.add("two");
+       list.add("three");
+       map.put("list",list);
+       String response = StringUtil.populatePattern("${{ ${{list}}.reduce((x,v)=>`${x}\\\\n  ${v}:80`,'').trim()}}",map,false);
+       assertEquals("one:80\n  two:80\n  three:80",response);
     }
 
     @Test

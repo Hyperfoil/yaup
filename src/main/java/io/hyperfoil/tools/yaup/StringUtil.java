@@ -1,14 +1,15 @@
 package io.hyperfoil.tools.yaup;
 
 import io.hyperfoil.tools.yaup.json.NashornMapContext;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Value;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,14 +49,27 @@ public class StringUtil {
             int defaultStart=-1;
             int defaultEnd=-1;
             int count=0;
+            char quoteChar='"';
+            boolean inQuote=false;
             for(int i=skip; i<rtrn.length(); i++){
+                if(inQuote){
+                   if(rtrn.charAt(i) == quoteChar){
+                      inQuote = false;
+                   }
+                }else{
+                    // added ` for string template patterns in javascript, do we need to make sure it's js to accept `?
+                   if(rtrn.charAt(i) == '"' || rtrn.charAt(i) == '\'' || rtrn.charAt(i) == '`'){ //TODO do we ignore escaped ' and "?
+                      quoteChar=rtrn.charAt(i);
+                      inQuote=true;
+                   }
+                }
                 if(rtrn.startsWith(PATTERN_PREFIX,i)){
                     if(count==0){
                         nameStart=i;
                     }
                     count++;
                     i+=PATTERN_SUFFIX.length()-1;
-                }else if (rtrn.startsWith(PATTERN_DEFAULT_SEPARATOR,i)){
+                }else if (rtrn.startsWith(PATTERN_DEFAULT_SEPARATOR,i) && !inQuote){
                     if(count==1){
                         nameEnd=i;
                         defaultStart=i;
@@ -88,22 +102,39 @@ public class StringUtil {
                 if(replacement == null && defaultValue!=null && !defaultValue.isEmpty()){
                     replacement = defaultValue;
                 }
-                if(StringUtil.findAny(name,"()/*^+-") > -1 ){
+                if(StringUtil.findAny(name,"()/*^+-") > -1 ){//TODO change to using graaljs?
                     String value = null;
-                    ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-                    try {
-                        engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
-                        engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
-                        Object nashonVal = engine.eval(name,new NashornMapContext(map,engine.getContext()));
-                        value = nashonVal.toString();
-                        if(value.endsWith(".0")){
-                            value = value.substring(0,value.length()-2);
-                        }
+                    try(Context context = Context.newBuilder("js")
+                       .allowHostAccess(true)
+                        .allowIO(true)
+                        //.fileSystem()TODO custom fileSystem for loading modules?
+                        .build()
+                       ){
+                        Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")");
+                        Value fn = factory.execute();
+                        value = fn.toString();
                         replacement = value;
-                    } catch (ScriptException e) {
-                        //e.printStackTrace();
-                    } catch (IllegalArgumentException e){
-                        //e.printStackTrace(); //occurs when missing value in map passed to nashorn
+                    }catch (PolyglotException e) {
+                        e.printStackTrace();
+                        return e.getMessage();
+                    }
+
+                    if(value == null) {
+                        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
+                        try {
+                            engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
+                            engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
+                            Object nashonVal = engine.eval(name, new NashornMapContext(map, engine.getContext()));
+                            value = nashonVal.toString();
+                            if (value.endsWith(".0")) {
+                                value = value.substring(0, value.length() - 2);
+                            }
+                            replacement = value;
+                        } catch (ScriptException e) {
+                            e.printStackTrace();
+                        } catch (IllegalArgumentException e) {
+                            e.printStackTrace(); //occurs when missing value in map passed to nashorn
+                        }
                     }
 
                 }

@@ -44,8 +44,6 @@ dependencies {
     compile 'org.apache.commons:commons-compress:1.7'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'org.slf4j:slf4j-ext:1.7.25'
-    compile 'ch.qos.logback:logback-classic:1.2.3'
-    compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.yaml:snakeyaml:1.23'
     compile 'com.jayway.jsonpath:json-path:2.4.0'
@@ -80,17 +78,3 @@ task uberJar(type: Jar,dependsOn:[':build']){
     archiveName "yaup-uber.jar"
     with jar
 }
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: "file:///home/wreicher/.m2/repository")
-//        }
-//    }
-//}
-//publishing {
-//    publications {
-//        mavenJava(MavenPublication) {
-//            from components.java
-//        }
-//    }
-//}
