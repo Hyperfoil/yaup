@@ -124,7 +124,11 @@ public class StringUtil {
 //                        replacement = value;
                     }catch (PolyglotException e) {
                         e.printStackTrace();
-                        return e.getMessage();
+                        if(replaceMissing &&  e.getMessage().indexOf("ReferenceError") > -1 ){
+                            //swallow ReferenceErrors atm because we aren't
+                        }else {
+                            return e.getMessage();
+                        }
                     }
 
                     if(value == null) {
