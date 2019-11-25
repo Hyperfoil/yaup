@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,8 +16,18 @@ public class StringUtilTest {
     @Test
     public void countOccurrances_nonOverlapping(){
 
-
         assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
+    }
+
+    @Test
+    public void populatePattern_javascript_array_spread(){
+       Map<Object,Object> map = new HashMap();
+       map.put("alpha", Arrays.asList("\"ant\"","\"apple\""));
+       map.put("bravo",Arrays.asList("\"bear\"","\"bull\""));
+       map.put("charlie","\"cat\"");
+
+       String response = StringUtil.populatePattern("${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}",map,false);
+       assertEquals("expect arrays to be combined","[\"cat\",\"ant\",\"apple\",\"bear\",\"bull\"]",response);
     }
 
     @Test
@@ -27,7 +38,7 @@ public class StringUtilTest {
        list.add("two");
        list.add("three");
        map.put("list",list);
-       String response = StringUtil.populatePattern("${{ ${{list}}.reduce((x,v)=>`${x}\\\\n  ${v}:80`,'').trim()}}",map,false);
+       String response = StringUtil.populatePattern("${{ ${{list}}.reduce((x,v)=>`${x}\n  ${v}:80`,'').trim()}}",map,false);
        assertEquals("one:80\n  two:80\n  three:80",response);
     }
 

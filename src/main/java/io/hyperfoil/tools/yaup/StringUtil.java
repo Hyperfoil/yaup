@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.yaup;
 
 import io.hyperfoil.tools.yaup.json.NashornMapContext;
+import io.hyperfoil.tools.yaup.json.ValueConverter;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -102,7 +103,8 @@ public class StringUtil {
                 if(replacement == null && defaultValue!=null && !defaultValue.isEmpty()){
                     replacement = defaultValue;
                 }
-                if(StringUtil.findAny(name,"()/*^+-") > -1 ){//TODO change to using graaljs?
+
+                if(StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
                     String value = null;
                     try(Context context = Context.newBuilder("js")
                        .allowHostAccess(true)
@@ -110,10 +112,16 @@ public class StringUtil {
                         //.fileSystem()TODO custom fileSystem for loading modules?
                         .build()
                        ){
-                        Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")");
-                        Value fn = factory.execute();
-                        value = fn.toString();
+
+                        Value evaled = context.eval("js",name);
+
+                        value = ValueConverter.convert(evaled).toString();
                         replacement = value;
+
+//                        Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
+//                        Value fn = factory.execute();
+//                        value = fn.toString();
+//                        replacement = value;
                     }catch (PolyglotException e) {
                         e.printStackTrace();
                         return e.getMessage();
