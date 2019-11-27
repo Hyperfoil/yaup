@@ -100,7 +100,7 @@ public class StringUtil {
                 if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
                    replacement = map.get(name).toString();
                 }
-                if(replacement == null && defaultValue!=null && !defaultValue.isEmpty()){
+                if((replacement == null || "".equals(replacement)) && defaultValue!=null && !defaultValue.isEmpty()){
                     replacement = defaultValue;
                 }
 
