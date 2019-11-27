@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
  * Created by wreicher
  */
 public class StringUtil {
-    private static final String PATTERN_PREFIX = "${{";
-    private static final String PATTERN_SUFFIX = "}}";
-    private static final String PATTERN_DEFAULT_SEPARATOR = ":";
+    public static final String PATTERN_PREFIX = "${{";
+    public static final String PATTERN_SUFFIX = "}}";
+    public static final String PATTERN_DEFAULT_SEPARATOR = ":";
 
     private static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
     private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -123,7 +123,7 @@ public class StringUtil {
 //                        value = fn.toString();
 //                        replacement = value;
                     }catch (PolyglotException e) {
-                        e.printStackTrace();
+                        //e.printStackTrace();
                         if(replaceMissing &&  e.getMessage().indexOf("ReferenceError") > -1 ){
                             //swallow ReferenceErrors atm because we aren't
                         }else {
