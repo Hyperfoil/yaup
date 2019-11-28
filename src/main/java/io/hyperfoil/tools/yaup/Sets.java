@@ -9,13 +9,15 @@ import java.util.Set;
 /**
  *
  */
+@SuppressWarnings("unused")
 public class Sets {
 
     public static <T> Set<T> getOverlap(Set<T> a, Set<T> b){
-        Set<T> rtrn = new HashSet<T>(a);
+        Set<T> rtrn = new HashSet<>(a);
         rtrn.retainAll(b);
         return rtrn;
     }
+    @SafeVarargs
     public static <T> Set<T> of(T...t){
         LinkedHashSet<T> rtrn = new LinkedHashSet<>();
         if(t!=null && t.length > 0){
@@ -27,8 +29,7 @@ public class Sets {
         if(b.containsAll(a)){
             return Collections.emptySet();
         }
-        Set<T> rtrn = new HashSet<>();
-        rtrn.addAll(a);
+        Set<T> rtrn = new HashSet<>(a);
         rtrn.removeAll(b);
         return rtrn;
     }

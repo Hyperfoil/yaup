@@ -11,8 +11,9 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * Created by wreicher
+ * There must be a jdk class that already does this
  */
+@SuppressWarnings("WeakerAccess")
 public class HashedSets<K,V> implements Serializable{
 
     private Map<K,HashSet<V>> sets;

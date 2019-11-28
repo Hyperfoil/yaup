@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 /**
  */
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class Indexer<T> implements Serializable{
 
 
@@ -28,11 +29,7 @@ public class Indexer<T> implements Serializable{
         this.defaultValue = defaultValue;
     }
     public int get(T value){
-        if(seen.containsKey(value)){
-            return seen.get(value);
-        }else{
-            return -1;
-        }
+        return seen.getOrDefault(value, -1);
     }
     public T get(int index){
         if(values.containsKey(index)){
@@ -95,6 +92,7 @@ public class Indexer<T> implements Serializable{
 
     public static <T> Indexer<T> fromList(List<T> list){
         Indexer<T> rtrn = new Indexer<T>();
+        //noinspection ForLoopReplaceableByForEach
         for(int i=0; i<list.size(); i++){
             rtrn.add(list.get(i));
         }
@@ -112,7 +110,7 @@ public class Indexer<T> implements Serializable{
         seen.keySet().forEach(consumer);
     }
     public void forEach(BiConsumer<Integer,T> consumer){
-        values.entrySet().forEach((entry)-> consumer.accept(entry.getKey(),entry.getValue()));
+        values.forEach(consumer::accept);
     }
 
 }

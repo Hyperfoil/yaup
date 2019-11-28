@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Simple class that takes an input object and generates String.
  * Useful to turn java hashCodes into a shorter sequence for json
  */
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class IdGenerator<T> {
 
     private static final int RADIX = 36;

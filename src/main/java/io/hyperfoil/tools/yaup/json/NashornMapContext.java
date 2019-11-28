@@ -8,6 +8,9 @@ import java.io.Writer;
 import java.util.List;
 import java.util.Map;
 
+
+//https://github.com/graalvm/graaljs/issues/44
+
 public class NashornMapContext implements javax.script.ScriptContext{
 
    private Map<Object,Object> map;

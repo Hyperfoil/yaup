@@ -9,8 +9,10 @@ import org.graalvm.polyglot.Value;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 /**
  * Created by wreicher
  */
+@SuppressWarnings({"unused", "WeakerAccess"})
 public class StringUtil {
     public static final String PATTERN_PREFIX = "${{";
     public static final String PATTERN_SUFFIX = "}}";
@@ -25,7 +28,8 @@ public class StringUtil {
 
     private static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
     private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    public static final List<String> getCaptureNames(String pattern) {
+
+    public static List<String> getCaptureNames(String pattern) {
         Matcher fieldMatcher = NAMED_CAPTURE.matcher(pattern);
         List<String> names = new LinkedList<>();
         while (fieldMatcher.find()) {
@@ -41,7 +45,7 @@ public class StringUtil {
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
         String rtrn = pattern;
-        boolean replaced = false;
+        boolean replaced;
         int skip=0;
         do {
             replaced = false;
@@ -100,7 +104,7 @@ public class StringUtil {
                 if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
                    replacement = map.get(name).toString();
                 }
-                if((replacement == null || "".equals(replacement)) && defaultValue!=null && !defaultValue.isEmpty()){
+                if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && !defaultValue.isEmpty()){
                     replacement = defaultValue;
                 }
 
@@ -123,10 +127,8 @@ public class StringUtil {
 //                        value = fn.toString();
 //                        replacement = value;
                     }catch (PolyglotException e) {
-                        //e.printStackTrace();
-                        if(replaceMissing &&  e.getMessage().indexOf("ReferenceError") > -1 ){
-                            //swallow ReferenceErrors atm because we aren't
-                        }else {
+                        //e.printStackTrace(); //swallow ReferenceErrors atm because we aren't
+                        if(!(replaceMissing && e.getMessage().contains("ReferenceError"))){
                             return e.getMessage();
                         }
                     }
@@ -142,16 +144,15 @@ public class StringUtil {
                                 value = value.substring(0, value.length() - 2);
                             }
                             replacement = value;
-                        } catch (ScriptException e) {
+                        } catch (ScriptException | IllegalArgumentException e) {
                             e.printStackTrace();
-                        } catch (IllegalArgumentException e) {
-                            e.printStackTrace(); //occurs when missing value in map passed to nashorn
-                        }
+                        } //ScriptException occurs when missing value in map passed to nashorn
+
                     }
 
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
-                if(replacement == null && replaceMissing == false){
+                if(replacement == null && !replaceMissing){
                     skip = end;
                 }else {
                     if(replacement==null){
@@ -182,8 +183,8 @@ public class StringUtil {
                 case "B": mult*=1; // included for completeness
             }
             double bytes = m.group("bB").equals("b") ? 1.0/8 : 1;
-            Double v =Double.parseDouble(m.group("number"))*mult*bytes;
-            return v.longValue();
+            double v =Double.parseDouble(m.group("number"))*mult*bytes;
+            return (long)v;
         }else{
             if(kmg.equals("-")){//trap for when dstat has a - value for a field (no idea why that happens but it does
                 return 0;
@@ -202,8 +203,8 @@ public class StringUtil {
      * @param input the name of an enum instance
      * @param clazz the enum class
      * @param defaultValue return value if a match is not found. null is acceptable
-     * @param <T>
-     * @return
+     * @param <T> the enum class
+     * @return enum instance matching input string or defaultValue
      */
     public static <T extends Enum<?>> T getEnum(String input,Class<T> clazz,T defaultValue){
         if(input==null || input.isEmpty()){
@@ -218,9 +219,10 @@ public class StringUtil {
         return defaultValue;
     }
 
-    public static char randNameChar(){
+    private static char randNameChar(){
         return VALID_REGEX_NAME_CHARS.charAt(ThreadLocalRandom.current().nextInt(0,  VALID_REGEX_NAME_CHARS.length()));
     }
+
     public static String greatestCommonSubstring(String first, String second){
         int firstLength = first.length();
         int secondLength = second.length();
@@ -292,7 +294,7 @@ public class StringUtil {
         return count;
     }
     public static String toHms(long duration){
-        String rtrn = "";
+        String rtrn ;
         long ms =  duration % 1000;
         duration = duration / 1000;
         if(ms>0){
@@ -331,7 +333,6 @@ public class StringUtil {
         duration = duration/7;
         if(duration==0) { return rtrn; }
         rtrn = String.format("%dw %s", duration % 52, rtrn);
-        if(duration==0) { return rtrn; }
         return rtrn;
     }
 
@@ -372,7 +373,8 @@ public class StringUtil {
         HashSet<Character> chars = new HashSet<>();
         boolean stop=false;
         if(toFind!=null){
-            char charArray[] = toFind.toCharArray();
+            char[] charArray = toFind.toCharArray();
+            //noinspection ForLoopReplaceableByForEach
             for(int i=0; i<charArray.length; i++){
                 chars.add(charArray[i]);
             }
@@ -393,8 +395,8 @@ public class StringUtil {
 
     /**
      * Find the first occurrence of a character in toFind that is not wrapped in ' or "
-     * @param input
-     * @param toFind
+     * @param input subject of search
+     * @param toFind set of characters to find in input
      * @return the substring up to the first matched char or all of input
      */
     public static String findNotQuoted(String input,String toFind){
@@ -407,11 +409,10 @@ public class StringUtil {
         boolean quoted=false;
         char quoteChar='"';
         HashSet<Character> chars = new HashSet<>();
-        if(toFind!=null){
-            char charArray[] = toFind.toCharArray();
-            for(int i=0; i<charArray.length; i++){
-                chars.add(charArray[i]);
-            }
+        char[] charArray = toFind.toCharArray();
+        //noinspection ForLoopReplaceableByForEach
+        for(int i=0; i<charArray.length; i++){
+            chars.add(charArray[i]);
         }
         while(index<input.length() && !stop){
             index++;
@@ -425,9 +426,7 @@ public class StringUtil {
                     quoted=true;
                 }else{//already in a quote
                     if(quoteChar == input.charAt(index)){ // this could be the end of the quote
-                        if(index > 0 && '/' == input.charAt(index-1)){//it's escaped, not end
-
-                        }else{
+                        if(! ( index > 0 && '/' == input.charAt(index-1) )){//it's escaped, not end
                             quoted=false;
                         }
                     }
@@ -479,7 +478,8 @@ public class StringUtil {
         boolean stop = false;
         HashSet<Character> chars = new HashSet<>();
         if (toFind != null) {
-            char charArray[] = toFind.toCharArray();
+            char[] charArray = toFind.toCharArray();
+            //noinspection ForLoopReplaceableByForEach
             for (int i = 0; i < charArray.length; i++) {
                 chars.add(charArray[i]);
             }
