@@ -1,6 +1,10 @@
 package io.hyperfoil.tools.yaup.json;
 
-import com.jayway.jsonpath.*;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.InvalidPathException;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.ReadContext;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
@@ -9,10 +13,24 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 
-import javax.script.*;
+import javax.script.Bindings;
+import javax.script.ScriptContext;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -378,6 +396,7 @@ public class Json {
         }
         return rtrn;
     }
+
 
     public static Optional<Json> optional(String json){
         if(isJsonLike(json)){

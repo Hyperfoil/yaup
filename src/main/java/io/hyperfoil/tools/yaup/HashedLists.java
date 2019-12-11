@@ -19,7 +19,14 @@ public class HashedLists<K,V> implements Serializable{
         empty = Collections.unmodifiableList( new ArrayList<>() );
         supplier = (k)->new ArrayList<V>();
     }
-
+    public void remove(K name,V value){
+        if(sets.containsKey(name)){
+            sets.get(name).remove(value);
+        }
+    }
+    public void removeAll(K name){
+        sets.remove(name);
+    }
     public void put(K name,V value){
         sets.computeIfAbsent(name, supplier).add(value);
     }

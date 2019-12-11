@@ -1,11 +1,14 @@
 package perf.yaup;
 
+import io.hyperfoil.tools.yaup.HashedList;
+import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -13,11 +16,77 @@ import static org.junit.Assert.*;
 public class StringUtilTest {
 
 
+   @Test
+   public void countOccurrances_jsonpaths(){
+      HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
+         "$.faban.run.SPECjEnterprise.\"fa:runConfig\".\"fa:runControl\".\"fa:rampUp\".\"text()\"",
+         "$.faban.run.SPECjEnterprise.\"fa:runConfig\".\"fa:scale\".\"text()\"",
+         "$.faban.xml.benchResults.benchSummary.runId.\"text()\""
+      ),(a,b)->{
+         String prefix = a.substring(0,StringUtil.commonPrefixLength(a,b));
+         if(prefix.length()==0){
+            return 0;
+         }
+         if(prefix.contains(".")) {
+            prefix = prefix.substring(0, prefix.lastIndexOf("."));
+         }
+         System.out.println("prefixing\na="+a+"\nb="+b+"\nprefix="+prefix);
+         return prefix.length();
+      });
+      grouped.forEach((key,list)->{
+         System.out.println(key+" : "+list);
+      });
+   }
+
+
     @Test
     public void countOccurrances_nonOverlapping(){
 
         assertEquals("don't let pattern overlap",2,StringUtil.countOccurances("{{{{","{{"));
     }
+
+    @Test
+    public void groupCommonPrefixes_no_omatches(){
+       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
+          "one",
+          "two",
+          "apple"
+       ));
+       grouped.forEach((key,list)->{
+          System.out.println(key+" : "+list);
+       });
+       assertEquals("separate group for each input",3,grouped.size());
+    }
+   @Test
+   public void groupCommonPrefixes_all_matches(){
+      HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
+         "one",
+         "onetwo",
+         "oneapple"
+      ));
+      grouped.forEach((key,list)->{
+         System.out.println(key+" : "+list);
+      });
+      grouped.values().forEach(v->{
+
+      });
+      assertEquals("all in one group",1,grouped.size());
+      assertTrue("group name is one",grouped.keys().contains("one"));
+   }
+   @Test
+   public void groupCommonPrefixes_longest_match(){
+      HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
+         "one",
+         "onetwo",
+         "onetwothree"
+      ));
+      grouped.forEach((key,list)->{
+         System.out.println(key+" : "+list);
+      });
+      assertEquals("two groups",2,grouped.size());
+      assertTrue("groups are [one, onetwo]",grouped.keys().containsAll(Arrays.asList("one","onetwo")));
+      assertEquals("group onetwo should have 2 entries",2,grouped.get("onetwo").size());
+   }
 
     @Test
     public void populatePattern_javascript_array_spread(){

@@ -9,11 +9,14 @@ import org.graalvm.polyglot.Value;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -127,7 +130,7 @@ public class StringUtil {
 //                        value = fn.toString();
 //                        replacement = value;
                     }catch (PolyglotException e) {
-                        //e.printStackTrace(); //swallow ReferenceErrors atm because we aren't
+                        e.printStackTrace(); //swallow ReferenceErrors atm because we aren't
                         if(!(replaceMissing && e.getMessage().contains("ReferenceError"))){
                             return e.getMessage();
                         }
@@ -162,6 +165,35 @@ public class StringUtil {
                 }
             }
         }while(replaced);
+        return rtrn;
+    }
+
+    public static HashedLists<String,String> groupCommonPrefixes(List<String> inputs){
+        return groupCommonPrefixes(inputs,StringUtil::commonPrefixLength);
+    }
+    public static HashedLists<String,String> groupCommonPrefixes(List<String> inputs, BiFunction<String,String,Integer> prefixMeasurer){
+        inputs.sort(String.CASE_INSENSITIVE_ORDER);
+        HashedLists rtrn = new HashedLists();
+
+        for(int i=0; i<inputs.size(); i++){
+            String current = inputs.get(i);
+            String previous = i>0 ? inputs.get(i-1) : "";
+            String next = i < inputs.size()-1 ? inputs.get(i+1) : "";
+
+
+            int commonPreviousLength = prefixMeasurer.apply(current,previous);
+            int commonNextLength = prefixMeasurer.apply(current,next);
+
+            if( commonPreviousLength == 0 && commonNextLength == 0){
+                rtrn.put(current,current);
+            }else{
+                if( commonPreviousLength > commonNextLength){
+                    rtrn.put(current.substring(0,commonPreviousLength),current);
+                }else{
+                    rtrn.put(current.substring(0,commonNextLength),current);
+                }
+            }
+        }
         return rtrn;
     }
 
