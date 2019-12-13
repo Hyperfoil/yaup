@@ -704,9 +704,13 @@ public class Json {
                 rtrn.add(key,valueStructure);
             }else{
                 if(value instanceof Number){
-                    rtrn.add(key,"Number");
+                    if(value instanceof Long || value instanceof Integer){
+                        rtrn.add(key,"integer");
+                    }else {
+                        rtrn.add(key, "number");
+                    }
                 }else {
-                    rtrn.add(key, value.getClass().getSimpleName());
+                    rtrn.add(key, value.getClass().getSimpleName().toLowerCase());
                 }
             }
         });

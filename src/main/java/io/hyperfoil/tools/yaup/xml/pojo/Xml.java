@@ -338,6 +338,14 @@ public class Xml {
         }
         return rtrn;
     }
+    public static Object convertString(String input){
+        if(input.matches("-?\\d{1,18}")){
+            return Long.parseLong(input);
+        }else if (input.matches("-?\\d*(?:\\.\\d+)?")){
+            return Double.parseDouble(input);
+        }
+        return input;
+    }
     private List<Xml> allChildren(){
         return Collections.unmodifiableList(allChildren);
     }
@@ -358,9 +366,9 @@ public class Xml {
     }
 
     public Json toJson(){
-       return toJson(JSON_ATTRIBUTE_PREFIX,JSON_VALUE_KEY);
+       return toJson(JSON_ATTRIBUTE_PREFIX,JSON_VALUE_KEY,true);
     }
-    public Json toJson(String attributePrefix,String valueKey){
+    public Json toJson(String attributePrefix,String valueKey,boolean convertNumbers){
         Json rtrn = new Json();
 
         Stack<Json> jsonTodo = new Stack<>();
@@ -374,10 +382,10 @@ public class Xml {
             Xml xml = xmlTodo.pop();
 
             xml.getAttributes().forEach((name,valueXml)->{
-                json.set(attributePrefix+name,valueXml.getValue());
+                json.set(attributePrefix+name,convertNumbers ? Xml.convertString(valueXml.getValue()) : valueXml.getValue());
             });
             if(xml.hasValue()){
-                json.set(valueKey,xml.getValue());
+                json.set(valueKey,convertNumbers ? Xml.convertString(xml.getValue()) : xml.getValue());
             }
             xml.getChildren().forEach(childXml->{
                 //Json(false) to prevent Json.add from treating it as an array for subsequent adds

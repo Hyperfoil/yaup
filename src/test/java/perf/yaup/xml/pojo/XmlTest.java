@@ -11,6 +11,25 @@ import static org.junit.Assert.*;
 
 public class XmlTest {
 
+
+    @Test
+    public void convertString(){
+        Object value = null;
+        value = Xml.convertString("-1");
+        assertEquals(new Long(-1),value);
+        value = Xml.convertString("123456789012345678");
+        assertEquals("max number of characters for a long",new Long(123456789012345678l),value);
+        value = Xml.convertString("1234567890123456789");
+        assertTrue("integers too long for int should be a double",value instanceof Double);
+        assertEquals("get expected value from an integer tool long for Long",1234567890123456789d,((Double)value).doubleValue(),0.0001);
+        value = Xml.convertString("-0.0");
+        assertTrue("-0.0 should be seen as a double",value instanceof Double);
+        assertEquals("negative 0 is 0",0d,((Double)value).doubleValue(),0.0001);
+        value = Xml.convertString(".5");
+        assertTrue("should not need digits before decimal",value instanceof Double);
+        assertEquals(".5 is 0.5",0.5,((Double)value).doubleValue(),0.0001);
+    }
+
     @Test
     public void apply_readTagText(){
         String xmlContent = "<foo><bar>bizz</bar></foo>";
