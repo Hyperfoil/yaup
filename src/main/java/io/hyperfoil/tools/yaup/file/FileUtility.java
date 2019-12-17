@@ -337,14 +337,17 @@ public class FileUtility {
         return getArchiveEntries(archivePath,false);
     }
     public static List<String> getArchiveEntries(String archivePath,boolean deep){
-        InputStream is = getInputStream(archivePath);
         List<String> rtrn = new LinkedList<String>();
-        if(is !=null && is instanceof ArchiveInputStream) {
-            try {
-                addEntries((ArchiveInputStream) is, "", rtrn, deep);
-            }catch (IOException e){
-                e.printStackTrace();
+        try (InputStream is = getInputStream(archivePath)){
+            if(is !=null && is instanceof ArchiveInputStream) {
+                try {
+                    addEntries((ArchiveInputStream) is, "", rtrn, deep);
+                }catch (IOException e){
+                    e.printStackTrace();
+                }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
         return Collections.unmodifiableList(rtrn);
     }

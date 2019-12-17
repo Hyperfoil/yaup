@@ -75,10 +75,9 @@ public class Xml {
                     rtrn.add(new Xml(node));
                 }
             }else if (resultObj instanceof String){
-                System.out.println("String |"+resultObj+"|");
                 rtrn.add(new Xml(node.getOwnerDocument().createTextNode((String)resultObj)));
             }else{
-                System.out.println("resultObject is "+resultObj.getClass());
+//                System.out.println("resultObject is "+resultObj.getClass());
             }
 
 

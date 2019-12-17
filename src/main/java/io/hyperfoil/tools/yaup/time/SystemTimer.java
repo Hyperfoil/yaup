@@ -36,7 +36,7 @@ public class SystemTimer {
     }
     public SystemTimer(String name, long milli, long nano){
         this.name = name;
-        this.children = new LinkedList<>();
+        this.children = new LinkedList<>(); // this risks NPE when concurrently modified :(
         this.milliStart = milli;
         this.nanoStart = nano;
     }

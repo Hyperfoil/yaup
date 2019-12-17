@@ -12,17 +12,22 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import io.hyperfoil.tools.yaup.file.FileUtility;
+import org.yaml.snakeyaml.Yaml;
 
 import javax.script.Bindings;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -37,6 +42,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.Optional.ofNullable;
 
@@ -277,10 +283,16 @@ public class Json {
                         existing.add(value);
                     }
                 }else{
-                    if(value instanceof Json && !((Json)value).isArray()){
-                        existing.merge((Json)value,false);
+                    if(value instanceof Json){
+                        Json valueJson = (Json)value;
+                        if(valueJson.isArray()) {
+                            valueJson.add(existing);
+                            target.set(key,valueJson);
+                        }else{
+                            existing.merge((Json) value, false);
+                        }
                     }else{//key already exissts, points to an object, and we want to add some random value into it? this is probably by mistake
-                        System.out.println("MERGE_ACTION unexpected value type for existing json object @ key="+key+" value="+value);
+                        System.out.println("MERGE_ACTION unexpected value type for existing json object\nkey\n"+key+"\nvalue\n"+value+"\nexisting\n"+existing);
                         existing.add(value);
                     }
                 }
@@ -330,6 +342,69 @@ public class Json {
         chainAct(target,prefix,value,SET_ACTION);
     }
 
+    public static Json fromYamlFile(String path){
+        try {
+            String content = Files.lines(Paths.get(path)).collect(Collectors.joining("\n"));
+            return fromYaml(content);
+        } catch (IOException e) {
+            e.printStackTrace();
+            //TODO prpertly handle IOE from fromYamlFile
+        }
+        return new Json();
+    }
+    public static Json fromYaml(String yamlContent){
+        Json rtrn = new Json();
+        Yaml yaml = new Yaml();
+        List<Object> loaded = StreamSupport.stream(yaml.loadAll(yamlContent).spliterator(), false)
+           .collect(Collectors.toList());
+        if(loaded.size() == 1){
+            if(loaded.get(0) instanceof Map){
+                rtrn = fromMap((Map)loaded.get(0));
+            }else if (loaded.get(0) instanceof Collection){
+                rtrn = fromCollection((Collection)loaded.get(0));
+            }else{
+                //TODO how do we handle the error
+            }
+        }else{
+            Json ref = rtrn;
+            loaded.forEach(entry->{
+                if(entry instanceof Map){
+                    ref.add(fromMap((Map)entry));
+                }else if (entry instanceof Collection){
+                    ref.add(fromCollection((Collection)entry));
+                }
+            });
+        }
+        return rtrn;
+    }
+
+    public static Json fromMap(Map map){
+        Json rtrn = new Json(false);
+
+        map.forEach((key,value)->{
+            if(value instanceof Map){
+                rtrn.set(key,fromMap((Map)value));
+            }else if (value instanceof Collection){
+                rtrn.set(key,fromCollection((Collection)value));
+            }else{
+                rtrn.set(key,value);
+            }
+        });
+        return rtrn;
+    }
+    public static Json fromCollection(Collection collection){
+        Json rtrn = new Json(true);
+        collection.forEach(value->{
+            if(value instanceof Map){
+                rtrn.add(fromMap((Map)value));
+            }else if (value instanceof Collection){
+                rtrn.add(fromCollection((Collection)value));
+            }else{
+                rtrn.add(value);
+            }
+        });
+        return rtrn;
+    }
     public static Json fromFile(String path){
         String content = FileUtility.readFile(path);
         return Json.fromString(content);
@@ -691,6 +766,28 @@ public class Json {
         return rtrn;
     }
 
+    /**
+     * load a Json object as a TypeStructure json object
+     * @param typeStructure the json type structure
+     * @return typeStructure converted to a json object that will enforce type structure
+     */
+    public static Json loadTypeStructure(Json typeStructure){
+        Json rtrn;
+        if(typeStructure.isArray()){
+            rtrn = new HashArray();
+        }else{
+            rtrn = new HashJson();
+        }
+        typeStructure.forEach((key,value)->{
+            if (value instanceof Json){
+                Json valueAsTypeStructure = loadTypeStructure((Json)value);
+                rtrn.add(key,valueAsTypeStructure);
+            }else{
+                rtrn.add(key,value);//trust the value is already a string presentation of the correct values
+            }
+        });
+        return rtrn;
+    }
     public static Json typeStructure(Json target){
         Json rtrn ;
         if(target.isArray()) {

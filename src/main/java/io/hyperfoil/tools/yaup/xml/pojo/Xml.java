@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup.xml.pojo;
 
+import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
@@ -11,6 +12,7 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.*;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.Consumer;
@@ -39,12 +41,13 @@ public class Xml {
     public static final String ATTRIBUTE_VALUE_PREFIX="=";
     public static final String ATTRIBUTE_WRAPPER="\"";
 
-
-
-
     public static Xml parseFile(String path){
         Xml rtrn = null;
-        rtrn = parse(FileUtility.getInputStream(path));
+        try(InputStream stream = FileUtility.getInputStream(path)){
+          rtrn = parse(stream,path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         if(rtrn == null){
             rtrn = new Xml(Type.Document,null,"xml");
         }
@@ -54,6 +57,9 @@ public class Xml {
         return parse(new ByteArrayInputStream(content.getBytes()));
     }
     public static Xml parse(InputStream stream){
+        return parse(stream,"InputStream");
+    }
+    public static Xml parse(InputStream stream,String streamName){
         Xml rtrn = new Xml(Type.Document,null,"xml");//document
         Stack<Xml> parentStack = new Stack<>();
         parentStack.push(rtrn);
@@ -138,7 +144,7 @@ public class Xml {
                 }
             }
         }catch (XMLStreamException e) {
-            System.out.println("XMLSException "+e.getMessage());
+            System.out.println("XMLSException "+e.getMessage()+" for "+streamName);
             parentStack.forEach(entry-> System.out.println(entry.getName()+" "+entry.getType()+" "+entry.getChildren().size()));
             //e.printStackTrace();
         }
