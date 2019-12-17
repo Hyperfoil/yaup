@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup.json;
 
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Value;
 
 public class ValueConverter {
@@ -8,7 +9,12 @@ public class ValueConverter {
       if(value == null || value.isNull()) {
          return "";
       }else if (value.isProxyObject()){
-         return value.asProxyObject();
+         Object po = value.asProxyObject();
+         if(po instanceof JsonProxyObject){
+            return ((JsonProxyObject)po).getJson();
+         }else {
+            return value.asProxyObject();
+         }
       }else if (value.isHostObject()){
          return value.asHostObject();
       }else if (value.isBoolean()){
