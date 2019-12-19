@@ -99,7 +99,11 @@ public class Json {
                 if(get(key).equals(value)){
                     //do nothing because we already have that value
                 }else {
-                    if (!(get(key) instanceof HashArray)) {
+                    if("integer".equals(value) && "number".equals(get(key))){
+                        //do not add it
+                    }else if ("number".equals(value) && "integer".equals(get(key))){
+                        super.set(key,value);//replace integer with more general integer
+                    }else if (!(get(key) instanceof HashArray)) {
                         HashArray newEntry = new HashArray();
                         newEntry.add(get(key));
                         newEntry.add(value);
@@ -802,9 +806,18 @@ public class Json {
             }else{
                 if(value instanceof Number){
                     if(value instanceof Long || value instanceof Integer){
-                        rtrn.add(key,"integer");
+                        if(rtrn.has(key) && "number".equals(rtrn.get(key))){
+                            //do not add integer if already a number
+                        }else{
+                            rtrn.add(key,"integer");
+                        }
+
                     }else {
-                        rtrn.add(key, "number");
+                        if(rtrn.has(key) && "integer".equals(rtrn.get(key))){
+                            rtrn.set(key,"number");
+                        }else{
+                            rtrn.add(key, "number");
+                        }
                     }
                 }else {
                     rtrn.add(key, value.getClass().getSimpleName().toLowerCase());
@@ -856,7 +869,7 @@ public class Json {
                             to.add(key,value);
                         }
                     }else{
-                        System.out.println("mergeStructure missing to["+key+"]");
+                        to.set(key,value);
                     }
                 });
             }
@@ -900,10 +913,9 @@ public class Json {
         }
         return results == null ? defaultValue : results;
     }
-    public static <T> T findT(Json input,String jsonPath,T defaultValue){
-        System.out.println("componentType="+Json.class.getComponentType());
-        return null;
-    }
+//    public static <T> T findT(Json input,String jsonPath,T defaultValue){
+//        return null;
+//    }
 
     private LinkedHashMap<Object,Object> data;
     private boolean isArray;

@@ -47,6 +47,9 @@ public class StringUtil {
         return populatePattern(pattern,map,true);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
+        return populatePattern(pattern,map,replaceMissing,PATTERN_DEFAULT_SEPARATOR);
+    }
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String separator){
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
@@ -77,7 +80,7 @@ public class StringUtil {
                     }
                     count++;
                     i+=PATTERN_SUFFIX.length()-1;
-                }else if (rtrn.startsWith(PATTERN_DEFAULT_SEPARATOR,i) && !inQuote){
+                }else if (rtrn.startsWith(separator,i) && !inQuote){
                     if(count==1){
                         nameEnd=i;
                         defaultStart=i;
@@ -100,7 +103,7 @@ public class StringUtil {
                 replaced = true;
                 String name = populatePattern(rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd),map);
 
-                String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+PATTERN_DEFAULT_SEPARATOR.length(),defaultEnd):"";
+                String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd):"";
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
                 String replacement = null;

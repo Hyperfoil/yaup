@@ -88,6 +88,16 @@ public class StringUtilTest {
       assertEquals("group onetwo should have 2 entries",2,grouped.get("onetwo").size());
    }
 
+   @Test
+   public void populatePattern_javascript_array_spread_append_object(){
+      Map<Object,Object> map = new HashMap();
+      map.put("FOO",new Json(true));
+
+      String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,"::");
+
+      System.out.println(response);
+   }
+
     @Test
     public void populatePattern_javascript_array_spread(){
        Map<Object,Object> map = new HashMap();
