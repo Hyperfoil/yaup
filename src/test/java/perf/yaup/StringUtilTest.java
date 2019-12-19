@@ -95,7 +95,7 @@ public class StringUtilTest {
 
       String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,"::");
 
-      System.out.println(response);
+      assertEquals("test should be added to an javascript array","[{\"test\":\"worked\"}]",response);
    }
 
     @Test
