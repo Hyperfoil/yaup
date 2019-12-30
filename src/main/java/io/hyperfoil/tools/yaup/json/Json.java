@@ -1,17 +1,27 @@
 package io.hyperfoil.tools.yaup.json;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ContainerNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
+import io.hyperfoil.tools.yaup.file.FileUtility;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.script.Bindings;
@@ -19,6 +29,8 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -27,7 +39,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -174,7 +185,13 @@ public class Json {
     private static Object toObject(Json json){
         if(json.isArray()){
             List<Object> rtrn = new LinkedList<>();
-            json.forEach((entry)->((LinkedList) rtrn).add(entry));
+            json.forEach((entry)->{
+                if(entry instanceof Json){
+                    ((LinkedList) rtrn).add(toObject((Json)entry));
+                }else{
+                    ((LinkedList) rtrn).add(entry);
+                }
+            });
             return rtrn;
         }else{
              return toObjectMap(json);
@@ -255,7 +272,6 @@ public class Json {
                     });
                 }
             }
-
         }
         return rtrn;
     }
@@ -266,16 +282,49 @@ public class Json {
         void accept(Json target,String key,Object value);
     }
     public static JsonAction ADD_ACTION = (target,key,value)->{
-        if(!target.has(key)){
-            target.set(key,new Json());
+        if(key == null || key.isEmpty()){
+            if( value instanceof Json && !((Json)value).isArray() && !target.isArray()){
+                ((Json)value).forEach((k,v)->{
+                    target.add(k,v,true);
+                });
+
+            }else{
+                //TODO how do we handle adding to object without a key?
+            }
+        }else{
+            target.add(key,value,true);
+            //TODO test changing from below to code to add wth forceArray
+//            if(!target.has(key)) {
+//                target.set(key, new Json());
+//            }
+//            target.getJson(key).add(value);
         }
-        target.getJson(key).add(value);
     };
     public static JsonAction SET_ACTION = (target,key,value)->{
+        if(key == null || key.isEmpty()){
+            if( value instanceof Json && !((Json)value).isArray() && !target.isArray()){
+                target.merge(((Json)value),true);
+            }
+        }
         target.set(key,value);
     };
     public static JsonAction MERGE_ACTION = (target,key,value)->{
-        if(!target.has(key)){
+        if(key == null || key.isEmpty()){
+            if(!target.isArray()){
+                if(value instanceof Json){
+                    Json jsonValue = (Json)value;
+                    if(!jsonValue.isArray()){
+                        target.merge(jsonValue,false);
+                    }else{
+
+                    }
+                }else{
+
+                }
+            }else{
+
+            }
+        }else if(!target.has(key)){
             target.set(key,value);
         }else{
             if(target.get(key) instanceof Json){
@@ -396,6 +445,21 @@ public class Json {
         });
         return rtrn;
     }
+    public static String prettyPrintWithJackson(JsonNode node, int indent){
+        ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+        DefaultPrettyPrinter.Indenter indenter =
+           new DefaultIndenter(String.format("%"+indent+"s",""), DefaultIndenter.SYS_LF);
+        DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
+        printer.indentObjectsWith(indenter);
+        printer.indentArraysWith(indenter);
+        try {
+            String json = mapper.writer(printer).writeValueAsString(node);
+            return json;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
     public static Json fromCollection(Collection collection){
         Json rtrn = new Json(true);
         collection.forEach(value->{
@@ -407,6 +471,86 @@ public class Json {
                 rtrn.add(value);
             }
         });
+        return rtrn;
+    }
+    public static Json fromJacksonString(String content){
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode node = mapper.readTree(content);
+            return fromJsonNode(node);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return new Json(false);
+    }
+    public static Json fromJacksonFile(String path){
+        ObjectMapper mapper = new ObjectMapper();
+        try(FileReader reader = new FileReader(path)){
+            JsonNode node = mapper.readTree(reader);
+            return fromJsonNode(node);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new Json(false);
+    }
+    private static Object convertJsonNode(JsonNode node){
+        if(node.isObject() || node.isArray()){
+            return fromJsonNode(node);
+        }else if (node.isDouble() || node.isFloat()){
+            return node.doubleValue();
+        }else if (node.isLong() || node.isInt()){
+            return node.longValue();
+        }else if (node.isNull()){
+            //TODO how do we handle null node
+            return "";
+        }else { // string
+            return node.textValue();
+        }
+    }
+    public static JsonNode toJsonNode(Json json){
+        JsonNodeFactory factory = JsonNodeFactory.instance;
+        ContainerNode rtrn;
+        if(json.isArray()){
+            ArrayNode arrayNode = new ArrayNode(factory);
+            rtrn = arrayNode;
+            json.forEach(value->{
+                if(value instanceof Json){
+                    value = toJsonNode((Json)value);
+                    arrayNode.add((JsonNode)value);
+                }else {
+                    ObjectMapper mapper = new ObjectMapper();
+                    arrayNode.add(mapper.convertValue(value, JsonNode.class));
+                }
+            });
+        }else{
+            ObjectNode objectNode = new ObjectNode(factory);
+            rtrn = objectNode;
+            json.forEach((key,value)->{
+                if(value instanceof Json){
+                    objectNode.set(key.toString(),toJsonNode((Json)value));
+                }else{
+                    ObjectMapper mapper = new ObjectMapper();
+                    objectNode.set(key.toString(),mapper.convertValue(value,JsonNode.class));
+                }
+            });
+        }
+        return rtrn;
+    }
+    public static Json fromJsonNode(JsonNode node){
+        Json rtrn = new Json();
+        if(node.isArray()){
+            node.fields().forEachRemaining((entry)->{
+                JsonNode value = entry.getValue();
+                rtrn.add(convertJsonNode(value));
+            });
+        }else if (node.isObject()){
+            node.fields().forEachRemaining((entry)->{
+                JsonNode value = entry.getValue();
+                rtrn.set(entry.getKey(),convertJsonNode(value));
+            });
+        }
         return rtrn;
     }
     public static Json fromFile(String path){
@@ -987,7 +1131,7 @@ public class Json {
         }
     }
     public void merge(Json toMerge){
-        merge(toMerge,true);
+        merge(toMerge,false);
     }
     public void merge(Json toMerge,boolean override){
         toMerge.forEach((key,value)->{
@@ -995,6 +1139,23 @@ public class Json {
                 set(key, value);
             }else{
                 if(has(key)){
+                    if(get(key) instanceof Json){
+                        Json keyJson = getJson(key);
+                        if(keyJson.isArray()){
+                            if(value instanceof Json && ((Json)value).isArray()){
+                                ((Json)value).forEach(v->keyJson.add(v));
+                            }else{
+                                keyJson.add(value);
+                            }
+                        }else{
+                            if(value instanceof Json && !((Json)value).isArray()){
+                                keyJson.merge((Json)value,override);
+                            }else{
+                                //TODO how do we merge an POJO into a Json object
+                                keyJson.add(value); //this will create a new key == size of current Json object
+                            }
+                        }
+                    }
                     if(get(key) instanceof Json && value instanceof Json){
                        ((Json)get(key)).merge((Json)value,override);
                     }
