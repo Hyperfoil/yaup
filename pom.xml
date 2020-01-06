@@ -161,7 +161,6 @@
             </configuration>
           </plugin>
           <!-- To generate javadoc -->
-<!--
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
@@ -188,7 +187,6 @@
               </execution>
             </executions>
           </plugin>
--->
 
           <!-- To sign the artifacts -->
 <!--
