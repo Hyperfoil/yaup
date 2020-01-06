@@ -43,7 +43,7 @@ public class SystemTimer {
 
     /**
      * Starts the current timer if it was not already started
-     * @return
+     * @return true if the timer was started, or false if already active
      */
     public boolean start(){
         if(isActive()){
@@ -70,7 +70,8 @@ public class SystemTimer {
     /**
      * Starts a new child timer and ends the current child timer if !parallel.
      * @param name the name of the new timer. Names are not unique
-     * @return
+     * @param parallel if true, leave current child timer running, otherwise stop child timers
+     * @return new SystemTime
      */
     public SystemTimer start(String name, boolean parallel){
         long milli = System.currentTimeMillis();

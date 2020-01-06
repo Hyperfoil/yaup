@@ -26,8 +26,8 @@ import java.util.stream.Stream;
  * Search:
  * //foo.txt
  * ./foo/bar//biz.txt
- * myEar.ear#/myWar.war#myJar.jar#entry.xml>xpath
- * myEar.ear#/myWar.war#myJar.jar#entry.json>jsonPath
+ * myEar.ear#/myWar.war#myJar.jar#entry.xml&gt;xpath
+ * myEar.ear#/myWar.war#myJar.jar#entry.json&gt;jsonPath
  * myArchive.jar#//findMeAnywhereIncludingNestedArchives.txt
  * <p>
  * thoughts on how to do it:
@@ -111,10 +111,8 @@ public class FileUtility {
    }
 
    /**
-    * return <code>true</code> if fileName refers to an entry within an archive file and is not an existing file
-    *
-    * @param fileName
-    * @return
+    * @param fileName      file name to search for within an archive
+    * @return <code>true</code> if fileName refers to an entry within an archive file and is not an existing file
     */
    public static boolean isArchiveEntryPath(String fileName) {
       if (fileName == null || !fileName.contains(ARCHIVE_KEY)) {
@@ -343,7 +341,7 @@ public class FileUtility {
    /**
     * Get an Unmodifiable list of the entries in the archive
     *
-    * @param archivePath
+    * @param archivePath full path to archive to retrieve entries from
     * @return a List containing all the named entires in the archive or an empty list
     */
    public static List<String> getArchiveEntries(String archivePath) {
@@ -385,7 +383,7 @@ public class FileUtility {
    /**
     * return the archive entry subPath portion or an empty <code>String</code>
     *
-    * @param archiveEntryPath
+    * @param archiveEntryPath    fully-qualified filename of archive
     * @return the archive entry subPath or an empty String
     */
    public static String getArchiveEntrySubPath(String archiveEntryPath) {
@@ -403,7 +401,7 @@ public class FileUtility {
    /**
     * return the path to the archive file, removing any archive entry subPath
     *
-    * @param archiveEntryPath
+    * @param archiveEntryPath      fully-qualified filename of archive
     * @return the archive's filePath or an empty String
     */
    public static String getArchiveFilePath(String archiveEntryPath) {

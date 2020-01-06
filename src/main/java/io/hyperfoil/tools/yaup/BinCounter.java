@@ -35,7 +35,7 @@ public class BinCounter {
     /**
      * Returns all the bin limits WITHOUT the overflow because it doesn't have a limit
      * (the effective limit is Long.MAX_VALUE but we don't return that)
-     * @return
+     * @return  all the bin limits WITHOUT the overflow because it doesn't have a limit
      */
     public List<Long> getBins(){
         List<Long> rtrn = Arrays.asList(bins);

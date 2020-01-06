@@ -223,7 +223,8 @@ public class Xml {
         ((Element)node).appendChild(toImport);
     }
     /**
-     * add value to this. Will treat "<...>" as xml
+     * add value to this. Will treat "&lt;...&gt;" as xml
+     * @param value string to be added
      */
     public void add(String value){
 
@@ -248,7 +249,8 @@ public class Xml {
         }
     }
     /**
-     * set the value of this. Will treat "<...>" as xml
+     * set the value of this. Will treat "&lt;...&gt;" as xml
+     * @param value set value of xml node
      */
     public void set(String value){
 
@@ -274,14 +276,15 @@ public class Xml {
     /**
      * Performs a modification to the associated Xml element. support sytanx:
      * value                 : sets the attribute value or text value depending if this represents an attribute or element
-     * <value></value>...    : set the attribute value or the children of this (deletes existing values)
+     * &lt;value&gt;&lt;/value&gt;...    : set the attribute value or the children of this (deletes existing values)
      * --                    : delete this from the parent (if possible)
      * ++ value              : add the value to the attribute value or text value depending if this represents an attribute or element
-     * ++ <value></value>... : add the value to the attribute value or add to the children elements
+     * ++ &lt;value&gt;&lt;/value&gt;... : add the value to the attribute value or add to the children elements
      * ++ @key=value         : add the attribute with value to this (will replace any existing value)
      * == value              : sets the text value
-     * == <value></value>... : removes all current children and sets children to <value></value>
+     * == &lt;value&gt;&lt;/value&gt;... : removes all current children and sets children to &lt;value&gt;&lt;/value&gt;
      *
+     * @param value xml element to be modified
      */
     public void modify(String value){
 

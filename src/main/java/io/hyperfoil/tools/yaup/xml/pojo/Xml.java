@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.yaup.xml.pojo;
 
-import com.sun.org.apache.xalan.internal.xsltc.compiler.util.Type;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;

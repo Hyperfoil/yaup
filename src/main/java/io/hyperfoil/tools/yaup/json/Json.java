@@ -637,8 +637,8 @@ public class Json {
     /**
      * A very simple check to see if the string looks like it could be json.
      * Currently just checks that for [...] or {...}
-     * @param input
-     * @return
+     * @param input string being tested
+     * @return true if string being tested appears to be json, otherwise false
      */
     public static boolean isJsonLike(String input){
         if(input == null || input.trim().isEmpty()){
@@ -1074,8 +1074,8 @@ public class Json {
     }
     /**
      * Split the keys by non-slash escaped dots (. not \.)
-     * @param keys
-     * @return
+     * @param keys string containing contatenated keys
+     * @return List of keys
      */
     public static List<String> toChain(String keys){
         if(!keys.contains(".")){
