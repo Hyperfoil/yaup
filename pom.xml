@@ -4,8 +4,9 @@
   <groupId>io.hyperfoil.tools</groupId>
   <artifactId>yaup</artifactId>
   <version>0.4-SNAPSHOT</version>
-    <name>Hyperfoil Yaup</name>
-    <description>Yet Another Utility Project</description>
+  <name>Hyperfoil Yaup</name>
+  <description>Yet Another Utility Project</description>
+  <url>https://github.com/Hyperfoil/yaup</url>
 
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
