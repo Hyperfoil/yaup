@@ -4,6 +4,9 @@
   <groupId>io.hyperfoil.tools</groupId>
   <artifactId>yaup</artifactId>
   <version>0.3-SNAPSHOT</version>
+    <name>Hyperfoil Yaup</name>
+    <description>Yet Another Utility Project</description>
+
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -22,6 +25,41 @@
     <url>https://github.com/Hyperfoil/yaup</url>
     <tag>HEAD</tag>
   </scm>
+
+    <!-- Licenses -->
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
+
+    <developers>
+          <developer>
+            <name>Will Reichert</name>
+            <email>wreicher@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>http://www.redhat.com</organizationUrl>
+        </developer>
+       <developer>
+            <name>Ståle Pedersen</name>
+            <email>spederse@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>http://www.redhat.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>John O'Hara</name>
+            <email>johara@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>http://www.redhat.com</organizationUrl>
+        </developer>
+        <developer>
+            <name>Jeremy Whiting</name>
+            <email>jwhiting@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>http://www.redhat.com</organizationUrl>
+        </developer>
+</developers>
 
   <distributionManagement>
     <snapshotRepository>
@@ -189,7 +227,6 @@
           </plugin>
 
           <!-- To sign the artifacts -->
-<!--
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
@@ -204,7 +241,6 @@
               </execution>
             </executions>
           </plugin>
--->
 
         </plugins>
 
