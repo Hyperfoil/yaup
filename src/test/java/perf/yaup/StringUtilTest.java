@@ -16,6 +16,9 @@ import static org.junit.Assert.*;
 public class StringUtilTest {
 
 
+
+
+
    @Test
    public void countOccurrances_jsonpaths(){
       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
@@ -89,11 +92,29 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_sed_example(){
+      Map<Object,Object> map = new HashMap<>();
+      map.put("FABAN_BENCHMARK","foo");
+
+      String response = StringUtil.populatePattern(
+         "sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"${{FABAN_BENCHMARK:$baseName}}.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",
+         map,
+         false,
+         StringUtil.PATTERN_PREFIX,
+         StringUtil.PATTERN_DEFAULT_SEPARATOR,
+         StringUtil.PATTERN_SUFFIX
+      );
+
+      System.out.println(response);
+      assertEquals("pattern should replace when in quotes that are outside of ${{..}}}","sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"foo.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",response);
+   }
+
+   @Test
    public void populatePattern_javascript_array_spread_append_object(){
       Map<Object,Object> map = new HashMap();
       map.put("FOO",new Json(true));
 
-      String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,"::");
+      String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,StringUtil.PATTERN_PREFIX,"::",StringUtil.PATTERN_SUFFIX);
 
       assertEquals("test should be added to an javascript array","[{\"test\":\"worked\"}]",response);
    }
@@ -107,6 +128,39 @@ public class StringUtilTest {
 
        String response = StringUtil.populatePattern("${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}",map,false);
        assertEquals("expect arrays to be combined","[\"cat\",\"ant\",\"apple\",\"bear\",\"bull\"]",response);
+    }
+
+   /**
+    * having { ..${{..}} } inside a ${{}} causes the outer pattern to use the extra } from the inner replacement and close the pattern too soon
+    * options:
+    *   change the prefix / suffix to not be two of the same character and hope we find a unique character combiniation {[]}
+    *   use last instance of suffix?
+    *     how do we identify the split between name and default value?
+    *       count prefixes?
+    *       we have prefix index and index of next prefix, suffix, separator
+    *         if prefix > -1 we inc count and look for a separate after dropping count number of suffix?
+    */
+   @Test
+    public void populatePattern_prefix_suffix(){
+       Map<Object,Object> map = new HashMap<>();
+       map.put("FOO","_");
+       map.put("{_}","FOUND");
+       String response  = StringUtil.populatePattern("$<<{$<<FOO>>}>>",map,false,"$<<",":",">>");
+       assertEquals("FOUND",response);
+    }
+    @Test
+    public void populatePattern_javascript_object_spread(){
+       Map<Object,Object> map = new HashMap<>();
+       Json foo = Json.fromString("{\"foo1\":\"one\",\"foo2\":{\"buz\":\"foo\"}}");
+       Json bar = Json.fromString("{\"bar1\":\"one\",\"bar2\":{\"buz\":\"bee\"}}");
+
+       map.put("FOO",foo);
+       map.put("BAR",bar);
+
+       String response  = StringUtil.populatePattern("$<<{...$<<FOO>>}>>",map,false,"$<<",":",">>");
+
+       System.out.println(response);
+
     }
 
     @Test
@@ -152,6 +206,19 @@ public class StringUtilTest {
         String response  = StringUtil.populatePattern("${{BIZ:${{FOO}}}}${{BAR}}",map);
         assertEquals("foobar",response);
     }
+    @Test
+    public void populatePattern_string_encode_json(){
+       Map<Object,Object> map = new HashMap<>();
+       map.put("FOO",Json.fromString("{\"foo1\":\"one\",\"foo2\":{\"buz\":\"foo\"}}"));
+       map.put("BAR",Json.fromString("{\"bar1\":\"one\",\"bar2\":{\"buz\":\"bee\"}}"));
+
+       String response  = StringUtil.populatePattern("${{FOO}}",map);
+
+       assertEquals("response should be json encoded",map.get("FOO"),Json.fromString(response));
+
+    }
+
+
     @Test
     public void populatePattern_name_and_default_patterns(){
         Map<Object,Object> map = new HashMap<>();

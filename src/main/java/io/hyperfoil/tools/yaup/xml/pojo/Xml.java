@@ -395,6 +395,7 @@ public class Xml {
             xml.getChildren().forEach(childXml->{
                 //Json(false) to prevent Json.add from treating it as an array for subsequent adds
                 Json child = new Json(false);
+                
                 json.add(childXml.getName(),child);
                 jsonTodo.push(child);
                 xmlTodo.push(childXml);

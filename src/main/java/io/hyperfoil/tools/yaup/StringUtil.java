@@ -47,9 +47,9 @@ public class StringUtil {
         return populatePattern(pattern,map,true);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
-        return populatePattern(pattern,map,replaceMissing,PATTERN_DEFAULT_SEPARATOR);
+        return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String separator){
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String prefix, String separator, String suffix){
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
@@ -63,46 +63,49 @@ public class StringUtil {
             char quoteChar='"';
             boolean inQuote=false;
             for(int i=skip; i<rtrn.length(); i++){
+                char targetChar = rtrn.charAt(i);
                 if(inQuote){
                    if(rtrn.charAt(i) == quoteChar){
                       inQuote = false;
                    }
                 }else{
                     // added ` for string template patterns in javascript, do we need to make sure it's js to accept `?
-                   if(rtrn.charAt(i) == '"' || rtrn.charAt(i) == '\'' || rtrn.charAt(i) == '`'){ //TODO do we ignore escaped ' and "?
+                    // only care about count > 0 quotes so we ignore quotes outside of ${{...}}
+                   if(count > 0 && (rtrn.charAt(i) == '"' || rtrn.charAt(i) == '\'' || rtrn.charAt(i) == '`')){ //TODO do we ignore escaped ' and "?
                       quoteChar=rtrn.charAt(i);
                       inQuote=true;
                    }
                 }
-                if(rtrn.startsWith(PATTERN_PREFIX,i)){
+                if(rtrn.startsWith(prefix,i)){
                     if(count==0){
                         nameStart=i;
                     }
                     count++;
-                    i+=PATTERN_SUFFIX.length()-1;
-                }else if (rtrn.startsWith(separator,i) && !inQuote){
+                    i+=prefix.length()-1;
+                }else if (rtrn.startsWith(separator,i) && !inQuote){ // '${{FOO:foo}}' doesn't work if checking for inQuote
                     if(count==1){
                         nameEnd=i;
                         defaultStart=i;
                     }
 
-                }else if (rtrn.startsWith(PATTERN_SUFFIX,i)){
+                }else if (rtrn.startsWith(suffix,i)){
                     count--;
                     if(count==0){
                         if(nameEnd>-1 && defaultStart>-1){
                             defaultEnd=i;
                         }else{
-                            nameEnd=i;
+                            nameEnd=i;//do we need -1 for the case where } in the end
                         }
                         i=rtrn.length();//end the loop
                     }
-                    i+=PATTERN_SUFFIX.length()-1;//skip the rest of suffix
+                    i+=suffix.length()-1;//skip the rest of suffix
                 }
             }
             if(nameStart>-1 && count == 0){
                 replaced = true;
-                String name = populatePattern(rtrn.substring(nameStart + PATTERN_PREFIX.length(),nameEnd),map);
 
+                String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
+                String name = populatePattern(namePattern,map,replaceMissing,prefix,separator,suffix);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd):"";
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
@@ -157,6 +160,7 @@ public class StringUtil {
                     }
 
                 }
+
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null && !replaceMissing){
                     skip = end;

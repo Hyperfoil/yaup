@@ -15,6 +15,7 @@ import io.hyperfoil.tools.yaup.Sets;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Stream;
@@ -145,8 +146,10 @@ public class FileUtility {
       return rtrn;
    }
 
+
+
    /**
-    * Get an input stream for the file path which can contain an optional achive entry subPath
+    * Get the size of the input target. Either the total file size of a folder or the inflated size of a compressed entry
     *
     * @param fullPath the path for the file with an optional archive entry subPaths for archive files (e.g. jars)
     * @return an InputStream if fullPath exists or null
@@ -163,6 +166,21 @@ public class FileUtility {
       if (!archiveFile.exists()) {
          return 0;
       }
+
+      if(archiveFile.isDirectory()){
+         Path folder = archiveFile.toPath();
+         try {
+            long size = Files.walk(folder)
+               .filter(p -> p.toFile().isFile())
+               .mapToLong(p -> p.toFile().length())
+               .sum();
+            return size;
+         } catch (IOException e) {
+            e.printStackTrace();
+         }
+
+      }
+
       try {
          InputStream rtrn = null;
          if (archivePath.endsWith(".tar.gz") || archivePath.endsWith(".tgz")) {
@@ -217,6 +235,9 @@ public class FileUtility {
             } else {
                throw new RuntimeException("Could not find " + entryPath + " in " + archivePath + " because it is not an archive collection");
             }
+         }else{ // not looking inside the arcive
+            return archiveFile.length();
+
          }
          if (rtrn != null) {
             return rtrn.available();
