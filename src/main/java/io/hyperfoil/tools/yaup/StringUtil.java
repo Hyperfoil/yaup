@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup;
 
+import com.oracle.truffle.regex.nashorn.regexp.joni.exception.SyntaxException;
 import io.hyperfoil.tools.yaup.json.NashornMapContext;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import org.graalvm.polyglot.Context;
@@ -114,13 +115,8 @@ public class StringUtil {
 
                 String replacement = null;
                 if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
-                   replacement = map.get(name).toString();
-                }
-                if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && !defaultValue.isEmpty()){
-                    replacement = defaultValue;
-                }
-
-                if(StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
+                    replacement = map.get(name).toString();
+                }else if(StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
                     String value = null;
                     try(Context context = Context.newBuilder("js")
                        .allowHostAccess(true)
@@ -143,6 +139,11 @@ public class StringUtil {
                         if(!(replaceMissing && e.getMessage().contains("ReferenceError"))){
                             return e.getMessage();
                         }
+                    }catch (SyntaxException e){
+                        e.printStackTrace();
+                        if(!(replaceMissing)){
+                            return pattern;
+                        }
                     }
 
                     if(value == null) {
@@ -162,6 +163,9 @@ public class StringUtil {
 
                     }
 
+                }
+                if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && !defaultValue.isEmpty()){
+                    replacement = defaultValue;
                 }
 
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();

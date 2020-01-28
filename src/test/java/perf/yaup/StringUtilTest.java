@@ -92,6 +92,19 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_issue(){
+      Map<Object,Object> map = new HashMap<>();
+
+      map.put("APP.name","getting-started");
+      map.put("VARIANT.name","jvm");
+      map.put("CPU.cores",1);
+      map.put("getting-started.jvm.1.pid","1234");
+      String response = StringUtil.populatePattern("${{${{APP.name}}.${{VARIANT.name}}.${{CPU.cores}}.pid}}",map);
+
+      assertEquals("expect response from map","1234",response);
+   }
+
+   @Test
    public void populatePattern_sed_example(){
       Map<Object,Object> map = new HashMap<>();
       map.put("FABAN_BENCHMARK","foo");
