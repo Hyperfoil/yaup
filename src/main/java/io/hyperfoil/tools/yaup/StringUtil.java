@@ -49,6 +49,9 @@ public class StringUtil {
     public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
         return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX);
     }
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing, String seperator){
+        return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,seperator,PATTERN_SUFFIX);
+    }
     public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String prefix, String separator, String suffix){
         String rtrn = pattern;
         boolean replaced;
