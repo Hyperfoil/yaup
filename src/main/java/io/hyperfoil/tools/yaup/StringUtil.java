@@ -10,6 +10,7 @@ import org.graalvm.polyglot.Value;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -20,6 +21,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -140,7 +142,12 @@ public class StringUtil {
                             return e.getMessage();
                         }
                     }catch (SyntaxException e){
-                        e.printStackTrace();
+                        String stack = Arrays.asList(e.getStackTrace())
+                           .stream()
+                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
+                           .collect(Collectors.joining("\n"));
+                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
+//                        e.printStackTrace();
                         if(!(replaceMissing)){
                             return pattern;
                         }
