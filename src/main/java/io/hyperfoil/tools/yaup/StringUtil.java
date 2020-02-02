@@ -46,16 +46,16 @@ public class StringUtil {
     /*
 
      */
-    public static String populatePattern(String pattern, Map<Object,Object> map){
+    public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException {
         return populatePattern(pattern,map,true);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing){
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing) throws PopulatePatternException{
         return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing, String seperator){
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing, String seperator) throws PopulatePatternException{
         return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,seperator,PATTERN_SUFFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String prefix, String separator, String suffix){
+    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String prefix, String separator, String suffix) throws PopulatePatternException {
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
@@ -116,6 +116,7 @@ public class StringUtil {
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
                 String replacement = null;
+
                 if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
                     replacement = map.get(name).toString();
                 }else if(StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
@@ -137,7 +138,7 @@ public class StringUtil {
 //                        value = fn.toString();
 //                        replacement = value;
                     }catch (PolyglotException e) {
-                        e.printStackTrace(); //swallow ReferenceErrors atm because we aren't
+                        //e.printStackTrace(); //swallow ReferenceErrors atm because we aren't - JS eval failed, but will log the failure to resolve the name below
                         if(!(replaceMissing && e.getMessage().contains("ReferenceError"))){
                             return e.getMessage();
                         }
@@ -180,7 +181,8 @@ public class StringUtil {
                     skip = end;
                 }else {
                     if(replacement==null){
-                        replacement="";
+                        //replacement has failed
+                        throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
                     }
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                 }
