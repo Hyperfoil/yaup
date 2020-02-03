@@ -126,6 +126,8 @@ public class StringUtil {
                         //.fileSystem()TODO custom fileSystem for loading modules?
                         .build()
                        ){
+                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)}");
+                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)/1000}");
 
                         Value evaled = context.eval("js",name);
 
@@ -146,11 +148,9 @@ public class StringUtil {
                            .stream()
                            .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
                            .collect(Collectors.joining("\n"));
-                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
-//                        e.printStackTrace();
-                        if(!(replaceMissing)){
-                            return pattern;
-                        }
+                        //System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
+                        //always return the pattern if it wasn't js syntax
+                        return pattern;
                     }
 
                     if(value == null) {
