@@ -2,6 +2,7 @@ package perf.yaup;
 
 import io.hyperfoil.tools.yaup.HashedList;
 import io.hyperfoil.tools.yaup.HashedLists;
+import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.junit.Test;
@@ -99,27 +100,34 @@ public class StringUtilTest {
       map.put("VARIANT.name","jvm");
       map.put("CPU.cores",1);
       map.put("getting-started.jvm.1.pid","1234");
-      String response = StringUtil.populatePattern("${{${{APP.name}}.${{VARIANT.name}}.${{CPU.cores}}.pid}}",map);
+      try {
+          String response = StringUtil.populatePattern("${{${{APP.name}}.${{VARIANT.name}}.${{CPU.cores}}.pid}}",map);
+          assertEquals("expect response from map","1234",response);
+      } catch (PopulatePatternException pe){
+          fail();
+      }
 
-      assertEquals("expect response from map","1234",response);
    }
 
    @Test
    public void populatePattern_sed_example(){
       Map<Object,Object> map = new HashMap<>();
       map.put("FABAN_BENCHMARK","foo");
+      try{
+          String response = StringUtil.populatePattern(
+             "sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"${{FABAN_BENCHMARK:$baseName}}.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",
+             map,
+             false,
+             StringUtil.PATTERN_PREFIX,
+             StringUtil.PATTERN_DEFAULT_SEPARATOR,
+             StringUtil.PATTERN_SUFFIX
+          );
 
-      String response = StringUtil.populatePattern(
-         "sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"${{FABAN_BENCHMARK:$baseName}}.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",
-         map,
-         false,
-         StringUtil.PATTERN_PREFIX,
-         StringUtil.PATTERN_DEFAULT_SEPARATOR,
-         StringUtil.PATTERN_SUFFIX
-      );
-
-      System.out.println(response);
-      assertEquals("pattern should replace when in quotes that are outside of ${{..}}}","sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"foo.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",response);
+          System.out.println(response);
+          assertEquals("pattern should replace when in quotes that are outside of ${{..}}}","sed -i 's/\\(\\s*\\)archiveName=.*/\\1archiveName=\"foo.$extension\"/g' ./modules/specjdriverharness/specjdriverharness.gradle",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
    }
 
    @Test
@@ -127,9 +135,13 @@ public class StringUtilTest {
       Map<Object,Object> map = new HashMap();
       map.put("FOO",new Json(true));
 
-      String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,StringUtil.PATTERN_PREFIX,"::",StringUtil.PATTERN_SUFFIX);
+      try{
+          String response = StringUtil.populatePattern("${{ [...${{FOO}},{'test':'worked'}] }}",map,false,StringUtil.PATTERN_PREFIX,"::",StringUtil.PATTERN_SUFFIX);
+          assertEquals("test should be added to an javascript array","[{\"test\":\"worked\"}]",response);
+      } catch (PopulatePatternException pe){
+          fail();
+      }
 
-      assertEquals("test should be added to an javascript array","[{\"test\":\"worked\"}]",response);
    }
 
     @Test
@@ -139,9 +151,14 @@ public class StringUtilTest {
        map.put("bravo",Arrays.asList("\"bear\"","\"bull\""));
        map.put("charlie","\"cat\"");
 
-       String response = StringUtil.populatePattern("${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}",map,false);
-       assertEquals("expect arrays to be combined","[\"cat\",\"ant\",\"apple\",\"bear\",\"bull\"]",response);
-    }
+       try {
+           String response = StringUtil.populatePattern("${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}", map, false);
+           assertEquals("expect arrays to be combined", "[\"cat\",\"ant\",\"apple\",\"bear\",\"bull\"]", response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
+}
 
    /**
     * having { ..${{..}} } inside a ${{}} causes the outer pattern to use the extra } from the inner replacement and close the pattern too soon
@@ -158,9 +175,14 @@ public class StringUtilTest {
        Map<Object,Object> map = new HashMap<>();
        map.put("FOO","_");
        map.put("{_}","FOUND");
-       String response  = StringUtil.populatePattern("$<<{$<<FOO>>}>>",map,false,"$<<",":",">>");
-       assertEquals("FOUND",response);
-    }
+       try{
+           String response  = StringUtil.populatePattern("$<<{$<<FOO>>}>>",map,false,"$<<",":",">>");
+           assertEquals("FOUND",response);
+       } catch (PopulatePatternException pe){
+           fail();
+       }
+
+   }
     @Test
     public void populatePattern_javascript_object_spread(){
        Map<Object,Object> map = new HashMap<>();
@@ -170,9 +192,12 @@ public class StringUtilTest {
        map.put("FOO",foo);
        map.put("BAR",bar);
 
-       String response  = StringUtil.populatePattern("$<<{...$<<FOO>>}>>",map,false,"$<<",":",">>");
-
-       System.out.println(response);
+       try{
+           String response  = StringUtil.populatePattern("$<<{...$<<FOO>>}>>",map,false,"$<<",":",">>");
+           System.out.println(response);
+       } catch (PopulatePatternException pe){
+           fail();
+       }
 
     }
 
@@ -184,23 +209,38 @@ public class StringUtilTest {
        list.add("two");
        list.add("three");
        map.put("list",list);
-       String response = StringUtil.populatePattern("${{ ${{list}}.reduce((x,v)=>`${x}\n  ${v}:80`,'').trim()}}",map,false);
-       assertEquals("one:80\n  two:80\n  three:80",response);
+       try{
+           String response = StringUtil.populatePattern("${{ ${{list}}.reduce((x,v)=>`${x}\n  ${v}:80`,'').trim()}}",map,false);
+           assertEquals("one:80\n  two:80\n  three:80",response);
+       } catch (PopulatePatternException pe){
+           fail();
+       }
+
     }
 
     @Test
     public void populatePattern_missing_not_replace(){
        Map<Object,Object> map = new HashMap<>();
-       String response = StringUtil.populatePattern("${{FOO}}",map,false);
+       try{
+           String response = StringUtil.populatePattern("${{FOO}}",map,false);
 
-       assertEquals("expect to not replace the pattern","${{FOO}}",response);
+           assertEquals("expect to not replace the pattern","${{FOO}}",response);
+       } catch (PopulatePatternException pe){
+           fail();
+       }
+
     }
 
     @Test
     public void populatePattern_arithmetic_missing_value(){
        Map<Object,Object> map = new HashMap<>();
-       String response = StringUtil.populatePattern("${{ 2*MISSING :-1}}",map);
-       assertEquals("expected default value when missing value","-1",response);
+       try{
+           String response = StringUtil.populatePattern("${{ 2*MISSING :-1}}",map);
+           assertEquals("expected default value when missing value","-1",response);
+       } catch (PopulatePatternException pe){
+           fail();
+       }
+
     }
 
     @Test
@@ -208,26 +248,39 @@ public class StringUtilTest {
         Map<Object,Object> map = new HashMap<>();
         map.put("FOO","foo");
         map.put("BAR","bar");
-        String response  = StringUtil.populatePattern("${{FOO}}${{BAR}}",map);
-        assertEquals("foobar",response);
+        try{
+            String response  = StringUtil.populatePattern("${{FOO}}${{BAR}}",map);
+            assertEquals("foobar",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
     }
     @Test
     public void populatePattern_default_is_pattern(){
         Map<Object,Object> map = new HashMap<>();
         map.put("FOO","foo");
         map.put("BAR","bar");
-        String response  = StringUtil.populatePattern("${{BIZ:${{FOO}}}}${{BAR}}",map);
-        assertEquals("foobar",response);
+        try{
+            String response  = StringUtil.populatePattern("${{BIZ:${{FOO}}}}${{BAR}}",map);
+            assertEquals("foobar",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
     }
     @Test
     public void populatePattern_string_encode_json(){
        Map<Object,Object> map = new HashMap<>();
        map.put("FOO",Json.fromString("{\"foo1\":\"one\",\"foo2\":{\"buz\":\"foo\"}}"));
        map.put("BAR",Json.fromString("{\"bar1\":\"one\",\"bar2\":{\"buz\":\"bee\"}}"));
+       try{
+           String response  = StringUtil.populatePattern("${{FOO}}",map);
 
-       String response  = StringUtil.populatePattern("${{FOO}}",map);
-
-       assertEquals("response should be json encoded",map.get("FOO"),Json.fromString(response));
+           assertEquals("response should be json encoded",map.get("FOO"),Json.fromString(response));
+       } catch (PopulatePatternException pe){
+           fail();
+       }
 
     }
 
@@ -237,31 +290,50 @@ public class StringUtilTest {
         Map<Object,Object> map = new HashMap<>();
         map.put("FOO","${{BAR}}");
         map.put("BAR","bar");
-        String response  = StringUtil.populatePattern("${{FOO:${{BIZ:biz}}}}${{BIZ:${{BAR}}}}",map);
-        assertEquals("barbar",response);
+        try{
+            String response  = StringUtil.populatePattern("${{FOO:${{BIZ:biz}}}}${{BIZ:${{BAR}}}}",map);
+            assertEquals("barbar",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
     }
     @Test
     public void populatePattern_use_default(){
         Map<Object,Object> map = new HashMap<>();
         map.put("FOO","foo");
         map.put("BAR","bar");
-        String response  = StringUtil.populatePattern("${{FOO}}.${{BAR}}.${{BIZ:biz}}",map);
-        assertEquals("foo.bar.biz",response);
+        try{
+            String response  = StringUtil.populatePattern("${{FOO}}.${{BAR}}.${{BIZ:biz}}",map);
+            assertEquals("foo.bar.biz",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
     }
    @Test
    public void populatePattern_use_js_on_value(){
       Map<Object,Object> map = new HashMap<>();
       map.put("FOO","foo");
-      String response  = StringUtil.populatePattern("${{\"${{FOO}}\".toUpperCase()}}",map);
-      assertEquals("FOO",response);
+      try {
+          String response = StringUtil.populatePattern("${{\"${{FOO}}\".toUpperCase()}}", map);
+          assertEquals("FOO", response);
+      } catch (PopulatePatternException pe){
+          fail();
+      }
    }
 
     @Test
     public void populatePattern_default_over_empty_value(){
         Map<Object,Object> map = new HashMap<>();
         map.put("FOO","");
-        String response = StringUtil.populatePattern("${{FOO:foo}}",map);
-        assertEquals("foo",response);
+        try{
+            String response = StringUtil.populatePattern("${{FOO:foo}}",map);
+            assertEquals("foo",response);
+        } catch (PopulatePatternException pe){
+            fail();
+        }
+
 
     }
 
