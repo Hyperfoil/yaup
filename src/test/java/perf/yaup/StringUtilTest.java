@@ -222,14 +222,26 @@ public class StringUtilTest {
     public void populatePattern_missing_not_replace(){
        Map<Object,Object> map = new HashMap<>();
        try{
-           String response = StringUtil.populatePattern("${{FOO}}",map,false);
+           String response = StringUtil.populatePattern("BAR=${{FOO}}",map,false);
 
-           assertEquals("expect to not replace the pattern","${{FOO}}",response);
+           assertEquals("expect to not replace the pattern","BAR=${{FOO}}",response);
        } catch (PopulatePatternException pe){
            fail();
        }
 
     }
+   @Test
+   public void populatePattern_missing_replace(){
+      Map<Object,Object> map = new HashMap<>();
+      try{
+         String response = StringUtil.populatePattern("BAR=${{FOO:}}",map,true);
+
+         assertEquals("expect to not replace the pattern","BAR=",response);
+      } catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+
+   }
 
     @Test
     public void populatePattern_arithmetic_missing_value(){
