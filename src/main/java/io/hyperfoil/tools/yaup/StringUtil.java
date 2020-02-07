@@ -112,7 +112,7 @@ public class StringUtil {
 
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
                 String name = populatePattern(namePattern,map,replaceMissing,prefix,separator,suffix);
-                String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd):"";
+                String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
                 String replacement = null;
@@ -172,7 +172,7 @@ public class StringUtil {
                     }
 
                 }
-                if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && !defaultValue.isEmpty()){
+                if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && defaultValue != null){
                     replacement = defaultValue;
                 }
 
