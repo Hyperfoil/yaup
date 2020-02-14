@@ -686,12 +686,14 @@ public class Json {
                 JSONObject jsonObject = (JSONObject)currentObject;
                 jsonObject.keySet().forEach(key->{
                     Object keyValue = jsonObject.get(key);
-                    if(keyValue instanceof JSONObject || keyValue instanceof JSONArray){
+                    if(keyValue instanceof JSONObject || keyValue instanceof JSONArray) {
                         Json newJson = new Json(keyValue instanceof JSONArray);
-                        currentJson.add(key,newJson);
+                        currentJson.add(key, newJson);
 
                         jsonList.add(newJson);
                         objects.add(keyValue);
+                    } else if (keyValue == JSONObject.NULL) {
+                        currentJson.add(key, null);
                     }else{
                         currentJson.add(key,keyValue);
                     }
@@ -1223,7 +1225,7 @@ public class Json {
     }
     private String escape(Object o){
         if(o == null){
-            return "";
+            return "null";
         }else if(o instanceof Json){
             return ((Json)o).toString();
         } else {
