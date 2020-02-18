@@ -188,7 +188,15 @@ public class StringUtilTest {
       }
 
    }
-
+   @Test
+   public void populatePattern_javascript_regex(){
+      try {
+         String response = StringUtil.populatePattern("${{='<foo>'.match(/<(.*?)>/)[1]}}", null);
+         assertEquals("capture tag","foo",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
    @Test
    public void populatePattern_javascript_object_spread() {
       Map<Object, Object> map = new HashMap<>();
@@ -236,6 +244,21 @@ public class StringUtilTest {
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
       }
+   }
+   @Test
+   public void populatePattern_javascript_seconds_concat(){
+      Map<Object,Object> state = new HashMap<>();
+      state.put("FOO", "10");
+      state.put("BAR", "'1m'");
+
+      String response = null;
+      try {
+         response = StringUtil.populatePattern("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", state);
+         assertEquals("expected value with seconds()", "140", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+
    }
 
    @Test

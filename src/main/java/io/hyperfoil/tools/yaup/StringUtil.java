@@ -163,6 +163,8 @@ public class StringUtil {
 //                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
                     }
 
+                    //Nashorn fallback if fail to obtain a value
+                    /*
                     if(value == null) {
                         ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
                         try {
@@ -180,6 +182,7 @@ public class StringUtil {
                         } //ScriptException occurs when missing value in map passed to nashorn
 
                     }
+                    */
 
                 }
                 if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && defaultValue != null){
