@@ -11,11 +11,13 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,6 +28,15 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class StringUtil {
+
+    public static final String MINUTES = "m";
+    public static final String SECONDS = "s";
+    public static final String MILLISECONDS = "ms";
+    public static final String HOURS = "h";
+
+    private static final Pattern timeUnitPattern = Pattern.compile("(?<amount>\\d+)(?<unit>"+MILLISECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+")?");
+
+
     public static final String PATTERN_PREFIX = "${{";
     public static final String PATTERN_JAVASCRIPT_PREFIX = "=";
     public static final String PATTERN_SUFFIX = "}}";
@@ -48,11 +59,11 @@ public class StringUtil {
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
         return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map, String seperator) throws PopulatePatternException{
-        return populatePattern(pattern,map,PATTERN_PREFIX,seperator,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
-    }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
         boolean replaceMissing = false;
+        if(map == null){
+            map = new HashMap<>();
+        }
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
@@ -130,8 +141,8 @@ public class StringUtil {
                         .build()
                        ){
                         //TODO this is probably not how Graal expects to access static methods
-                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)}");
-                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)/1000}");
+                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}");
+                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}");
 
                         Value evaled = null;
                         try { //try the javascript as an expression that returns a value
@@ -212,6 +223,34 @@ public class StringUtil {
                     rtrn.put(current.substring(0,commonNextLength),current);
                 }
             }
+        }
+        return rtrn;
+    }
+
+    public static long parseToMs(String amount){
+        amount = amount.replaceAll("_","");
+        long rtrn = 0;
+        Matcher m = timeUnitPattern.matcher(amount);
+        while(m.find()){
+            long toAdd = Long.parseLong(m.group("amount"));
+            String unit = m.group("unit") == null ? "" : m.group("unit"); //in case there isn't a unit
+            TimeUnit timeUnit;
+            switch (unit){
+                case HOURS:
+                    timeUnit = TimeUnit.HOURS;
+                    break;
+                case MINUTES:
+                    timeUnit = TimeUnit.MINUTES;
+                    break;
+                case SECONDS:
+                    timeUnit = TimeUnit.SECONDS;
+                    break;
+                case MILLISECONDS:
+                default:
+                    timeUnit = TimeUnit.MILLISECONDS;
+            }
+            long increment = timeUnit.toMillis(toAdd);
+            rtrn += increment;
         }
         return rtrn;
     }
