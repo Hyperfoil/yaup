@@ -1,6 +1,7 @@
 package perf.yaup.xml.pojo;
 
 import io.hyperfoil.tools.yaup.xml.pojo.Xml;
+import org.junit.Ignore;
 import org.junit.Test;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
@@ -138,15 +139,12 @@ public class XmlTest {
         assertTrue("@bar exists",found.exists());
         assertEquals("bar",found.getValue());
     }
-    @Test
+    @Test @Ignore
     public void get_tag_get_attribute(){
         String xmlContent = "<foo><bar bar=\"bar\"></bar></foo>";
         Xml xml = Xml.parse(xmlContent);
         Xml foo = xml.get("foo");
-        System.out.println("foo.isDocument="+foo.isDocument());
         Xml bar = foo.get("bar/@bar");
-        System.out.println(foo.exists()+" "+foo.documentString(0));
-        System.out.println(bar.exists()+" "+bar.documentString(0));
 
     }
 }

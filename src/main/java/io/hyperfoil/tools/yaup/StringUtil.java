@@ -11,14 +11,12 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,6 +27,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class StringUtil {
     public static final String PATTERN_PREFIX = "${{";
+    public static final String PATTERN_JAVASCRIPT_PREFIX = "=";
     public static final String PATTERN_SUFFIX = "}}";
     public static final String PATTERN_DEFAULT_SEPARATOR = ":";
 
@@ -46,16 +45,14 @@ public class StringUtil {
     /*
 
      */
-    public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException {
-        return populatePattern(pattern,map,true);
+    public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
+        return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing) throws PopulatePatternException{
-        return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX);
+    public static String populatePattern(String pattern, Map<Object,Object> map, String seperator) throws PopulatePatternException{
+        return populatePattern(pattern,map,PATTERN_PREFIX,seperator,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing, String seperator) throws PopulatePatternException{
-        return populatePattern(pattern,map,replaceMissing,PATTERN_PREFIX,seperator,PATTERN_SUFFIX);
-    }
-    public static String populatePattern(String pattern, Map<Object,Object> map,boolean replaceMissing,String prefix, String separator, String suffix) throws PopulatePatternException {
+    public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
+        boolean replaceMissing = false;
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
@@ -94,7 +91,7 @@ public class StringUtil {
                         defaultStart=i;
                     }
 
-                }else if (rtrn.startsWith(suffix,i)){
+                }else if (rtrn.startsWith(suffix,i) && count > 0){ //added count > 0 for when jq has }} outside ${{ }}
                     count--;
                     if(count==0){
                         if(nameEnd>-1 && defaultStart>-1){
@@ -111,15 +108,20 @@ public class StringUtil {
                 replaced = true;
 
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
-                String name = populatePattern(namePattern,map,replaceMissing,prefix,separator,suffix);
+                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
-                String replacement = null;
+                boolean isJavascript = false;
+                if(name.startsWith(javascriptPrefix)){
+                    isJavascript = true;
+                    name = name.substring(javascriptPrefix.length());
+                }
 
-                if(map.containsKey(name) && !map.get(name).toString().isEmpty()){
+                String replacement = null;
+                if(!isJavascript && map.containsKey(name) && !map.get(name).toString().isEmpty()){
                     replacement = map.get(name).toString();
-                }else if(StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
+                }else if(isJavascript || StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
                     String value = null;
                     try(Context context = Context.newBuilder("js")
                        .allowHostAccess(true)
@@ -127,31 +129,27 @@ public class StringUtil {
                         //.fileSystem()TODO custom fileSystem for loading modules?
                         .build()
                        ){
+                        //TODO this is probably not how Graal expects to access static methods
                         context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)}");
                         context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseKMG(v)/1000}");
 
-                        Value evaled = context.eval("js",name);
-
+                        Value evaled = null;
+                        try { //try the javascript as an expression that returns a value
+                            evaled = context.eval("js", name);
+                        }catch(SyntaxException|PolyglotException e){
+                            //try returning the javascript as the value
+                            Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
+                            evaled = factory.execute();
+                        }
                         value = ValueConverter.convert(evaled).toString();
                         replacement = value;
 
-//                        Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
-//                        Value fn = factory.execute();
-//                        value = fn.toString();
-//                        replacement = value;
-                    }catch (PolyglotException e) {
-                        //e.printStackTrace(); //swallow ReferenceErrors atm because we aren't - JS eval failed, but will log the failure to resolve the name below
-                        if(!(replaceMissing && e.getMessage().contains("ReferenceError"))){
-                            return e.getMessage();
-                        }
-                    }catch (SyntaxException e){
+                    }catch (SyntaxException | PolyglotException e){
                         String stack = Arrays.asList(e.getStackTrace())
                            .stream()
                            .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
                            .collect(Collectors.joining("\n"));
-                        //System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
-                        //always return the pattern if it wasn't js syntax
-                        return pattern;
+//                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
                     }
 
                     if(value == null) {
@@ -166,7 +164,8 @@ public class StringUtil {
                             }
                             replacement = value;
                         } catch (ScriptException | IllegalArgumentException e) {
-                            e.printStackTrace();
+                            //TODO log the exception
+                            //e.printStackTrace();
                         } //ScriptException occurs when missing value in map passed to nashorn
 
                     }
@@ -177,13 +176,10 @@ public class StringUtil {
                 }
 
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
-                if(replacement == null && !replaceMissing){
+                if(replacement == null){
                     skip = end;
+                   throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
                 }else {
-                    if(replacement==null){
-                        //replacement has failed
-                        throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
-                    }
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                 }
             }
