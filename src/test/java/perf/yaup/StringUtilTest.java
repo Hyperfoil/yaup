@@ -4,9 +4,11 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,6 +16,32 @@ import static org.junit.Assert.*;
 
 public class StringUtilTest {
 
+   @Test
+   public void jsEval_function(){
+      Map<String,String> map = new HashMap<>();
+      map.put("foo","FOO");
+
+
+      //"Java.extend(java.util.function.BiFunction,function(a,b){return b;})",
+      // cannot execute but does return BiFunction
+      Object result = StringUtil.jsEval("function(a,b){return b;}","a","b");
+      assertEquals("expect function to evaluate with input","b",result);
+   }
+
+   @Test
+   public void jsEval_math(){
+      Object result = StringUtil.jsEval("2+2");
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a Long "+result,result instanceof Long);
+      assertEquals("result should be 4",new Long(4),result);
+   }
+   @Test
+   public void jsEval_math_lambda(){
+      Object result = StringUtil.jsEval("(a,b)=>a+b",1,2);
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a Long "+result,result instanceof Long);
+      assertEquals("result should be 4",new Long(3),result);
+   }
 
    @Test
    public void countOccurrances_jsonpaths() {
@@ -188,6 +216,19 @@ public class StringUtilTest {
       }
 
    }
+
+   @Test
+   public void populatePattern_multiple_separators(){
+      //TODO decide if first or last separator should be used, currently use last
+      Map<Object, Object> map = new HashMap<>();
+      try{
+         String response = StringUtil.populatePattern("${{FOO:bar:biz}}",map);
+         assertEquals("response should be from last separator","biz",response);
+      }catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+   }
+
    @Test
    public void populatePattern_javascript_regex(){
       try {

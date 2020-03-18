@@ -1,8 +1,10 @@
 package io.hyperfoil.tools.yaup;
 
 import com.oracle.truffle.regex.nashorn.regexp.joni.exception.SyntaxException;
+import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.NashornMapContext;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -11,6 +13,8 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -58,6 +62,70 @@ public class StringUtil {
      */
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
         return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+    }
+    public static Object jsEval(String js,Object...args){
+        return jsEval(js, Collections.EMPTY_LIST,args);
+    }
+    public static Object jsEval(String js, Collection<String> evals,Object...args){
+        try(Context context = Context.newBuilder("js")
+        .allowAllAccess(true)
+        .build()){
+            context.enter();
+            try{
+                evals.forEach(s->{
+                    try {
+                        context.eval("js", s);
+                    } catch(PolyglotException pge) {
+                        throw new RuntimeException("failed to evaluate "+s+" preparing for "+js,pge);
+                    }
+                });
+                Value matcher = null;
+                try{ //evaluate the js to see if it directly returns a value
+                    matcher = context.eval("js",js);
+                }catch(PolyglotException pge){
+
+                    //throw new RuntimeException("failed to evaluate "+js,pge);
+                    try{
+                        matcher = context.eval("js","(() => "+js+")()");
+                    }catch (PolyglotException pge2){
+
+                    }
+                }
+                if(matcher==null ){
+                    //TODO raise issue that the return from graaljs is missing
+                }else{
+                    if( !matcher.canExecute() ){
+                        //the result of evaluating the javascript is an object
+                    }else {
+                        if (args != null && args.length > 0) {
+                            for (int i = 0; i < args.length; i++) {
+                                if (args[i] != null && args[i] instanceof Json) {
+                                    args[i] = new JsonProxyObject((Json) args[i]);
+                                }
+                            }
+                            Value result = matcher.execute(args);
+                            if (result != null) {
+                                matcher = result;
+                            }
+                        }
+                    }
+                    Object converted = ValueConverter.convert(matcher);
+                    if (converted instanceof JsonProxyObject) {
+                        return ((JsonProxyObject) converted).getJson();
+                    } else if (converted instanceof Json) {
+                        return (Json) converted;
+                    } else {
+                        return converted;
+                    }
+                }
+
+            }catch(Exception e){
+                throw new RuntimeException("jsEval exception for:"+js,e);
+            }finally{
+                context.leave();
+            }
+        }
+        return null;
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
         boolean replaceMissing = false;
