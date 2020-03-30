@@ -17,6 +17,33 @@ import static org.junit.Assert.*;
 public class StringUtilTest {
 
    @Test
+   public void jsEval_function_return_null(){
+      Object result = StringUtil.jsEval("function(a,b){return null;}","a","b");
+      assertNull("result should be null",result);
+   }
+   @Test
+   public void jsEval_function_no_return(){
+      Object result = StringUtil.jsEval("function(a,b){}","a","b");
+      assertNotNull("no result should not be null",result);
+      assertTrue("result should be a string",result instanceof String);
+      assertEquals("result should be an empty string","",result);
+
+   }
+   @Test
+   public void jsEval_function_return_json(){
+      Object result = StringUtil.jsEval("function(a,b){return {a:'a',b:'b'};}","a","b");
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json has a",json.has("a"));
+      assertEquals("json a = a","a",json.getString("a"));
+      assertTrue("json has b",json.has("b"));
+      assertEquals("json b = b","b",json.getString("b"));
+
+
+   }
+
+   @Test
    public void jsEval_function(){
       Map<String,String> map = new HashMap<>();
       map.put("foo","FOO");

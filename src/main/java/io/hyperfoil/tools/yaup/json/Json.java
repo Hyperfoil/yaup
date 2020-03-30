@@ -792,7 +792,9 @@ public class Json {
             context.enter();
             try {
                Value obj = context.eval("js", "const walker = (parent,key,value)=>{\n" +
-                   "if( Array.isArray(value) ){ value.forEach((entry,index)=>walker(value,index,entry)) }\n" +
+                   "if( value === undefined){ parent[key]=null }\n" +
+                   "else if (value === null){ parent[key]=null }\n" +
+                   "else if( Array.isArray(value) ){ value.forEach((entry,index)=>walker(value,index,entry)) }\n" +
                    "else if (typeof value === 'function'){ parent[key]=value.toString() }\n" +
                    "else if (value instanceof Date){ parent[key]=value.toISOString() }\n" +
                    "else if (typeof value === 'object'){ Object.keys(value).forEach(k=>walker(value,k,value[k])) }\n" +

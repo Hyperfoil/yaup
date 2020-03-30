@@ -224,39 +224,16 @@ public class StringUtil {
                         replacement = value;
 
                     }catch (SyntaxException | PolyglotException e){
-                        String stack = Arrays.asList(e.getStackTrace())
-                           .stream()
-                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
-                           .collect(Collectors.joining("\n"));
-//                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+stack);
+//                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
+//                           .stream()
+//                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
+//                           .collect(Collectors.joining("\n"))
+//                        );
                     }
-
-                    //Nashorn fallback if fail to obtain a value
-                    /*
-                    if(value == null) {
-                        ScriptEngine engine = new ScriptEngineManager().getEngineByName("nashorn");
-                        try {
-                            engine.eval("function milliseconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)}");
-                            engine.eval("function seconds(v){ return Packages.io.hyperfoil.tools.qdup.cmd.impl.Sleep.parseToMs(v)/1000}");
-                            Object nashonVal = engine.eval(name, new NashornMapContext(map, engine.getContext()));
-                            value = nashonVal.toString();
-                            if (value.endsWith(".0")) {
-                                value = value.substring(0, value.length() - 2);
-                            }
-                            replacement = value;
-                        } catch (ScriptException | IllegalArgumentException e) {
-                            //TODO log the exception
-                            //e.printStackTrace();
-                        } //ScriptException occurs when missing value in map passed to nashorn
-
-                    }
-                    */
-
                 }
                 if((replacement == null || "".equals(replacement)) /*&& defaultValue!=null*/ && defaultValue != null){
                     replacement = defaultValue;
                 }
-
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){
                     skip = end;

@@ -80,6 +80,26 @@ public class JsonTest {
 
     }
 
+    @Test
+    public void fromJs_oc_array(){
+        String input="" +
+           "[\n" +
+           "  {\n" +
+           "    \"isNull\": null,\n" +
+           "    \"isUndefined\": undefined,\n" +
+           "  }\n" +
+           "]";
+        try {
+            Json json = Json.fromJs(input);
+            assertFalse("json should not be null",json == null);
+            assertTrue("json should be an array",json.isArray());
+            assertEquals("json should have 1 entry",1,json.size());
+            assertTrue("json[0] should be json",json.get(0) instanceof Json);
+        }catch(Exception e){
+            fail(e.getMessage());
+        }
+    }
+
     @Test @Ignore //TODO Graaljs does not yet support on demand bindings like Nashorn
     public void fromJs_array_new_bindings(){
         Json json = Json.fromJs("[one,2,three]");

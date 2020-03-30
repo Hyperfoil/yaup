@@ -6,8 +6,15 @@ import org.graalvm.polyglot.Value;
 public class ValueConverter {
 
    public static Object convert(Value value){
-      if(value == null || value.isNull()) {
-         return "";
+      if(value == null) {
+         return null;
+      }else if (value.isNull()){
+         // Value api cannot differentiate null and undefined from javascript
+         if(value.toString().contains("undefined")){
+            return "";
+         }else{
+            return null;
+         }
       }else if (value.isProxyObject()){
          Object po = value.asProxyObject();
          if(po instanceof JsonProxyObject){
