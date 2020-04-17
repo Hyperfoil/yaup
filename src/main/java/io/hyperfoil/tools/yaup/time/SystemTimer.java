@@ -27,8 +27,8 @@ public class SystemTimer {
     private final boolean isParallel;
     private long nanoStart;
     private long milliStart;
-    private long nanoStop;
-    private long milliStop;
+    private long nanoStop=-1;
+    private long milliStop=-1;
     private String name;
 
     private LinkedList<SystemTimer> children;

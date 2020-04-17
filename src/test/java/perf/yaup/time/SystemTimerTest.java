@@ -11,6 +11,45 @@ public class SystemTimerTest {
 
 
    @Test
+   public void parallel_children_not_stop_parent(){
+      SystemTimer timer = new SystemTimer("top");
+      SystemTimer parallelTimer = timer.start("parallel",true);
+      try {
+         Thread.sleep(100);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+      parallelTimer.start("parallel2",false);
+      SystemTimer serialTimer = timer.start("serial");
+      try {
+         Thread.sleep(100);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+      parallelTimer.start("parallel3",false);
+      try {
+         Thread.sleep(100);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+      timer.stop();
+
+      Json json = timer.getJson();
+      System.out.println(json.toString(2));
+      assertTrue("expect timer timers",json.has("timers") && json.get("timers") instanceof Json);
+      Json children = json.getJson("timers");
+      assertEquals("expect 2 timers",2,children.size());
+      Json serial = children.getJson(0);
+      Json parallel = children.getJson(1);
+      if(serial.getString("name").equals("parallel")){
+         Json tmp = serial;
+         serial = parallel;
+         parallel = tmp;
+      }
+
+   }
+
+   @Test
    public void serial_not_stop_parallel(){
       SystemTimer timer = new SystemTimer("top");
       timer.start("parallel",true);
