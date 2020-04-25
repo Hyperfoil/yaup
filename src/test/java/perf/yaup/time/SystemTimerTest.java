@@ -4,10 +4,37 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SystemTimerTest {
+
+   private void sleep(long ms){
+      try {
+         Thread.sleep(ms);
+      } catch (InterruptedException e) {
+         e.printStackTrace();
+      }
+
+   }
+
+   @Test
+   public void stops(){
+      SystemTimer timer = new SystemTimer("one");
+      timer.start();
+      sleep(100);
+      timer.start("two");
+      sleep(100);
+      timer.start("three");
+      sleep(100);
+      timer.stop();
+
+      Json json = timer.getJson();
+      System.out.println(json.toString(2));
+   }
 
 
    @Test

@@ -2,9 +2,11 @@ package io.hyperfoil.tools.yaup.time;
 
 import io.hyperfoil.tools.yaup.json.Json;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A SystemTimer based on System.currentTimeMillis and System.nanoTime that supports sequential or parallel children timers.
@@ -50,6 +52,9 @@ public class SystemTimer {
      * @return true if the timer was started, or false if already active
      */
     public boolean start(){
+        if(isStopped()){
+            throw new IllegalStateException("cannot start after stop");
+        }
         if(isActive()){
             return false;
         }
@@ -78,6 +83,9 @@ public class SystemTimer {
      * @return new SystemTime
      */
     public SystemTimer start(String name, boolean parallel){
+        if(isStopped()){
+            throw new IllegalStateException("cannot start("+name.trim()+") after stop");
+        }
         long milli = System.currentTimeMillis();
         long nano = System.nanoTime();
         if(isActive()) {
@@ -120,6 +128,7 @@ public class SystemTimer {
         }
     }
     private void stop(long milliStop,long nanoStop,boolean stopParallel){
+
         if(isActive()) {
             this.milliStop = milliStop;
             this.nanoStop = nanoStop;
