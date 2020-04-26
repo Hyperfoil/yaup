@@ -135,7 +135,7 @@ public class SystemTimer {
         }
     }
     private void stop(long milliStop,long nanoStop,boolean stopParallel){
-        if(isActive()) {
+        if(isActive() && ( stopParallel || !isParallel)) {
             this.milliStop = milliStop;
             this.nanoStop = nanoStop;
             stopChildren(milliStop,nanoStop,stopParallel);
