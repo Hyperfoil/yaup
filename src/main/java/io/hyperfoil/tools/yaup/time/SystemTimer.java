@@ -2,6 +2,7 @@ package io.hyperfoil.tools.yaup.time;
 
 import io.hyperfoil.tools.yaup.json.Json;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -27,13 +28,14 @@ public class SystemTimer {
     };
 
     private final boolean isParallel;
+    private boolean hasParallel; //helper to track if there is potentially a running parallel child
     private long nanoStart;
     private long milliStart;
     private long nanoStop=-1;
     private long milliStop=-1;
     private String name;
 
-    private LinkedList<SystemTimer> children;
+    private List<SystemTimer> children;
 
 
     public SystemTimer(String name){
@@ -41,10 +43,11 @@ public class SystemTimer {
     }
     public SystemTimer(String name, long milli, long nano, boolean isParallel){
         this.name = name;
-        this.children = new LinkedList<>(); // this risks NPE when concurrently modified :(
+        this.children = new ArrayList<>(); // this risks NPE when concurrently modified :(
         this.milliStart = milli;
         this.nanoStart = nano;
         this.isParallel = isParallel;
+        this.hasParallel = false;
     }
 
     /**
@@ -52,9 +55,10 @@ public class SystemTimer {
      * @return true if the timer was started, or false if already active
      */
     public boolean start(){
-        if(isStopped()){
-            throw new IllegalStateException("cannot start after stop");
-        }
+//TODO throwing breaks async ScriptCmd
+//        if(isStopped()){
+//            throw new IllegalStateException("cannot start after stop("+name+")");
+//        }
         if(isActive()){
             return false;
         }
@@ -83,9 +87,12 @@ public class SystemTimer {
      * @return new SystemTime
      */
     public SystemTimer start(String name, boolean parallel){
-        if(isStopped()){
-            throw new IllegalStateException("cannot start("+name.trim()+") after stop");
-        }
+//TODO throwing breaks async ScriptCmd
+//        if(isStopped()){
+//            throw new IllegalStateException("cannot start("+name.trim()+") after stop("+this.name+")");
+//        }
+
+        hasParallel = hasParallel || parallel;
         long milli = System.currentTimeMillis();
         long nano = System.nanoTime();
         if(isActive()) {
@@ -101,7 +108,7 @@ public class SystemTimer {
         milli = System.currentTimeMillis();
         nano = System.nanoTime();
         SystemTimer newTimer =new SystemTimer(name,milli,nano,parallel);
-        children.push(newTimer);
+        children.add(newTimer);
         return newTimer;
     }
 
@@ -122,27 +129,36 @@ public class SystemTimer {
 
     private SystemTimer current(){
         if(!children.isEmpty()){
-            return children.getLast();
+            return children.get(children.size()-1);
         }else{
             return NULL;//TODO return this instead of NULL?
         }
     }
     private void stop(long milliStop,long nanoStop,boolean stopParallel){
-
         if(isActive()) {
             this.milliStop = milliStop;
             this.nanoStop = nanoStop;
             stopChildren(milliStop,nanoStop,stopParallel);
         }
     }
+
+    /**
+     * stop running children. If !stopParallel then search from back until find a not-running child.
+     * If stopParallel then full scan for any parallel children if there is at least one parallel child
+     * @param milliStop
+     * @param nanoStop
+     * @param stopParallel
+     */
     private void stopChildren(long milliStop,long nanoStop,boolean stopParallel){
-        int count = children.size();
-        for(int i=0; i<count; i++){
-            SystemTimer timer = children.get(i);
-            if(stopParallel || !timer.isParallel) {
-                children.get(i).stop(milliStop, nanoStop, stopParallel);
-            }
+        int counter = children.size()-1;
+        while(counter>=0 && ( (stopParallel && hasParallel) || children.get(counter).isActive())){
+            children.get(counter).stop(milliStop, nanoStop, stopParallel);
+            counter--;
         }
+        if(stopParallel){
+            hasParallel = false;
+        }
+
     }
 
     public Json getJson(){

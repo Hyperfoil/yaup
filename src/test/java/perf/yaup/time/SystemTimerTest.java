@@ -1,5 +1,6 @@
 package perf.yaup.time;
 
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
@@ -34,6 +35,19 @@ public class SystemTimerTest {
 
       Json json = timer.getJson();
       System.out.println(json.toString(2));
+   }
+
+   @Test(timeout = 1000)
+   public void start_notParallel_under_one_second(){
+      int count = 1_000_000;
+      SystemTimer timer = new SystemTimer("one");
+      long start = System.currentTimeMillis();
+      for(int i=0; i<count; i++){
+         timer.start("next",false);
+      }
+      long stop = System.currentTimeMillis();
+
+      assertTrue("create "+count+" children timers in "+StringUtil.durationToString(stop-start)+" <1s ",(stop-start)<1000);
    }
 
 
