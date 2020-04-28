@@ -5,9 +5,6 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -55,28 +52,15 @@ public class SystemTimerTest {
    public void parallel_children_not_stop_parent(){
       SystemTimer timer = new SystemTimer("top");
       SystemTimer parallelTimer = timer.start("parallel",true);
-      try {
-         Thread.sleep(100);
-      } catch (InterruptedException e) {
-         e.printStackTrace();
-      }
+      sleep(100);
       parallelTimer.start("parallel2",false);
       SystemTimer serialTimer = timer.start("serial");
-      try {
-         Thread.sleep(100);
-      } catch (InterruptedException e) {
-         e.printStackTrace();
-      }
+      sleep(100);
       parallelTimer.start("parallel3",false);
-      try {
-         Thread.sleep(100);
-      } catch (InterruptedException e) {
-         e.printStackTrace();
-      }
+      sleep(100);
       timer.stop();
 
       Json json = timer.getJson();
-      System.out.println(json.toString(2));
       assertTrue("expect timer timers",json.has("timers") && json.get("timers") instanceof Json);
       Json children = json.getJson("timers");
       assertEquals("expect 2 timers",2,children.size());
@@ -87,7 +71,7 @@ public class SystemTimerTest {
          serial = parallel;
          parallel = tmp;
       }
-
+      //TODO check serial and parallel
    }
 
    @Test

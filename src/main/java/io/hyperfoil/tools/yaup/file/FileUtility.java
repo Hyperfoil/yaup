@@ -182,7 +182,7 @@ public class FileUtility {
       }
 
       try {
-         InputStream rtrn = null;
+         InputStream rtrn = new FileInputStream(archiveFile);
          if (archivePath.endsWith(".tar.gz") || archivePath.endsWith(".tgz")) {
             rtrn = new TarArchiveInputStream(new GzipCompressorInputStream(rtrn));
          } else if (archivePath.endsWith((".gz"))) {

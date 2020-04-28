@@ -16,6 +16,7 @@ import static org.junit.Assert.*;
 
 public class StringUtilTest {
 
+
    @Test
    public void jsEval_function_return_null(){
       Object result = StringUtil.jsEval("function(a,b){return null;}","a","b");
