@@ -237,7 +237,11 @@ public class StringUtil {
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){
                     skip = end;
-                   throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
+                    if (map.containsKey(name) && map.get(name).toString().isEmpty()){
+                        throw new PopulatePatternException( "Unable to resolve replacement for: " + name + " State variable is a zero length String. If the substitution should allow zero length strings, please provide a default empty string substitution; ${{"+name+":}}"); //TODO: replace with logging framework
+                    } else {
+                        throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
+                    }
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                 }
