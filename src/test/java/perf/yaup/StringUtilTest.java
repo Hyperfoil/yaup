@@ -478,8 +478,30 @@ public class StringUtilTest {
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
       }
+   }
 
+   @Test
+   public void populatePattern_empty_default_over_empty_value() {
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO", "");
+      try {
+         String response = StringUtil.populatePattern("${{FOO:}}", map);
+         assertEquals("", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
 
+   @Test
+   public void populatePattern_empty_value_no_default() {
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO", "");
+      try {
+         String response = StringUtil.populatePattern("${{FOO}}", map);
+         assertEquals("", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
    }
 
    @Test
