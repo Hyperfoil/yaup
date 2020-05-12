@@ -258,6 +258,61 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_javascript_missing(){
+      Map<Object, Object> map = new HashMap<>();
+      Json array = Json.fromString("[\"one\",\"two\"]");
+      map.put("ARRAY",array);
+      //map.put("ADD","vert.x-eventloop-thread-1,5,main");
+      try {
+         String response = StringUtil.populatePattern("${{= [...${{ARRAY}}, ${{ADD}} ] }}",map);
+         System.out.println(response);
+      } catch (PopulatePatternException pe) {
+         return;
+      }
+      fail("expected an exception from missing value");
+   }
+   @Test(timeout = 10_000)
+   public void populatePattern_looped_references(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","${{BAR}}");
+      map.put("BAR","-${{BIZ}}");
+      map.put("BIZ","${{BUZ}}");
+      map.put("BUZ","${{FOO}}");
+
+      try{
+         String response = StringUtil.populatePattern("${{FOO}}",map);
+      }catch (PopulatePatternException pe){
+         System.out.println(pe.getMessage());
+         return;
+      }
+      fail("expected an exception not infinite loop");
+   }
+   @Test(timeout = 10_000)
+   public void populatePatttern_self_reference(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","${{FOO}}");
+      try{
+         String response = StringUtil.populatePattern("${{FOO}}",map);
+      }catch (PopulatePatternException pe){
+         return;
+      }
+      fail("expect an exception not infinite loop");
+   }
+
+   @Test
+   public void populatePattern_same_pattern_twice(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","BAR");
+
+      try{
+         String response = StringUtil.populatePattern("${{FOO}}${{FOO}}",map);
+         assertEquals("expect pattern to replace twice","BARBAR",response);
+      }catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+   }
+
+   @Test
    public void populatePattern_javascript_regex(){
       try {
          String response = StringUtil.populatePattern("${{='<foo>'.match(/<(.*?)>/)[1]}}", null);

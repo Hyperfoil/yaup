@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -128,6 +129,10 @@ public class StringUtil {
         return null;
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
+        Set<String> seen = new HashSet();
+        return populatePattern(pattern,map,prefix,separator,suffix,javascriptPrefix,seen);
+    }
+    private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen) throws PopulatePatternException {
         boolean replaceMissing = false;
         if(map == null){
             map = new HashMap<>();
@@ -135,6 +140,7 @@ public class StringUtil {
         String rtrn = pattern;
         boolean replaced;
         int skip=0;
+        int seenIndex=-1; //index where seen becomes invalid
         do {
             replaced = false;
             int nameStart=-1;
@@ -185,9 +191,11 @@ public class StringUtil {
             }
             if(nameStart>-1 && count == 0){
                 replaced = true;
-
+                if(nameStart > seenIndex){
+                   seen.clear();
+                }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
-                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix);
+                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix,seen);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
@@ -199,7 +207,11 @@ public class StringUtil {
 
                 String replacement = null;
                 if(!isJavascript && map.containsKey(name) && !map.get(name).toString().isEmpty()){
+                    if (seen.contains(name)) {
+                        throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+seen+"\n  rtrn="+rtrn);
+                    }
                     replacement = map.get(name).toString();
+                    seen.add(name); //only add to seen if used to replace?
                 }else if(isJavascript || StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
                     String value = null;
                     try(Context context = Context.newBuilder("js")
@@ -240,6 +252,7 @@ public class StringUtil {
                     throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
+                    seenIndex = nameStart + replacement.length()-1;
                 }
             }
         }while(replaced);

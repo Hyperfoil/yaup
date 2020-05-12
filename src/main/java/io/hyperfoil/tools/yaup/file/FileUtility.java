@@ -14,9 +14,13 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.Sets;
 
 import java.io.*;
+import java.nio.file.CopyOption;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -280,7 +284,6 @@ public class FileUtility {
       ByteArrayOutputStream buffer = new ByteArrayOutputStream();
       int nRead;
       byte[] data = new byte[16384];
-
       try {
          while ((nRead = stream.read(data, 0, data.length)) != -1) {
             buffer.write(data, 0, nRead);
@@ -332,6 +335,39 @@ public class FileUtility {
       return rtrn;
    }
 
+   public static File getFile(String fullPath,boolean delete){
+      String archivePath = fullPath;
+      String entryPath = "";
+      if(isArchiveEntryPath(fullPath)){
+         archivePath = getArchiveFilePath(fullPath);
+         entryPath = getArchiveEntrySubPath(fullPath);
+      }
+      if(isArchive(archivePath)){
+         try {
+            FileSystem fs = FileSystems.newFileSystem(Paths.get(archivePath),FileUtility.class.getClassLoader());
+            Path entry = fs.getPath(entryPath);
+            String prefix = entryPath;
+            if(prefix.contains("/")){
+               prefix = prefix.substring(prefix.lastIndexOf("/"));
+            }
+            Path tmp = Files.createTempFile(prefix+"_",".yaup");
+            Files.copy(entry, tmp, StandardCopyOption.REPLACE_EXISTING);
+            File rtrn = tmp.toFile();
+            if(delete){
+               rtrn.deleteOnExit();
+            }
+            return rtrn;
+         } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+         }
+
+      }else{
+         return new File(fullPath);
+      }
+
+
+   }
    public static InputStream getInputStream(String fullPath) {
       InputStream rtrn = null;
       String archivePath = fullPath;
