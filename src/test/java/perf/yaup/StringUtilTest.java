@@ -265,7 +265,6 @@ public class StringUtilTest {
       //map.put("ADD","vert.x-eventloop-thread-1,5,main");
       try {
          String response = StringUtil.populatePattern("${{= [...${{ARRAY}}, ${{ADD}} ] }}",map);
-         System.out.println(response);
       } catch (PopulatePatternException pe) {
          return;
       }
@@ -275,14 +274,13 @@ public class StringUtilTest {
    public void populatePattern_looped_references(){
       Map<Object, Object> map = new HashMap<>();
       map.put("FOO","${{BAR}}");
-      map.put("BAR","-${{BIZ}}");
+      map.put("BAR","${{BIZ}}");
       map.put("BIZ","${{BUZ}}");
       map.put("BUZ","${{FOO}}");
 
       try{
          String response = StringUtil.populatePattern("${{FOO}}",map);
       }catch (PopulatePatternException pe){
-         System.out.println(pe.getMessage());
          return;
       }
       fail("expected an exception not infinite loop");
@@ -293,6 +291,18 @@ public class StringUtilTest {
       map.put("FOO","${{FOO}}");
       try{
          String response = StringUtil.populatePattern("${{FOO}}",map);
+      }catch (PopulatePatternException pe){
+         return;
+      }
+      fail("expect an exception not infinite loop");
+   }
+
+   @Test(timeout = 10_000)
+   public void populatePatttern_self_reference_padded_javascript(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","${{= [...${{FOO}},new String(${{BAR}}) ] }}");
+      try{
+         String response = StringUtil.populatePattern("${{= ${{FOO}}.join(' ')}}",map);
       }catch (PopulatePatternException pe){
          return;
       }

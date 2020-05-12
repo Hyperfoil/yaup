@@ -191,7 +191,7 @@ public class StringUtil {
             }
             if(nameStart>-1 && count == 0){
                 replaced = true;
-                if(nameStart > seenIndex){
+                if(nameStart > seenIndex && seenIndex >= 0){
                    seen.clear();
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
