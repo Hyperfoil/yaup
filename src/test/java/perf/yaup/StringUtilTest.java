@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -28,8 +29,18 @@ public class StringUtilTest {
       assertNotNull("no result should not be null",result);
       assertTrue("result should be a string",result instanceof String);
       assertEquals("result should be an empty string","",result);
-
    }
+   @Test
+   public void jsEval_return_missing_key(){ //TODO should returning a missing key return null or empty string
+      Object result = StringUtil.jsEval("(a)=>a.foo",Json.fromString("{\"notfoo\":\"bar\"}"));
+      assertNotNull("no result should not be null",result);
+      assertTrue("result should be a string",result instanceof String);
+      assertEquals("result should be an empty string","",result);
+
+      //assertNull("missing keys should return null as undefined",result);
+   }
+
+
    @Test
    public void jsEval_function_return_json(){
       Object result = StringUtil.jsEval("function(a,b){return {a:'a',b:'b'};}","a","b");
@@ -40,18 +51,75 @@ public class StringUtilTest {
       assertEquals("json a = a","a",json.getString("a"));
       assertTrue("json has b",json.has("b"));
       assertEquals("json b = b","b",json.getString("b"));
-
-
    }
+
+   @Test
+   public void jsEval_array_spread(){
+      Object result = StringUtil.jsEval("(a)=>{return [...a,'three']}",Json.fromString("[\"one\",\"two\"]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 3 entries: "+json,3,json.size());
+      assertTrue("json should contain three: "+json,json.values().contains("three"));
+   }
+   @Test
+   public void jsEval_array_push(){
+      Object result = StringUtil.jsEval("function(a){a.push('three'); return a;}",Json.fromString("[\"one\",\"two\"]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 3 entries: "+json,3,json.size());
+      assertTrue("json should contain three: "+json,json.values().contains("three"));
+   }
+   @Test
+   public void jsEval_array_concat(){
+      Object result = StringUtil.jsEval("(a)=>{return a.concat(['a','b']);}",Json.fromString("[\"one\",\"two\"]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 4 entries: "+json,4,json.size());
+      assertTrue("json should contain 'a': "+json,json.values().contains("a"));
+   }
+   @Test
+   public void jsEval_array_map(){
+      Object result = StringUtil.jsEval("(a)=>{return a.map(v=>`${v}_value`);}",Json.fromString("[\"one\",\"two\"]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 2 entries: "+json,2,json.size());
+      assertTrue("json should contain 'a': "+json,json.values().contains("one_value"));
+   }
+
+   @Test
+   public void jsEval_array_filter(){
+      Object result = StringUtil.jsEval("(a)=>{return a.filter(v=>v<3);}",Json.fromString("[1,2,3,4]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 2 entries: "+json,2,json.size());
+      assertTrue("json should contain 2: "+json,json.values().contains(2l));//graaljs uses long not ints
+   }
+
+   @Test
+   public void jsEval_array_length(){
+      Object result = StringUtil.jsEval("(a)=>{return a.length;}",Json.fromString("[1,2,3,4]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result snould be a number",result instanceof Number);
+      Integer value = ((Number)result).intValue();
+      assertEquals("length should be 4",4,value.intValue());
+   }
+
+
 
    @Test
    public void jsEval_function(){
       Map<String,String> map = new HashMap<>();
       map.put("foo","FOO");
-
-
-      //"Java.extend(java.util.function.BiFunction,function(a,b){return b;})",
-      // cannot execute but does return BiFunction
       Object result = StringUtil.jsEval("function(a,b){return b;}","a","b");
       assertEquals("expect function to evaluate with input","b",result);
    }
@@ -69,6 +137,50 @@ public class StringUtilTest {
       assertNotNull("result should not be null default",result);
       assertTrue("result should be a Long "+result,result instanceof Long);
       assertEquals("result should be 4",new Long(3),result);
+   }
+
+   @Test
+   public void jsEval_json_dot_notation(){
+      Object result = StringUtil.jsEval("(a)=>a.foo",Json.fromString("{\"foo\":\"bar\"}"));
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a String "+result,result instanceof String);
+      assertEquals("result should be from json","bar",result);
+   }
+   @Test
+   public void jsEval_json_nested_dot_notation(){
+      Object result = StringUtil.jsEval("(a)=>a.foo.bar",Json.fromString("{\"foo\": {\"bar\":\"biz\" }}"));
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a String "+result,result instanceof String);
+      assertEquals("result should be from json","biz",result);
+   }
+   @Test
+   public void jsEval_object_keys(){
+      Object result = StringUtil.jsEval("(a)=>Object.keys(a)",Json.fromString("{\"foo\":\"FOO\",\"bar\":\"BAR\"}"));
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a Json"+result.getClass(),result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array "+json,json.isArray());
+      assertEquals("Json should have 2 entries: "+json,2,json.size());
+   }
+   @Test
+   public void jsEval_object_values(){
+      Object result = StringUtil.jsEval("(a)=>Object.values(a)",Json.fromString("{\"foo\":\"FOO\",\"bar\":\"BAR\"}"));
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a Json"+result.getClass(),result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array "+json,json.isArray());
+      assertEquals("Json should have 2 entries: "+json,2,json.size());
+   }
+   @Test
+   public void jsEval_object_entries(){
+      Object result = StringUtil.jsEval("(a)=>Object.entries(a)",Json.fromString("{\"foo\":\"FOO\",\"bar\":\"BAR\"}"));
+      assertNotNull("result should not be null default",result);
+      assertTrue("result should be a Json"+result.getClass(),result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array "+json,json.isArray());
+      assertEquals("Json should have 2 entries: "+json,2,json.size());
+      assertTrue("json[0] should be json: "+json.get(0),json.get(0) instanceof Json);
+      assertTrue("json[0] should be an array: "+json.get(0),json.getJson(0).isArray());
    }
 
    @Test

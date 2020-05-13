@@ -1236,8 +1236,9 @@ public class Json {
     }
 
     public void remove(Object key){
-        if(isArray() && key instanceof Integer){
-            int index = (Integer)key;
+        key = box(key);
+        if(isArray() && (key instanceof Integer || key instanceof Long)){
+            int index = ((Number)key).intValue();
             int size = size();
             for(int i=index; i<size-1; i++){
                 set(i,get(i+1));
@@ -1248,7 +1249,8 @@ public class Json {
         }
     }
     public void set(Object key, Object value){
-        if(key instanceof Integer){
+        key = box(key);
+        if(key instanceof Integer || key instanceof Long){
             key = ((Number)key).intValue();
         }else{
             isArray = false;
@@ -1257,7 +1259,7 @@ public class Json {
         data.put(key,value);
     }
     private void checkKeyType(Object key){
-        if(! (key instanceof Integer) ){
+        if(! (key instanceof Integer || key instanceof Long) ){
             isArray = false;
         }else{
             if(isEmpty()){
@@ -1269,6 +1271,7 @@ public class Json {
         return data.size();
     }
     public boolean has(Object key){
+        key = box(key);
         return data.containsKey(key);
     }
 
@@ -1299,6 +1302,7 @@ public class Json {
     }
     public void add(Object key,Object value){ add(key,value,false); }
     public void add(Object key,Object value,boolean forceArray){
+        key = box(key);
         if(value instanceof Integer){
             value = new Long(((Integer) value).longValue());
         }
@@ -1331,11 +1335,19 @@ public class Json {
     public boolean isArray(){return isArray;}
 
     public Object get(Object key){
-        return data.get(key);
+        return data.get(box(key));
+    }
+
+    private Object box(Object key){
+        if(isArray() && (key instanceof Integer || key instanceof Long)){
+            key = ((Number)key).intValue();
+        }
+        return key;
     }
 
     public boolean getBoolean(Object key) { return getBoolean(key,false);}
     public boolean getBoolean(Object key,boolean defaultValue){
+        key = box(key);
         return has(key) ? data.get(key) instanceof Boolean ? (Boolean)data.get(key) : Boolean.parseBoolean(data.get(key).toString()): defaultValue;
     }
     public Optional<Boolean> optBoolean(Object key){
@@ -1346,6 +1358,7 @@ public class Json {
         return getString(key,null);
     }
     public String getString(Object key,String defaultValue) {
+        key = box(key);
         return has(key) ? data.get(key).toString() : defaultValue;
     }
     public Optional<String> optString(Object key){

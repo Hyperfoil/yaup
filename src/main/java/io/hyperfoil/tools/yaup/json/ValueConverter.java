@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup.json;
 
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyArray;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Value;
 
@@ -11,14 +12,16 @@ public class ValueConverter {
       }else if (value.isNull()){
          // Value api cannot differentiate null and undefined from javascript
          if(value.toString().contains("undefined")){
-            return "";
+            return ""; //no return is the same as returning a missing key from a ProxyObject?
          }else{
             return null;
          }
       }else if (value.isProxyObject()){
          Object po = value.asProxyObject();
-         if(po instanceof JsonProxyObject){
-            return ((JsonProxyObject)po).getJson();
+         if(po instanceof JsonProxyObject) {
+            return ((JsonProxyObject) po).getJson();
+         }else if (po instanceof JsonProxyArray){
+            return ((JsonProxyArray) po).getJson();
          }else {
             return value.asProxyObject();
          }

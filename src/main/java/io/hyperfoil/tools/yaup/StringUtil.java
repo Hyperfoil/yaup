@@ -4,6 +4,7 @@ import com.oracle.truffle.regex.nashorn.regexp.joni.exception.SyntaxException;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.NashornMapContext;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
@@ -70,6 +71,8 @@ public class StringUtil {
     public static Object jsEval(String js, Collection<String> evals,Object...args){
         try(Context context = Context.newBuilder("js")
         .allowAllAccess(true)
+       .allowExperimentalOptions(true)
+       .option("js.experimental-foreign-object-prototype", "true")
         .build()){
             context.enter();
             try{
@@ -101,7 +104,7 @@ public class StringUtil {
                         if (args != null && args.length > 0) {
                             for (int i = 0; i < args.length; i++) {
                                 if (args[i] != null && args[i] instanceof Json) {
-                                    args[i] = new JsonProxyObject((Json) args[i]);
+                                    args[i] = JsonProxy.create((Json) args[i]);
                                 }
                             }
                             Value result = matcher.execute(args);
@@ -236,7 +239,7 @@ public class StringUtil {
                         replacement = value;
 
                     }catch (SyntaxException | PolyglotException e){
-//                        System.out.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
+//                        System.err.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
 //                           .stream()
 //                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
 //                           .collect(Collectors.joining("\n"))
