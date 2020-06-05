@@ -940,90 +940,93 @@ public class Json {
         });
         return rtrn;
     }
-    public static Json typeStructure(Json target){
-        Json rtrn ;
-        if(target.isArray()) {
+
+    public static Json typeStructure(Json target) {
+        Json rtrn;
+        if (target.isArray()) {
             rtrn = new HashArray();
-        }else{
+        } else {
             rtrn = new HashJson();
         }
-        target.forEach((key,value)->{
-            if(value instanceof Json){
-                Json valueStructure = typeStructure((Json)value);
-                rtrn.add(key,valueStructure);
-            }else{
-                if(value instanceof Number){
-                    if(value instanceof Long || value instanceof Integer){
-                        if(rtrn.has(key) && "number".equals(rtrn.get(key))){
-                            //do not add integer if already a number
-                        }else{
-                            rtrn.add(key,"integer");
-                        }
-
-                    }else {
-                        if(rtrn.has(key) && "integer".equals(rtrn.get(key))){
-                            rtrn.set(key,"number");
-                        }else{
-                            rtrn.add(key, "number");
-                        }
-                    }
-                }else {
-                    rtrn.add(key, value.getClass().getSimpleName().toLowerCase());
+        target.forEach((key, value) -> {
+            if (value == null) {
+                if (rtrn.has(key)) {
+                    rtrn.add(key, "null");
+                } else {
+                    rtrn.set(key, "null");
                 }
+            } else if (value instanceof Json) {
+                Json valueStructure = typeStructure((Json) value);
+                rtrn.add(key, valueStructure);
+            } else if (value instanceof Number) {
+                if (value instanceof Long || value instanceof Integer) {
+                    if (rtrn.has(key) && "number".equals(rtrn.get(key))) {
+                        //do not add integer if already a number
+                    } else {
+                        rtrn.add(key, "integer");
+                    }
+                } else {
+                    if (rtrn.has(key) && "integer".equals(rtrn.get(key))) {
+                        rtrn.set(key, "number");
+                    } else {
+                        rtrn.add(key, "number");
+                    }
+                }
+            } else {
+                rtrn.add(key, value.getClass().getSimpleName().toLowerCase());
             }
         });
         return rtrn;
     }
+
     private static void mergeStructure(Json to,Json from){
-        if(to.isArray()){//going to be a HashArray
-            if(from.isArray()){
+        if (to.isArray()) {//going to be a HashArray
+            if (from.isArray()) {
                 from.values().forEach(to::add);
-            }else{
+            } else {
                 to.add(from);
             }
-        }else{
-            if(from.isArray()){
-
-            }else{
-                from.forEach((key,value)->{
-                    if(to.has(key)){
-                        Object toValue = to.get(key);
-                        if(toValue instanceof Json){
-                            Json toValueJson = (Json)toValue;
-                            if(toValueJson.isArray()){
-                                if(value instanceof Json){
-                                    Json jsonValue = (Json)value;
-                                    if(jsonValue.isArray()){
-                                        jsonValue.forEach(v->toValueJson.add(v));
-                                    }else{
-                                        //TODO not sure if we should just add as an entry
-                                        toValueJson.add(value);
-                                    }
-                                }else {
-                                    toValueJson.add(value);
-                                }
-                            }else{
-                                if(value instanceof Json){
-                                    Json fromValueJson = (Json)value;
-                                    if(fromValueJson.isArray()){
-                                        System.out.println("mergeStructure: what to do?\n  to["+key+"] = "+toValueJson+"\n  from["+key+"]="+value);
-                                    }else{
-                                        mergeStructure(toValueJson,fromValueJson);
-                                    }
-                                }
-
-                            }
-                        }else{//to has a value that is not a Json
-                            to.add(key,value);
-                        }
-                    }else{
-                        to.set(key,value);
-                    }
-                });
+        } else {
+            if (from.isArray()) {
+                return;
             }
+            from.forEach((key, value) -> {
+                if (!to.has(key)) {
+                    to.set(key, value);
+                    return;
+                }
+                Object toValue = to.get(key);
+                if (!(toValue instanceof Json)) {//to has a value that is not a Json
+                    to.add(key, value);
+                    return;
+                }
+                Json toValueJson = (Json) toValue;
+                if (toValueJson.isArray()) {
+                    if (value instanceof Json) {
+                        Json jsonValue = (Json) value;
+                        if (jsonValue.isArray()) {
+                            jsonValue.forEach((Consumer<Object>) toValueJson::add);
+                        } else {
+                            //TODO not sure if we should just add as an entry
+                            toValueJson.add(value);
+                        }
+                    } else {
+                        toValueJson.add(value);
+                    }
+                } else {
+                    if (value instanceof Json) {
+                        Json fromValueJson = (Json) value;
+                        if (fromValueJson.isArray()) {
+                            System.out.println("mergeStructure: what to do?\n  to[" + key + "] = " + toValueJson + "\n  from[" + key + "]=" + value);
+                        } else {
+                            mergeStructure(toValueJson, fromValueJson);
+                        }
+                    }
+                }
+            });
         }
-
     }
+
     private static void keyId(Json target,StringBuilder sb){
         sb.append("[ ");
         target.keys().stream().sorted().forEach(key->{
