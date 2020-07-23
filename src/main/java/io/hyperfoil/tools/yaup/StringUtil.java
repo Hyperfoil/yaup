@@ -1,8 +1,6 @@
 package io.hyperfoil.tools.yaup;
 
-import com.oracle.truffle.regex.nashorn.regexp.joni.exception.SyntaxException;
 import io.hyperfoil.tools.yaup.json.Json;
-import io.hyperfoil.tools.yaup.json.NashornMapContext;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
@@ -10,9 +8,6 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +22,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -75,32 +69,35 @@ public class StringUtil {
        .option("js.experimental-foreign-object-prototype", "true")
         .build()){
             context.enter();
-            try{
-                evals.forEach(s->{
+            try {
+                evals.forEach(s -> {
                     try {
                         context.eval("js", s);
-                    } catch(PolyglotException pge) {
-                        throw new RuntimeException("failed to evaluate "+s+" preparing for "+js,pge);
+                    } catch (PolyglotException pge) {
+                        throw new RuntimeException("failed to evaluate " + s + " preparing for " + js, pge);
                     }
                 });
                 Value matcher = null;
-                try{ //evaluate the js to see if it directly returns a value
-                    matcher = context.eval("js",js);
-                }catch(PolyglotException pge){
-
+                try { //evaluate the js to see if it directly returns a value
+                    matcher = context.eval("js", js);
+                } catch (PolyglotException pge) {
+                    //pge.printStackTrace();
                     //throw new RuntimeException("failed to evaluate "+js,pge);
-                    try{
-                        matcher = context.eval("js","(() => "+js+")()");
-                    }catch (PolyglotException pge2){
-
+                    try {
+                        matcher = context.eval("js", "(() => " + js + ")()");
+                    } catch (PolyglotException pge2) {
+                        Value factory = context.eval("js", "new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
+                        matcher = factory.execute();
+                        //pge2.printStackTrace();
                     }
                 }
-                if(matcher==null ){
+                if (matcher == null) {
+                    System.out.println("How is matcher null");
                     //TODO raise issue that the return from graaljs is missing
-                }else{
-                    if( !matcher.canExecute() ){
+                } else {
+                    if (!matcher.canExecute()) {
                         //the result of evaluating the javascript is an object
-                    }else {
+                    } else {
                         if (args != null && args.length > 0) {
                             for (int i = 0; i < args.length; i++) {
                                 if (args[i] != null && args[i] instanceof Json) {
@@ -122,6 +119,8 @@ public class StringUtil {
                         return converted;
                     }
                 }
+            }catch(PolyglotException pe){
+                //TODO do we log polyglot exceptions
 
             }catch(Exception e){
                 throw new RuntimeException("jsEval exception for:"+js,e);
@@ -217,34 +216,44 @@ public class StringUtil {
                     seen.add(name); //only add to seen if used to replace?
                 }else if(isJavascript || StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
                     String value = null;
-                    try(Context context = Context.newBuilder("js")
-                       .allowHostAccess(true)
-                        .allowIO(true)
-                        //.fileSystem()TODO custom fileSystem for loading modules?
-                        .build()
-                       ){
-                        //TODO this is probably not how Graal expects to access static methods
-                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}");
-                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}");
-
-                        Value evaled = null;
-                        try { //try the javascript as an expression that returns a value
-                            evaled = context.eval("js", name);
-                        }catch(SyntaxException|PolyglotException e){
-                            //try returning the javascript as the value
-                            Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
-                            evaled = factory.execute();
-                        }
-                        value = ValueConverter.convert(evaled).toString();
-                        replacement = value;
-
-                    }catch (SyntaxException | PolyglotException e){
-//                        System.err.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
-//                           .stream()
-//                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
-//                           .collect(Collectors.joining("\n"))
-//                        );
+                    Object evalResult = jsEval(
+                       name,
+                       Arrays.asList(
+                          "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
+                          "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
+                       )
+                    );
+                    if(evalResult != null) {
+                        replacement = evalResult.toString();
                     }
+//                    try(Context context = Context.newBuilder("js")
+//                       .allowHostAccess(true)
+//                        .allowIO(true)
+//                        //.fileSystem()TODO custom fileSystem for loading modules?
+//                        .build()
+//                       ){
+//                        //TODO this is probably not how Graal expects to access static methods
+//                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}");
+//                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}");
+//
+//                        Value evaled = null;
+//                        try { //try the javascript as an expression that returns a value
+//                            evaled = context.eval("js", name);
+//                        }catch(PolyglotException e){
+//                            //try returning the javascript as the value
+//                            Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
+//                            evaled = factory.execute();
+//                        }
+//                        value = ValueConverter.convert(evaled).toString();
+//                        replacement = value;
+//
+//                    }catch (PolyglotException e){
+////                        System.err.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
+////                           .stream()
+////                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
+////                           .collect(Collectors.joining("\n"))
+////                        );
+//                    }
                 }
                 if((replacement == null || "".equals(replacement))){
                     replacement = defaultValue != null ? defaultValue : (map.containsKey(name) ? map.get(name).toString() : null);

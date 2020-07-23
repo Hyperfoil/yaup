@@ -170,8 +170,8 @@ public class SystemTimer {
         rtrn.set("millis",milliTime());
         if(hasChildren()){
             Json childrenJson = new Json();
-            for(SystemTimer child : children){
-                childrenJson.add(child.getJson());
+            for(int i=0; i<children.size(); i++){ //was getting ConcurrentModificationException, want snapshot read?
+                childrenJson.add(children.get(i).getJson());
             }
             rtrn.set("timers",childrenJson);
         }

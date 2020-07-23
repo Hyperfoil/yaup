@@ -397,6 +397,38 @@ public class StringUtilTest {
       }
       fail("expected an exception not infinite loop");
    }
+
+   @Test
+   public void populatePattern_replace_regex(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         String response = StringUtil.populatePattern(
+            StringUtil.PATTERN_PREFIX + StringUtil.PATTERN_JAVASCRIPT_PREFIX + " \"00:11:22:33:44:0b\".replace(/:/g,'-') " + StringUtil.PATTERN_SUFFIX,
+            map,
+            StringUtil.PATTERN_PREFIX,
+            "_",
+            StringUtil.PATTERN_SUFFIX,
+            StringUtil.PATTERN_JAVASCRIPT_PREFIX
+            );
+      }catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+
+
+   }
+
+   @Test
+   public void populatePattern_add_to_list(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("vm",new Json(true));
+      try{
+         String response = StringUtil.populatePattern("${{= [...${{vm:[]}},\"added\"]}}",map);
+      }catch (PopulatePatternException pe){
+         fail("did not expect a pattern exception\n"+pe.getMessage());
+      }
+
+   }
+
    @Test(timeout = 10_000)
    public void populatePatttern_self_reference(){
       Map<Object, Object> map = new HashMap<>();
