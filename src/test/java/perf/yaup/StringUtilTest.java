@@ -243,6 +243,19 @@ public class StringUtilTest {
       assertEquals("group onetwo should have 2 entries", 2, grouped.get("onetwo").size());
    }
 
+   @Test @Ignore /*Still working on how thsi should work for json in map*/
+   public void populatePattern_jsonpath_search(){
+      try{
+         Json json = Json.fromJs("[{key:'a',value:'ant'},{key:'b',value:'bat'},{key:'c',value:'cat'}]");
+         Map<Object, Object> map = new HashMap<>();
+         map.put("data",json);
+         String response = StringUtil.populatePattern("${{data.[?(@.key=='b')].value}}",map);
+         assertEquals("response should be value of b","bat",response);
+      }catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+
    @Test
    public void populatePattern_javascript_expand_object() {
       try {

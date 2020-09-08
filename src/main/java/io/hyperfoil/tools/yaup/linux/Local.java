@@ -106,6 +106,13 @@ public class Local {
         }
     }
 
+
+    public void setIdentify(String identify){
+        this.identity = identify;
+    }
+    public String getIdentity(){return this.identity;}
+    public boolean hasCustomIdentity(){return !DEAULLT_IDENTITY.equals(getIdentity());}
+
     private String prepSshCommand(int port){
         String rtrn = sshPath;
         if(knownHosts!=null && !knownHosts.equals(DEFAULT_KNOWN_HOSTS)){

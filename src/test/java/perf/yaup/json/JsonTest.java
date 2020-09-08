@@ -69,15 +69,13 @@ public class JsonTest {
 
         Json.chainSet(root,"first.second.third",10);
 
-        assertTrue("second shoudl have 1 entry",second.size()==1);
+        assertTrue("second should have 1 entry",second.size()==1);
         assertTrue("second[third] should exist",second.has("third"));
         assertEquals("second[third] should be 10",10, second.get("third"));
 
         Json.chainSet(root,"first.second.fourth",20);
         assertTrue("second[fourth] should exist\n"+second.toString(2),second.has("fourth"));
         assertEquals("second[fourth] should be 20",20, second.get("fourth"));
-
-
     }
 
     @Test

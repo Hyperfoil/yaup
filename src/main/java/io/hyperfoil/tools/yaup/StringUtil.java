@@ -92,7 +92,6 @@ public class StringUtil {
                     }
                 }
                 if (matcher == null) {
-                    System.out.println("How is matcher null");
                     //TODO raise issue that the return from graaljs is missing
                 } else {
                     if (!matcher.canExecute()) {
@@ -121,9 +120,9 @@ public class StringUtil {
                 }
             }catch(PolyglotException pe){
                 //TODO do we log polyglot exceptions
-
+                throw new IllegalStateException("jsEval exception for:"+js,pe);
             }catch(Exception e){
-                throw new RuntimeException("jsEval exception for:"+js,e);
+                throw new IllegalStateException("jsEval exception for:"+js,e);
             }finally{
                 context.leave();
             }
@@ -198,6 +197,7 @@ public class StringUtil {
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
                 String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix,seen);
+
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
 
@@ -214,17 +214,25 @@ public class StringUtil {
                     }
                     replacement = map.get(name).toString();
                     seen.add(name); //only add to seen if used to replace?
-                }else if(isJavascript || StringUtil.findAny(name,"()/*^+-") > -1 || name.matches(".*?\\.\\.\\.\\s*[{\\[].*")){
+                }else if(
+                    isJavascript ||
+                    StringUtil.findAny(name,"()/*^+-") > -1 ||
+                    name.matches(".*?\\.\\.\\.\\s*[{\\[].*")
+                ) {
                     String value = null;
-                    Object evalResult = jsEval(
-                       name,
-                       Arrays.asList(
-                          "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
-                          "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
-                       )
-                    );
-                    if(evalResult != null) {
-                        replacement = evalResult.toString();
+                    try {
+                        Object evalResult = jsEval(
+                           name,
+                           Arrays.asList(
+                              "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
+                              "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
+                           )
+                        );
+                        if (evalResult != null) {
+                            replacement = evalResult.toString();
+                        }
+                    }catch(IllegalStateException ise){
+                        //TODO failed to run javascript, save exception in case it was meant to be javascript but there is an error
                     }
 //                    try(Context context = Context.newBuilder("js")
 //                       .allowHostAccess(true)
@@ -261,7 +269,7 @@ public class StringUtil {
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){
                     skip = end;
-                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
+                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                     seenIndex = nameStart + replacement.length()-1;

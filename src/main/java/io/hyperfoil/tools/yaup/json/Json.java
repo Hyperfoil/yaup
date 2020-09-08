@@ -1137,10 +1137,15 @@ public class Json {
             return false;
         }
     }
+
     public void merge(Json toMerge){
+
         merge(toMerge,false);
     }
     public void merge(Json toMerge,boolean override){
+        if(toMerge==null){
+            return;
+        }
         toMerge.forEach((key,value)->{
             if(override || !has(key)) {
                 set(key, value);
