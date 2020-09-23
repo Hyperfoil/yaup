@@ -35,7 +35,14 @@ public class Local {
     private String passphrase = DEFAULT_PASSPHRASE;
 
 
-    public Local(){}
+    public Local(){
+        this(null,null,null);
+    }
+    public Local(String identity, String knownHosts, String passphrase){
+        this.identity = identity!=null && !identity.isEmpty() ? identity : DEAULLT_IDENTITY;
+        this.knownHosts = knownHosts!=null && !knownHosts.isEmpty() ? knownHosts : DEFAULT_KNOWN_HOSTS;
+        this.passphrase = passphrase!=null && !passphrase.isEmpty() ? passphrase : DEFAULT_PASSPHRASE;
+    }
     public void upload(String localPath,String remotePath,String userName,String hostName) {
         upload(localPath,remotePath,userName,hostName,DEFAULT_PORT);
     }
@@ -111,8 +118,11 @@ public class Local {
         this.identity = identify;
     }
     public String getIdentity(){return this.identity;}
-    public boolean hasCustomIdentity(){return !DEAULLT_IDENTITY.equals(getIdentity());}
-
+    public boolean hasIdentity(){return !DEAULLT_IDENTITY.equals(getIdentity());}
+    public String getKnownHosts(){return knownHosts;}
+    public boolean hasKnownHosts(){ return !DEFAULT_KNOWN_HOSTS.endsWith(getKnownHosts());}
+    public String getPassphrase(){return passphrase;}
+    public boolean hasPassphrase(){return DEFAULT_PASSPHRASE!=getPassphrase();}
     private String prepSshCommand(int port){
         String rtrn = sshPath;
         if(knownHosts!=null && !knownHosts.equals(DEFAULT_KNOWN_HOSTS)){
