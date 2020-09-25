@@ -8,10 +8,7 @@ import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -243,6 +240,72 @@ public class StringUtilTest {
       assertEquals("group onetwo should have 2 entries", 2, grouped.get("onetwo").size());
    }
 
+   @Test
+   public void getPatternNames_no_names(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("no names",map);
+         assertEquals("names should be empty: "+names.toString(),0,names.size());
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_single_pattern(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{FOO}}",map);
+         assertEquals("names should have 1 entry: "+names.toString(),1,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_pattern_in_default(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{FOO:${{BAR}}}}",map);
+         assertEquals("names should have 2 entries: "+names.toString(),2,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO","BAR")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_pattern_in_javascript(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{='${{FOO}}'.split('${{BAR}}').join(' ')}}",map);
+         assertEquals("names should have 2 entries: "+names.toString(),2,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO","BAR")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_multiple_patterns(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{FOO}}${{BAR}}",map);
+         assertEquals("names should have 2 entries: "+names.toString(),2,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO","BAR")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_pattern_in_map(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","${{BAR}}");
+      try {
+         List<String> names = StringUtil.getPatternNames("${{FOO}}",map);
+         assertEquals("names should have 2 entries: "+names.toString(),2,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO","BAR")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
    @Test @Ignore /*Still working on how thsi should work for json in map*/
    public void populatePattern_jsonpath_search(){
       try{
@@ -595,6 +658,17 @@ public class StringUtilTest {
 
    }
 
+   @Test @Ignore
+   public void populatePattern_resolve_name_from_map(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("NAME",2);
+      try {
+         String response = StringUtil.populatePattern("${{ 2*NAME :-1}}", map);
+         assertEquals("expected default value when missing value", "4", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
    @Test
    public void populatePattern_arithmetic_missing_value() {
       Map<Object, Object> map = new HashMap<>();

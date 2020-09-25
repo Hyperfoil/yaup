@@ -8,15 +8,7 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -28,6 +20,96 @@ import java.util.regex.Pattern;
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class StringUtil {
+
+    public static class UnclearableSet<V> implements Set<V> {
+
+        private final Set<V> set;
+        public UnclearableSet(){this(new HashSet<>());}
+        public UnclearableSet(Set<V> set){this.set = set;}
+
+        @Override
+        public int size() {return set.size();}
+
+        @Override
+        public boolean isEmpty() {return set.isEmpty();}
+
+        @Override
+        public boolean contains(Object o) {return set.contains(o);}
+
+        @Override
+        public Iterator<V> iterator() {return set.iterator();}
+
+        @Override
+        public Object[] toArray() {return set.toArray();}
+
+        @Override
+        public <T> T[] toArray(T[] ts) {return set.toArray(ts);}
+
+        @Override
+        public boolean add(V v) {return set.add(v);}
+
+        @Override
+        public boolean remove(Object o) {return false;}
+
+        @Override
+        public boolean containsAll(Collection<?> collection) {return set.containsAll(collection);}
+
+        @Override
+        public boolean addAll(Collection<? extends V> collection) {return set.addAll(collection);}
+
+        @Override
+        public boolean retainAll(Collection<?> collection) {return set.retainAll(collection);}
+
+        @Override
+        public boolean removeAll(Collection<?> collection) {return false;}
+
+        @Override
+        public void clear() {}
+    }
+    public static class HasItAllMap<K,V> implements Map<K,V> {
+
+        private final Map<K,V> map;
+        private final V value;
+        public HasItAllMap(Map<K,V> map,V value){
+            this.map = map;
+            this.value = value;
+        }
+
+        @Override
+        public int size() {return map.size();}
+
+        @Override
+        public boolean isEmpty() {return false;}
+
+        @Override
+        public boolean containsKey(Object o) {return true;}
+
+        @Override
+        public boolean containsValue(Object o) {return true;}
+
+        @Override
+        public V get(Object o) {return map.containsKey(o) ? map.get(o) : value;}
+
+        @Override
+        public V put(Object o, Object o2) {return null;}
+
+        @Override
+        public V remove(Object o) {return null;}
+
+        @Override
+        public void putAll(Map map) {}
+
+        @Override
+        public void clear() {}
+
+        @Override
+        public Set keySet() {return map.keySet();}
+
+        @Override
+        public Collection values() {return map.values();}
+        @Override
+        public Set<Entry<K,V>> entrySet() { return map.entrySet();}
+    }
 
     public static final String MINUTES = "m";
     public static final String SECONDS = "s";
@@ -53,20 +135,17 @@ public class StringUtil {
         }
         return names;
     }
-    /*
 
-     */
-    public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
-        return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
-    }
+
     public static Object jsEval(String js,Object...args){
         return jsEval(js, Collections.EMPTY_LIST,args);
     }
     public static Object jsEval(String js, Collection<String> evals,Object...args){
         try(Context context = Context.newBuilder("js")
         .allowAllAccess(true)
-       .allowExperimentalOptions(true)
-       .option("js.experimental-foreign-object-prototype", "true")
+        .allowExperimentalOptions(true)
+        .option("js.experimental-foreign-object-prototype", "true")
+        .option("js.global-property","true")
         .build()){
             context.enter();
             try {
@@ -129,11 +208,22 @@ public class StringUtil {
         }
         return null;
     }
+    public static List<String> getPatternNames(String pattern, Map<Object,Object> map) throws PopulatePatternException{
+        return getPatternNames(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+    }
+    public static List<String> getPatternNames(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
+        UnclearableSet<String> rtrn = new UnclearableSet<>();
+        populatePattern(pattern,new HasItAllMap<Object,Object>(map,"_"),prefix,separator,suffix,javascriptPrefix,rtrn,true);
+        return new ArrayList(rtrn);
+    }
+    public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
+        return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+    }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
         Set<String> seen = new HashSet();
-        return populatePattern(pattern,map,prefix,separator,suffix,javascriptPrefix,seen);
+        return populatePattern(pattern,map,prefix,separator,suffix,javascriptPrefix,seen,false);
     }
-    private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen) throws PopulatePatternException {
+    private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
         boolean replaceMissing = false;
         if(map == null){
             map = new HashMap<>();
@@ -176,7 +266,6 @@ public class StringUtil {
                         nameEnd=i;
                         defaultStart=i;
                     }
-
                 }else if (rtrn.startsWith(suffix,i) && count > 0){ //added count > 0 for when jq has }} outside ${{ }}
                     count--;
                     if(count==0){
@@ -196,17 +285,16 @@ public class StringUtil {
                    seen.clear();
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
-                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix,seen);
-
+                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
-                //String replacement = map.containsKey(name) ? map.get(name).toString() : defaultValue;
-
+                if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too
+                    defaultValue = populatePattern(defaultValue,map,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                }
                 boolean isJavascript = false;
                 if(name.startsWith(javascriptPrefix)){
                     isJavascript = true;
                     name = name.substring(javascriptPrefix.length());
                 }
-
                 String replacement = null;
                 if(!isJavascript && map.containsKey(name) && !map.get(name).toString().isEmpty()){
                     if (seen.contains(name)) {
@@ -226,6 +314,15 @@ public class StringUtil {
                            Arrays.asList(
                               "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
                               "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
+//                                   , //working on adding the map entries as first level
+//                              "Object.setPrototypeOf(globalThis, new Proxy(Object.prototype, {\n" +
+//                              "    has(target, key) {\n" +
+//                              "        return key in __scope || key in target;\n" +
+//                              "    },\n" +
+//                              "    get(target, key, receiver) {\n" +
+//                              "        return Reflect.get((key in __scope) ? __scope : target, key, receiver);\n" +
+//                              "    }\n" +
+//                              "}))"
                            )
                         );
                         if (evalResult != null) {
@@ -234,34 +331,6 @@ public class StringUtil {
                     }catch(IllegalStateException ise){
                         //TODO failed to run javascript, save exception in case it was meant to be javascript but there is an error
                     }
-//                    try(Context context = Context.newBuilder("js")
-//                       .allowHostAccess(true)
-//                        .allowIO(true)
-//                        //.fileSystem()TODO custom fileSystem for loading modules?
-//                        .build()
-//                       ){
-//                        //TODO this is probably not how Graal expects to access static methods
-//                        context.eval("js", "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}");
-//                        context.eval("js", "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}");
-//
-//                        Value evaled = null;
-//                        try { //try the javascript as an expression that returns a value
-//                            evaled = context.eval("js", name);
-//                        }catch(PolyglotException e){
-//                            //try returning the javascript as the value
-//                            Value factory = context.eval("js","new Function('return '+"+StringUtil.quote(name)+")"); //this method didn't work with multi-line string literals
-//                            evaled = factory.execute();
-//                        }
-//                        value = ValueConverter.convert(evaled).toString();
-//                        replacement = value;
-//
-//                    }catch (PolyglotException e){
-////                        System.err.println("SyntaxException::"+e.getMessage()+"\n"+pattern+"\n"+Arrays.asList(e.getStackTrace())
-////                           .stream()
-////                           .map(ste->ste.getClassName()+"."+ste.getMethodName()+"():"+ste.getLineNumber())
-////                           .collect(Collectors.joining("\n"))
-////                        );
-//                    }
                 }
                 if((replacement == null || "".equals(replacement))){
                     replacement = defaultValue != null ? defaultValue : (map.containsKey(name) ? map.get(name).toString() : null);

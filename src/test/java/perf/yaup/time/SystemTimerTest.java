@@ -3,6 +3,7 @@ package perf.yaup.time;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.time.SystemTimer;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -19,7 +20,7 @@ public class SystemTimerTest {
 
    }
 
-   @Test
+   @Test @Ignore
    public void stops(){
       SystemTimer timer = new SystemTimer("one");
       timer.start();
@@ -31,7 +32,7 @@ public class SystemTimerTest {
       timer.stop();
 
       Json json = timer.getJson();
-      System.out.println(json.toString(2));
+
    }
 
    @Test(timeout = 1000)

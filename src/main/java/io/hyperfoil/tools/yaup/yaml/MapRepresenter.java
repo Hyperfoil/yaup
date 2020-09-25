@@ -30,6 +30,13 @@ public class MapRepresenter extends Representer implements Defer {
         return rtrn;
     }
 
+    public boolean hasEncoder(Class clazz){
+        return encoders.containsKey(clazz);
+    }
+    public Function<Object,Object> getEncoder(Class clazz){
+        return encoders.get(clazz);
+    }
+
     @Override
     public Object defer(Object obj) {
         return deferAs(obj,null);
