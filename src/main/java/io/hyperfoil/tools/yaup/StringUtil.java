@@ -141,6 +141,9 @@ public class StringUtil {
         return jsEval(js, Collections.EMPTY_LIST,args);
     }
     public static Object jsEval(String js, Collection<String> evals,Object...args){
+        return jsEval(js,Collections.EMPTY_MAP,evals,args);
+    }
+    public static Object jsEval(String js, Map globals,Collection<String> evals,Object...args){
         try(Context context = Context.newBuilder("js")
         .allowAllAccess(true)
         .allowExperimentalOptions(true)
@@ -149,6 +152,19 @@ public class StringUtil {
         .build()){
             context.enter();
             try {
+                if(!globals.isEmpty()){
+                    context.getBindings("js").putMember("__yaupGlobal",globals);
+                    context.eval("js",
+             "Object.setPrototypeOf(globalThis, new Proxy(Object.prototype, {\n" +
+                    "    has(target, key) {\n" +
+                    "        return key in target || __yaupGlobal.containsKey(key);\n" +
+                    "    },\n" +
+                    "    get(target, key, receiver) {\n" +
+                    "        if (__yaupGlobal.containsKey(key)){ return __yaupGlobal.get(key); }\n" +
+                    "        else { return Reflect.get( target, key, receiver); }\n" +
+                    "    }\n" +
+                    "}))");
+                }
                 evals.forEach(s -> {
                     try {
                         context.eval("js", s);
@@ -311,18 +327,10 @@ public class StringUtil {
                     try {
                         Object evalResult = jsEval(
                            name,
+                           map,
                            Arrays.asList(
                               "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
                               "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
-//                                   , //working on adding the map entries as first level
-//                              "Object.setPrototypeOf(globalThis, new Proxy(Object.prototype, {\n" +
-//                              "    has(target, key) {\n" +
-//                              "        return key in __scope || key in target;\n" +
-//                              "    },\n" +
-//                              "    get(target, key, receiver) {\n" +
-//                              "        return Reflect.get((key in __scope) ? __scope : target, key, receiver);\n" +
-//                              "    }\n" +
-//                              "}))"
                            )
                         );
                         if (evalResult != null) {

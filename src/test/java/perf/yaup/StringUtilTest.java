@@ -14,6 +14,20 @@ import static org.junit.Assert.*;
 
 public class StringUtilTest {
 
+   @Test
+   public void jsEval_global_string(){
+      Map<Object,Object> globals = new HashMap<>();
+      globals.put("FOO","one");
+      Object result = StringUtil.jsEval("FOO+'two'",globals,Collections.EMPTY_LIST);
+      assertEquals("FOO should be found in global context","onetwo",result);
+   }
+   @Test
+   public void jsEval_global_number(){
+      Map<Object,Object> globals = new HashMap<>();
+      globals.put("FOO",1);
+      Object result = StringUtil.jsEval("FOO+2",globals,Collections.EMPTY_LIST);
+      assertEquals("FOO should be found in global context",3l,result);
+   }
 
    @Test
    public void jsEval_function_return_null(){
