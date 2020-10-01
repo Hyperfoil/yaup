@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -58,5 +59,10 @@ public class Counters<T> implements Serializable{
     public List<T> entries(){
         return Arrays.asList(((T[]) counts.keySet().toArray()));
 
+    }
+
+    @Override
+    public String toString(){
+        return counts.entrySet().stream().map(e->e.getKey()+"="+e.getValue()).collect(Collectors.joining(" "));
     }
 }

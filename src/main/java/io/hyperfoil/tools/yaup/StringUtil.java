@@ -153,11 +153,12 @@ public class StringUtil {
             context.enter();
             try {
                 if(!globals.isEmpty()){
+                    //https://github.com/graalvm/graaljs/issues/44
                     context.getBindings("js").putMember("__yaupGlobal",globals);
                     context.eval("js",
              "Object.setPrototypeOf(globalThis, new Proxy(Object.prototype, {\n" +
                     "    has(target, key) {\n" +
-                    "        return key in target || __yaupGlobal.containsKey(key);\n" +
+                    "        return  __yaupGlobal.containsKey(key) || key in target;\n" +
                     "    },\n" +
                     "    get(target, key, receiver) {\n" +
                     "        if (__yaupGlobal.containsKey(key)){ return __yaupGlobal.get(key); }\n" +
@@ -314,7 +315,7 @@ public class StringUtil {
                 String replacement = null;
                 if(!isJavascript && map.containsKey(name) && !map.get(name).toString().isEmpty()){
                     if (seen.contains(name)) {
-                        throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+seen+"\n  rtrn="+rtrn);
+                        throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+seen+"\n  rtrn="+rtrn,rtrn);
                     }
                     replacement = map.get(name).toString();
                     seen.add(name); //only add to seen if used to replace?
@@ -346,7 +347,7 @@ public class StringUtil {
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){
                     skip = end;
-                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid"); //TODO: replace with logging framework
+                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn); //TODO: replace with logging framework
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                     seenIndex = nameStart + replacement.length()-1;
