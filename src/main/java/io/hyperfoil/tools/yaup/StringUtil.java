@@ -345,7 +345,7 @@ public class StringUtil {
                     replacement = defaultValue != null ? defaultValue : (map.containsKey(name) ? map.get(name).toString() : null);
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
-                if(replacement == null){
+                if(replacement == null){//right now we fail fast, should we try and replace as much as possible before failing?
                     skip = end;
                     throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn); //TODO: replace with logging framework
                 }else {
