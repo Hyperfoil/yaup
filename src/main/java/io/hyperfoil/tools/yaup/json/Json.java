@@ -1367,7 +1367,12 @@ public class Json {
     }
     public String getString(Object key,String defaultValue) {
         key = box(key);
-        return has(key) ? data.get(key).toString() : defaultValue;
+        if (has(key)) {
+            Object value = data.get(key);
+            return value == null ? null : value.toString();
+        } else {
+            return defaultValue;
+        }
     }
     public Optional<String> optString(Object key){
         return ofNullable(getString(key));
