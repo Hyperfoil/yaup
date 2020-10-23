@@ -460,6 +460,20 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatPattern_javascript_padStart(){
+      Map<Object, Object> map = new HashMap<>();
+      Json array = Json.fromString("[\"one\",\"two\"]");
+      map.put("index",5);
+      try {
+         String response = StringUtil.populatePattern("${{=(${{index}}).toString().padStart(3,\"0\")}}",map);
+         assertEquals("005",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+
+      }
+   }
+
+   @Test
    public void populatePattern_javascript_missing(){
       Map<Object, Object> map = new HashMap<>();
       Json array = Json.fromString("[\"one\",\"two\"]");

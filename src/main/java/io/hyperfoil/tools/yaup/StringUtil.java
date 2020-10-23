@@ -313,7 +313,7 @@ public class StringUtil {
                     name = name.substring(javascriptPrefix.length());
                 }
                 String replacement = null;
-                if(!isJavascript && map.containsKey(name) && !map.get(name).toString().isEmpty()){
+                if(!isJavascript && map.containsKey(name) && map.get(name)!=null && !map.get(name).toString().isEmpty()){
                     if (seen.contains(name)) {
                         throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+seen+"\n  rtrn="+rtrn,rtrn);
                     }
@@ -342,12 +342,12 @@ public class StringUtil {
                     }
                 }
                 if((replacement == null || "".equals(replacement))){
-                    replacement = defaultValue != null ? defaultValue : (map.containsKey(name) ? map.get(name).toString() : null);
+                    replacement = defaultValue != null ? defaultValue : (map.containsKey(name) && map.get(name) != null ? map.get(name).toString() : null);
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){//right now we fail fast, should we try and replace as much as possible before failing?
                     skip = end;
-                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn); //TODO: replace with logging framework
+                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn);
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                     seenIndex = nameStart + replacement.length()-1;
