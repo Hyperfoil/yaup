@@ -436,11 +436,11 @@ public class Xml {
         XmlOperation toApply =XmlOperation.parse(xmlOperation);
         return apply(toApply);
     }
+
     public String apply(XmlOperation xmlOperation){
         if(!exists()){
             return null;
         }
-
         StringBuilder rtrn = new StringBuilder();
 
         XmlPath xmlPath = XmlPath.parse(xmlOperation.getPath());
@@ -509,6 +509,7 @@ public class Xml {
                         if(rtrn.length()>0){
                             rtrn.append(System.lineSeparator());
                         }
+
                         rtrn.append(x.getValue());
                     });
                     break;

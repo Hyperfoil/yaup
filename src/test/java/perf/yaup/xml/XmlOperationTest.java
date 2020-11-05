@@ -13,28 +13,28 @@ import static org.junit.Assert.assertFalse;
 public class XmlOperationTest {
 
     @Test
-    public void parseRead(){
+    public void parse_read(){
         XmlOperation operation = XmlOperation.parse("/foo/bar");
         assertTrue("expect read",operation.isRead());
         assertEquals("path","/foo/bar",operation.getPath());
         assertFalse("no value",operation.hasValue());
     }
     @Test
-    public void parseSet(){
+    public void parse_set(){
         XmlOperation operation = XmlOperation.parse("/foo/bar "+ FileUtility.SET_OPERATION+" bizz");
         assertTrue("expect set",operation.isSet());
         assertEquals("path","/foo/bar",operation.getPath());
         assertEquals("value","bizz",operation.getValue());
     }
     @Test
-    public void parseAdd(){
+    public void parse_add(){
         XmlOperation operation = XmlOperation.parse("/foo/bar "+ FileUtility.ADD_OPERATION+" @key = bizz");
         assertTrue("expect add",operation.isAdd());
         assertEquals("path","/foo/bar",operation.getPath());
         assertEquals("value","@key = bizz",operation.getValue());
     }
     @Test
-    public void applyReadTagText(){
+    public void apply_read_tag_text(){
         String xmlContent = "<foo><bar>bizz</bar></foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
 
@@ -44,7 +44,7 @@ public class XmlOperationTest {
         assertEquals("bizz",response);
     }
     @Test
-    public void applyReadAttribute(){
+    public void apply_read_attribute(){
         String xmlContent = "<foo><bar key=\"value\">bizz</bar></foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
 
@@ -54,7 +54,7 @@ public class XmlOperationTest {
         assertEquals("value",response);
     }
     @Test
-    public void applySetAttribute(){
+    public void apply_set_attribute(){
         String xmlContent = "<foo><bar key=\"value\">bizz</bar></foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
 
@@ -66,7 +66,7 @@ public class XmlOperationTest {
         assertEquals("changed",xml.firstChild("bar").attribute("key").toString());
     }
     @Test
-    public void applyAddAttribute(){
+    public void apply_add_attribute(){
         String xmlContent = "<foo></foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
 
@@ -79,7 +79,7 @@ public class XmlOperationTest {
         assertEquals("attribute value","changed",xml.attribute("key").toString());
     }
     @Test
-    public void applyAddChild(){
+    public void apply_add_child(){
         String xmlContent = "<foo><bar>bizz</bar></foo>";
 
         Xml xml = new XmlLoader().loadXml(xmlContent);
@@ -91,7 +91,7 @@ public class XmlOperationTest {
         assertEquals("fuzz",xml.firstChild("bar").firstChild("buzz").toString());
     }
     @Test
-    public void applySetMissingAttribute(){
+    public void apply_set_missing_attribute(){
         String xmlContent = "<foo>bizz</foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/@key "+FileUtility.SET_OPERATION+" value with space");
@@ -100,7 +100,7 @@ public class XmlOperationTest {
         assertEquals("value with space",xml.attribute("key").toString());
     }
     @Test
-    public void appplySetMissingTag(){
+    public void appply_set_missing_tag(){
         String xmlContent = "<foo>fizz</foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/bar "+FileUtility.SET_OPERATION+" buzz");
@@ -108,7 +108,7 @@ public class XmlOperationTest {
 
     }
     @Test
-    public void applySetMissingTagWithAttribute(){
+    public void apply_set_missing_tag_with_attribute(){
         String xmlContent = "<foo>fizz</foo>";
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/bar[@key='value' and @set] "+FileUtility.SET_OPERATION+" <hi>mom</hi>");
@@ -119,7 +119,7 @@ public class XmlOperationTest {
 
     }
     @Test
-    public void replaceXmlnsAttribute(){
+    public void replace_xmlns_attribute(){
         String search = "/foo[@xmlns=urn:foo:bar:biz]/bar[@xmlns:biz=foo:biz:buz]";
 
         String replaced = XmlOperation.replaceXmlnsAttribute(search);
@@ -134,7 +134,7 @@ public class XmlOperationTest {
 
 
     @Test
-    public void lastPathIndex(){
+    public void last_path_index(){
 
         assertEquals("attribute",9, XmlOperation.lastPathIndex("/foo/bar/@foo"));
         assertEquals("fragment",9,XmlOperation.lastPathIndex("/foo/bar/foo"));

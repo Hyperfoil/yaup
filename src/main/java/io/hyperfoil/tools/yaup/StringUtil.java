@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
+import io.hyperfoil.tools.yaup.json.graaljs.MapProxyWrapper;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Value;
@@ -154,7 +155,7 @@ public class StringUtil {
             try {
                 if(!globals.isEmpty()){
                     //https://github.com/graalvm/graaljs/issues/44
-                    context.getBindings("js").putMember("__yaupGlobal",globals);
+                    context.getBindings("js").putMember("__yaupGlobal",new MapProxyWrapper(globals));
                     context.eval("js",
              "Object.setPrototypeOf(globalThis, new Proxy(Object.prototype, {\n" +
                     "    has(target, key) {\n" +
@@ -217,7 +218,7 @@ public class StringUtil {
             }catch(PolyglotException pe){
                 //TODO do we log polyglot exceptions
                 throw new IllegalStateException("jsEval exception for:"+js,pe);
-            }catch(Exception e){
+            }catch(Throwable e){
                 throw new IllegalStateException("jsEval exception for:"+js,e);
             }finally{
                 context.leave();
@@ -234,13 +235,30 @@ public class StringUtil {
         return new ArrayList(rtrn);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
-        return populatePattern(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+        return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
         Set<String> seen = new HashSet();
-        return populatePattern(pattern,map,prefix,separator,suffix,javascriptPrefix,seen,false);
+        return populatePattern(pattern,map,Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,seen,false);
+    }
+    public static String populatePattern(String pattern, Map<Object,Object> map,Collection<String> evals,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
+        Set<String> seen = new HashSet();
+        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false);
     }
     private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
+        return populatePattern(
+                pattern,
+                map,
+                Collections.emptyList(),
+                prefix,
+                separator,
+                suffix,
+                javascriptPrefix,
+                seen,
+                fullScan
+        );
+    }
+    private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
         boolean replaceMissing = false;
         if(map == null){
             map = new HashMap<>();
@@ -302,10 +320,10 @@ public class StringUtil {
                    seen.clear();
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
-                String name = populatePattern(namePattern,map,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                String name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too
-                    defaultValue = populatePattern(defaultValue,map,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                    defaultValue = populatePattern(defaultValue,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
                 }
                 boolean isJavascript = false;
                 if(name.startsWith(javascriptPrefix)){
@@ -329,10 +347,7 @@ public class StringUtil {
                         Object evalResult = jsEval(
                            name,
                            map,
-                           Arrays.asList(
-                              "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
-                              "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}"
-                           )
+                           evals
                         );
                         if (evalResult != null) {
                             replacement = evalResult.toString();

@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -13,6 +14,29 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class StringUtilTest {
+
+   static List<String> evals = Arrays.asList(
+           "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
+           "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
+           "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
+   );
+
+   @Test
+   public void jsEval_global_json_member_math(){
+      Map<Object,Object> globals = new HashMap<Object,Object>();
+      globals.put("FOO",Json.fromString("{\"bar\":2}"));
+      globals.put("BAR",2);
+      Object result = StringUtil.jsEval("FOO.bar+BAR",globals,Collections.EMPTY_LIST);
+      assertEquals("FOO should be found in global context",4L,result);
+   }
+
+   @Test
+   public void jsEval_global_json_member(){
+      Map<Object,Object> globals = new HashMap<Object,Object>();
+      globals.put("FOO",Json.fromString("{\"bar\":\"biz\"}"));
+      Object result = StringUtil.jsEval("FOO.bar+'buz'",globals,Collections.EMPTY_LIST);
+      assertEquals("FOO should be found in global context","bizbuz",result);
+   }
 
    @Test
    public void jsEval_global_string(){
@@ -598,11 +622,92 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_javascript_range(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","1");
+      try {
+         String response = StringUtil.populatePattern("${{=range(1,10)}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         assertTrue("expect javascript: "+response,Json.isJsonLike(response));
+         Json json = Json.fromString(response);
+         assertNotNull(json);
+         assertTrue("json should be an array",json.isArray());
+         assertEquals("json should have 8 entries",9,json.size());
+         assertEquals("json[0] should be 1",1,json.getLong(0));
+         assertEquals("json[8] should be 9",9,json.getLong(8));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_range_negative_stop(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","1");
+      try {
+         String response = StringUtil.populatePattern("${{=range(0,-10)}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         assertTrue("expect javascript: "+response,Json.isJsonLike(response));
+         Json json = Json.fromString(response);
+         assertNotNull(json);
+         assertTrue("json should be an array",json.isArray());
+         assertEquals("json size: "+json,10,json.size());
+         assertEquals("json[0]",0,json.getLong(0));
+         assertEquals("json[9]",-9,json.getLong(9));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_range_implicit_negative_step(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","1");
+      try {
+         String response = StringUtil.populatePattern("${{=range(20,10)}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         assertTrue("expect javascript: "+response,Json.isJsonLike(response));
+         Json json = Json.fromString(response);
+         assertNotNull(json);
+         assertTrue("json should be an array:"+json,json.isArray());
+         assertEquals("json should have 10 entries:"+json,10,json.size());
+         assertEquals("json[0]",20,json.getLong(0));
+         assertEquals("json[9]",11,json.getLong(9));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_range_step(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","1");
+      try {
+         String response = StringUtil.populatePattern("${{=range(20,10,2)}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         assertTrue("expect javascript: "+response,Json.isJsonLike(response));
+         Json json = Json.fromString(response);
+         assertNotNull(json);
+         assertTrue("json should be an array: "+json,json.isArray());
+         assertEquals("json should have 5 entries: "+json,5,json.size());
+         assertEquals("json[0]: "+json,20,json.getLong(0));
+         assertEquals("json[4]: "+json,12,json.getLong(4));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_range_incorrect_step(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","1");
+      boolean caught = false;
+      try {
+         String response = StringUtil.populatePattern("${{=range(20,10,-2)}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+      } catch (PopulatePatternException pe) {
+         caught = true;
+      }
+      assertTrue("Expect a PopulatePatternException when step is the wrong direction for range",caught);
+   }
+
+   @Test
    public void populatePattern_javascript_milliseconds_concat(){
       Map<Object, Object> map = new HashMap<>();
       map.put("FOO","1");
       try {
-         String response = StringUtil.populatePattern("${{=milliseconds(${{FOO}}+'m'):100}}", map);
+         String response = StringUtil.populatePattern("${{=milliseconds(${{FOO}}+'m'):100}}", map, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          assertEquals("expect 1m in ms","60000",response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
@@ -612,7 +717,7 @@ public class StringUtilTest {
    @Test
    public void populatePattern_javascript_milliseconds() {
       try {
-         String response = StringUtil.populatePattern("${{=milliseconds('1m')}}", null);
+         String response = StringUtil.populatePattern("${{=milliseconds('1m')}}", null, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          assertEquals("expect 1m in ms","60000",response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
@@ -621,7 +726,7 @@ public class StringUtilTest {
    @Test
    public void populatePattern_javascript_seconds() {
       try {
-         String response = StringUtil.populatePattern("${{=seconds('1m')}}", null);
+         String response = StringUtil.populatePattern("${{=seconds('1m')}}", null, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          assertEquals("expect 1m in seconds","60",response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
@@ -635,7 +740,7 @@ public class StringUtilTest {
 
       String response = null;
       try {
-         response = StringUtil.populatePattern("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", state);
+         response = StringUtil.populatePattern("${{= 2*(seconds(${{BAR}})+${{FOO}}) :-1}}", state, evals,StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          assertEquals("expected value with seconds()", "140", response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
