@@ -1085,13 +1085,13 @@ public class Json {
      * @return List of keys
      */
     public static List<String> toChain(String keys){
-        if(!keys.contains(".")){
+        if(!keys.contains(".") && !keys.contains("[")){
             ArrayList<String> rtrn = new ArrayList();
             rtrn.add(keys);
             return rtrn;
         }
         return new ArrayList<>(
-           Arrays.asList(keys.split("\\.(?<!\\\\\\.)"))
+           Arrays.asList(keys.split("[\\.\\[\\]](?<!\\\\[\\.\\[\\]])"))
         );
     }
 
@@ -1347,6 +1347,13 @@ public class Json {
     }
 
     private Object box(Object key){
+        if(isArray()){
+            if(key instanceof Integer || key instanceof Long){
+                return ((Number)key).intValue();
+            }else if( key.toString().matches("\\d+")){
+                return Integer.parseInt(key.toString());
+            }
+        }
         if(isArray() && (key instanceof Integer || key instanceof Long)){
             key = ((Number)key).intValue();
         }
@@ -1380,6 +1387,7 @@ public class Json {
 
     public Json getJson(Object key){ return getJson(key,null); }
     public Json getJson(Object key,Json defaultValue){
+        key = box(key);
         return has(key) && data.get(key) instanceof Json ? (Json)data.get(key) : defaultValue;
     }
     public Optional<Json> optJson(Object key){

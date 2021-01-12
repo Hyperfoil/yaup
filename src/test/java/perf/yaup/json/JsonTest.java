@@ -6,10 +6,41 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 public class JsonTest {
 
+    @Test
+    public void has_array_string_index(){
+        Json json = new Json();
+        json.add("foo");
+        assertTrue("json should have ['0']",json.has("0"));
+        assertTrue("json should have [0]",json.has(0));
+    }
+
+    @Test
+    public void toChain_no_dots(){
+        List<String> chain = Json.toChain("a");
+        assertEquals("expect 1 entry: "+chain,1,chain.size());
+    }
+    @Test
+    public void toChain_separate_dots(){
+        List<String> chain = Json.toChain("a.b.c");
+        assertEquals("expect 3 entries: "+chain,3,chain.size());
+    }
+    @Test
+    public void toChain_skip_slash_dot(){
+        List<String> chain = Json.toChain("a\\.b.c");
+        assertEquals("expect 2 entries: "+chain,2,chain.size());
+    }
+
+    @Test
+    public void toChain_array_reference(){
+        List<String> chain = Json.toChain("v[0]");
+        assertEquals("expect 2 entries: "+chain,2,chain.size());
+    }
 
     @Test
     public void fromString_empty_object(){
@@ -51,6 +82,19 @@ public class JsonTest {
         Json target = Json.fromJs("{FOO:{biz:{buz:'one'}}}");
         Object found = Json.find(target,"$.FOO.biz.buz");
         assertNotNull(found);
+    }
+
+    @Test
+    public void chainSet_array_reference(){
+        Json root = Json.fromString("{\"v\":[{},{}]}");
+        Json.chainSet(root,"v[0].uno","one");
+
+        Json first = root.getJson("v");
+        assertNotNull("v should exist",first);
+        first = first.getJson(0);
+        assertNotNull("v[0] should exist",first);
+        assertTrue("v[0].uno should exist: "+first.toString(),first.has("uno"));
+
     }
 
     @Test
