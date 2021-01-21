@@ -21,25 +21,57 @@ public class JsonTest {
     }
 
     @Test
+    public void toChain_doubleQuote_key(){
+        List<String> chain = Json.toChain("a.\"1.2.3\".b");
+        assertEquals("expect 3 entries: "+chain,3,chain.size());
+        assertEquals("incorrect chain[0]","a",chain.get(0));
+        assertEquals("incorrect chain[1]","1.2.3",chain.get(1));
+        assertEquals("incorrect chain[2]","b",chain.get(2));
+    }
+    @Test
+    public void toChain_singleQuote_key(){
+        List<String> chain = Json.toChain("a.'1.2.3'.b");
+        assertEquals("expect 3 entries: "+chain,3,chain.size());
+        assertEquals("incorrect chain[0]","a",chain.get(0));
+        assertEquals("incorrect chain[1]","1.2.3",chain.get(1));
+        assertEquals("incorrect chain[2]","b",chain.get(2));
+    }
+    @Test
+    public void bracket_key(){
+        List<String> chain = Json.toChain("a[1.2.3].b");
+        assertEquals("incorrect chain[0]","a",chain.get(0));
+        assertEquals("incorrect chain[1]","1.2.3",chain.get(1));
+        assertEquals("incorrect chain[2]","b",chain.get(2));
+    }
+
+    @Test
     public void toChain_no_dots(){
         List<String> chain = Json.toChain("a");
         assertEquals("expect 1 entry: "+chain,1,chain.size());
+        assertEquals("incorrect chain[0]","a",chain.get(0));
     }
     @Test
     public void toChain_separate_dots(){
         List<String> chain = Json.toChain("a.b.c");
         assertEquals("expect 3 entries: "+chain,3,chain.size());
+        assertEquals("incorrect chain[0]","a",chain.get(0));
+        assertEquals("incorrect chain[1]","b",chain.get(1));
+        assertEquals("incorrect chain[2]","c",chain.get(2));
     }
     @Test
     public void toChain_skip_slash_dot(){
         List<String> chain = Json.toChain("a\\.b.c");
         assertEquals("expect 2 entries: "+chain,2,chain.size());
+        assertEquals("incorrect chain[0]","a\\.b",chain.get(0));
+        assertEquals("incorrect chain[1]","c",chain.get(1));
     }
 
     @Test
     public void toChain_array_reference(){
         List<String> chain = Json.toChain("v[0]");
         assertEquals("expect 2 entries: "+chain,2,chain.size());
+        assertEquals("incorrect chain[0]","v",chain.get(0));
+        assertEquals("incorrect chain[1]","0",chain.get(1));
     }
 
     @Test

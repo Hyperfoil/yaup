@@ -15,6 +15,7 @@ import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
@@ -1071,7 +1072,8 @@ public class Json {
     private LinkedHashMap<Object,Object> data;
     private boolean isArray;
 
-    public static List<String> dotChain(String path){
+    //does not appear to be used
+    private static List<String> dotChain(String path){
         return new ArrayList<>(
                 Arrays.asList(path.split("\\.(?<!\\\\\\.)"))
                         .stream()
@@ -1079,20 +1081,90 @@ public class Json {
                         .collect(Collectors.toList())
         );
     }
+
+
+
     /**
-     * Split the keys by non-slash escaped dots (. not \.)
+     * Split the keys by non-slash escaped dots (. not \.), quoted keys, or bracketed keys
      * @param keys string containing contatenated keys
      * @return List of keys
      */
     public static List<String> toChain(String keys){
+        if(keys == null || keys.trim().isEmpty()){
+            return new ArrayList<>();
+        }
         if(!keys.contains(".") && !keys.contains("[")){
             ArrayList<String> rtrn = new ArrayList();
             rtrn.add(keys);
             return rtrn;
         }
-        return new ArrayList<>(
-           Arrays.asList(keys.split("[\\.\\[\\]](?<!\\\\[\\.\\[\\]])"))
-        );
+        int flushed=0;
+        char quote='X';
+        boolean inQuote=false;
+        boolean inBracket=false;
+
+        ArrayList<String> rtrn = new ArrayList<>();
+        for(int i=0; i<keys.length(); i++){
+            char c = keys.charAt(i);
+            switch (c){
+                case '\'':
+                case '"':
+                    if(inQuote){
+                        if(quote == c){
+                            if(i==0 || keys.charAt(i-1) != '\\'){
+                                inQuote=false;
+
+                            }
+                        }
+                    }else{
+                        quote = c;
+                        inQuote=true;
+                    }
+                    break;
+                case '[':
+                    if(!inQuote){
+                        if(flushed<i){
+                            rtrn.add(StringUtil.removeQuotes(keys.substring(flushed,i)));
+                            flushed=i+1;
+                        }
+                        inBracket=true;
+                    }
+                    break;
+                case ']':
+                    if(!inQuote){
+                        if(inBracket){
+                            inBracket=false;
+                            if(flushed<i){
+                                rtrn.add(StringUtil.removeQuotes(keys.substring(flushed,i)));
+                                flushed=i+1;
+                            }
+                        }else{
+                            //ERROR, should not see ] if not in quote or bracket
+                        }
+                    }
+                    break;
+                case '.':
+                    if(!inQuote && !inBracket){
+                        if (i==0 || keys.charAt(i-1) != '\\' ){
+                            if(flushed<i){
+                                rtrn.add(StringUtil.removeQuotes(keys.substring(flushed,i)));
+                                flushed=i+1;
+                            }else if (i>0 && keys.charAt(i-1) == ']'){
+                                flushed=i+1;
+                            }
+                        }
+                    }
+                    break;
+            }
+
+        }
+        if(flushed < keys.length()){
+            rtrn.add(StringUtil.removeQuotes(keys.substring(flushed,keys.length())));
+        }
+        return rtrn;
+//        return new ArrayList<>(
+//           Arrays.asList(keys.split("[\\.\\[\\]](?<!\\\\[\\.\\[\\]])"))
+//        );
     }
 
     public Json(){
