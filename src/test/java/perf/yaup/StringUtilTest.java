@@ -856,6 +856,18 @@ public class StringUtilTest {
 
    }
 
+   @Test
+   public void populatePattern_populate_before_exception(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         String response= StringUtil.populatePattern("${{missing}}_${{hasDefault:}}", map);
+         fail("populatePattern should throw a PopulatePatternException");
+      }catch (PopulatePatternException pe){
+         String result = pe.getResult();
+         assertNotNull("result should not be null",result);
+         assertFalse("result should not contain hasDefault: "+result,result.contains("hasDefault"));
+      }
+   }
 
    @Test
    public void populatePattern_name_and_default_patterns() {

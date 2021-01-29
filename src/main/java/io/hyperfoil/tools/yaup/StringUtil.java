@@ -260,6 +260,7 @@ public class StringUtil {
     }
     private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
         boolean replaceMissing = false;
+        PopulatePatternException toThrow = null;
         if(map == null){
             map = new HashMap<>();
         }
@@ -361,14 +362,21 @@ public class StringUtil {
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();
                 if(replacement == null){//right now we fail fast, should we try and replace as much as possible before failing?
+                    if(toThrow==null){
+                        toThrow = new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn);
+                    }
                     skip = end;
-                    throw new PopulatePatternException("Unable to resolve replacement for: " + name + " in "+pattern+" Either state variable has not been set, or JS expression is invalid",rtrn);
+                    seenIndex = end;
                 }else {
                     rtrn = rtrn.substring(0, nameStart) + replacement + rtrn.substring(end);
                     seenIndex = nameStart + replacement.length()-1;
                 }
             }
         }while(replaced);
+        if(toThrow!=null){
+            toThrow.setResult(rtrn);
+            throw toThrow;
+        }
         return rtrn;
     }
 
