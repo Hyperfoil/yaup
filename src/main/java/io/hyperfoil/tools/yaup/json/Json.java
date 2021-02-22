@@ -1073,7 +1073,7 @@ public class Json {
     private boolean isArray;
 
     //does not appear to be used
-    private static List<String> dotChain(String path){
+    public static List<String> dotChain(String path){
         return new ArrayList<>(
                 Arrays.asList(path.split("\\.(?<!\\\\\\.)"))
                         .stream()

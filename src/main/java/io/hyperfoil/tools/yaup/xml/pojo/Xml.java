@@ -5,6 +5,7 @@ import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -18,6 +19,7 @@ import java.util.function.Consumer;
 
 import static io.hyperfoil.tools.yaup.xml.XmlOperation.Operation;
 import static io.hyperfoil.tools.yaup.xml.XmlOperation.Operation.Add;
+import static io.hyperfoil.tools.yaup.xml.pojo.Xml.Type.Text;
 
 public class Xml {
 
@@ -66,6 +68,7 @@ public class Xml {
 
         try {
             XMLEventReader xmlEventReader = xmlInputFactory.createXMLEventReader(stream);
+
             while (xmlEventReader.hasNext()) {
                 XMLEvent xmlEvent = xmlEventReader.nextEvent();
                 if(xmlEvent.isStartDocument()){
@@ -129,7 +132,7 @@ public class Xml {
                     String value = xmlEvent.asCharacters().getData().trim();
 
                     if(!value.isEmpty()) {
-                        Xml textElement = new Xml(Type.Text, parentStack.peek(),"#text");
+                        Xml textElement = new Xml(Text, parentStack.peek(),"#text");
                         textElement.setValue(xmlEvent.asCharacters().getData());
                         parentStack.peek().addChild(textElement);
                     }
@@ -147,7 +150,6 @@ public class Xml {
             parentStack.forEach(entry-> System.out.println(entry.getName()+" "+entry.getType()+" "+entry.getChildren().size()));
             //e.printStackTrace();
         }
-
         return rtrn;
     }
 
@@ -218,7 +220,7 @@ public class Xml {
             }
             allChildren.add(child);
             child.parent = this;
-            if (child.getType().equals(Type.Text)) {
+            if (child.getType().equals(Text)) {
                 textChildren.add(child);
                 addValue(child.getValue());
             } else if (child.getType().equals(Type.Tag)) {
@@ -276,7 +278,7 @@ public class Xml {
     }
     Xml getValueXml(){
         //TODO should this be detached from parent so it cannot attempt to modify?
-        return new Xml(Type.Text,null,"#text",getValue());
+        return new Xml(Text,null,"#text",getValue());
     }
     public boolean hasValue(){return value!=null;}
     private void addValue(String value){
@@ -416,7 +418,7 @@ public class Xml {
         return getType().equals(Type.Tag);
     }
     public boolean isText(){
-        return getType().equals(Type.Text);
+        return getType().equals(Text);
     }
 
     public void attributeWalk(Consumer<Xml> toWalk){
@@ -499,6 +501,8 @@ public class Xml {
                 }else{
                     System.out.println("unsupported type = "+tail.getType());
                 }
+            }else{
+
             }
         }
         String finalValue = value.trim();
@@ -509,8 +513,18 @@ public class Xml {
                         if(rtrn.length()>0){
                             rtrn.append(System.lineSeparator());
                         }
-
-                        rtrn.append(x.getValue());
+                        switch (x.getType()){
+                            case Text:
+                            case Attribute:
+                                rtrn.append(x.getValue());
+                                break;
+                            default:
+                                if(x.hasValue()){
+                                    rtrn.append(x.getValue());
+                                }else {
+                                    rtrn.append(x.documentString());
+                                }
+                        }
                     });
                     break;
                 case Set:
@@ -525,7 +539,7 @@ public class Xml {
                                 x.addChild(toSet);
                             }else{
                                 x.clearText();
-                                Xml toSet = new Xml(Type.Text,x,"#text",finalValue);
+                                Xml toSet = new Xml(Text,x,"#text",finalValue);
                                 x.addChild(toSet);
                             }
                         }else if (x.isText()){
@@ -561,7 +575,7 @@ public class Xml {
                                 toAdd = new Xml(Type.Attribute,x,attrName,StringUtil.removeQuotes(attrValue));
                                 x.setAttribute(toAdd);
                             }else{
-                                toAdd = new Xml(Type.Text,x,"#text",finalValue);
+                                toAdd = new Xml(Text,x,"#text",finalValue);
                                 x.addChild(toAdd);
                             }
 
@@ -589,6 +603,25 @@ public class Xml {
                     System.out.println("unsupported opp "+opp+" on "+xmlPath.toString());
             }
         }
+        if(rtrn.toString().isEmpty() && found.size()>0){
+            found.forEach(x->{
+                if(rtrn.length()>0){
+                    rtrn.append(System.lineSeparator());
+                }
+                switch (x.getType()){
+                    case Text:
+                    case Attribute:
+                        rtrn.append(x.getValue());
+                        break;
+                    default:
+                        if(x.hasValue()){
+                            rtrn.append(x.getValue());
+                        }else {
+                            rtrn.append(x.documentString());
+                        }
+                }
+            });
+        }
         return rtrn.toString();
     }
 
@@ -603,7 +636,8 @@ public class Xml {
         return documentString(4);
     }
     public String documentString(int indent){
-        return documentString(indent,true);
+        boolean includeDocument = getType() == Type.Document ? hasAttribute("version") : true;
+        return documentString(indent,includeDocument);
     }
     public String documentString(int indent,boolean includeDocument){
         StringBuilder rtrn = new StringBuilder();
@@ -644,9 +678,9 @@ public class Xml {
                     if (increment > 0) {
                         sb.append(System.lineSeparator());
                     }
-                    for (Xml child : getChildren()) {
-                        child.append(sb, indent, increment, includeDocument);
-                    }
+                }
+                for (Xml child : getChildren()) {
+                    child.append(sb, indent, increment, includeDocument);
                 }
                 break;
             case Tag:
@@ -657,7 +691,8 @@ public class Xml {
                     sb.append(attribute.getName());
                     sb.append(ATTRIBUTE_VALUE_PREFIX);
                     sb.append(ATTRIBUTE_WRAPPER);
-                    sb.append(attribute.getValue());
+                    sb.append(StringEscapeUtils.escapeXml11(attribute.getValue()));
+                    //sb.append(attribute.getValue());
                     sb.append(ATTRIBUTE_WRAPPER);
                 }
                 if(allChildren().isEmpty() && getValue().isEmpty()){
