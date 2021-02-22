@@ -12,6 +12,14 @@ import static org.junit.Assert.*;
 
 public class XmlTest {
 
+    @Test
+    public void preserve_urlencoding(){
+        String xmlContent = "<get dest=\"${worktmp}/supplierhome.html\" src=\"http://${appserver.web.host}:${appserver.web.port}/specj-web/app?action=Set%20Supplier%20URLs&amp;supp_ws_url=http://${supplier.host}:${supplier.port}/emulator/SupplierService&amp;supp_reply_url=http://${buyer.host}:${buyer.port}/supplier/BuyerService\"/>";
+        Xml xml = Xml.parse(xmlContent);
+        String out = xml.documentString();
+        System.out.println(out);
+        assertTrue("expect to url encode attributes:\n"+out,out.contains("&amp;"));
+    }
 
     @Test
     public void convertString(){
