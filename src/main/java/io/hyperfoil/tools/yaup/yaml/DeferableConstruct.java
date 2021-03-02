@@ -19,9 +19,15 @@ public abstract class DeferableConstruct extends AbstractConstruct {
         this.overloadConstructor = overloadConstructor;
     }
     public final Object defer(Node node){
+        if(overloadConstructor == null){
+            throw new RuntimeException("DeferableConstruct.defer without setting overloadConstructor @ "+node.getStartMark());
+        }
         return overloadConstructor.constructObject(node);
     }
     public final Object deferAs(Node node,Tag tag){
+        if(overloadConstructor == null){
+            throw new RuntimeException("DeferableConstruct.deferAs without setting overloadConstructor @ "+node.getStartMark());
+        }
         return overloadConstructor.retryAs(node,tag);
     }
 }
