@@ -99,6 +99,16 @@ public class StringUtilTest {
       assertTrue("json should contain three: "+json,json.values().contains("three"));
    }
    @Test
+   public void jsEval_array_spread_empty_array(){
+      Object result = StringUtil.jsEval("(a)=>{return [...a,'three']}",Json.fromString("[]"));
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 1 entries: "+json,1,json.size());
+      assertTrue("json should contain three: "+json,json.values().contains("three"));
+   }
+   @Test
    public void jsEval_array_push(){
       Object result = StringUtil.jsEval("function(a){a.push('three'); return a;}",Json.fromString("[\"one\",\"two\"]"));
       assertNotNull("result should not be null",result);
@@ -425,6 +435,20 @@ public class StringUtilTest {
       try {
          String response = StringUtil.populatePattern("${{[...${{FOO}},{'test':'worked'}] }}", map, StringUtil.PATTERN_PREFIX, "::", StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
          assertEquals("test should be added to an javascript array", "[{\"test\":\"worked\"}]", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+
+   }
+   @Test
+   public void populatePattern_javascript_array_spread_empty_array() {
+      Map<Object, Object> map = new HashMap();
+      map.put("alpha", Json.fromString("[]"));
+      map.put("charlie", "\"cat\"");
+
+      try {
+         String response = StringUtil.populatePattern("${{ [...${{alpha}}, ${{charlie}} ] }}", map);
+         assertEquals("expect arrays to be combined", "[\"cat\"]", response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
       }
