@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.hyperfoil.tools</groupId>
   <artifactId>yaup</artifactId>
-  <version>0.8.3-SNAPSHOT</version>
+  <version>0.8.3</version>
   <name>Hyperfoil Yaup</name>
   <description>Yet Another Utility Project</description>
   <url>https://github.com/Hyperfoil/yaup</url>
@@ -24,7 +24,7 @@
     <connection>scm:git:git://github.com/Hyperfoil/yaup.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/yaup.git</developerConnection>
     <url>https://github.com/Hyperfoil/yaup</url>
-    <tag>HEAD</tag>
+    <tag>yaup-0.8.3</tag>
   </scm>
 
     <!-- Licenses -->
@@ -88,7 +88,7 @@
               <transformers>
                 <!-- https://github.com/oracle/graaljs/issues/125 -->
                 <!-- https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer -->
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>io.hyperfoil.tools.yaup.JarMain</mainClass>
                 </transformer>
