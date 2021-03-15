@@ -456,6 +456,23 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_javascript_array_spread_dot_in_key() {
+      Map<Object, Object> map = new HashMap();
+      map.put("alpha.foo.bar", Arrays.asList("\"ant\"", "\"apple\""));
+      map.put("charlie", "\"cat\"");
+      map.put("key", "foo");
+
+      try {
+         String response = StringUtil.populatePattern("${{=[...${{alpha.${{key}}.bar}},${{charlie}}]}}", map);
+
+         assertEquals("expect arrays to be combined", "[\"ant\",\"apple\",\"cat\"]", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+
+   }
+
+   @Test
    public void populatePattern_javascript_array_spread() {
       Map<Object, Object> map = new HashMap();
       map.put("alpha", Arrays.asList("\"ant\"", "\"apple\""));

@@ -21,6 +21,20 @@ public class JsonTest {
     }
 
     @Test
+    public void has_map_integer_key(){
+        Json json = Json.fromString("{\"10\":\"found\"}");
+        assertTrue("json should have ['10'] "+json,json.has("10"));
+        assertTrue("json should have [10] "+json,json.has(10));
+    }
+    @Test
+    public void has_map_integer_key_from_set(){
+        Json json = new Json();
+        json.set(10,"found");
+        assertTrue("json should have ['10'] "+json,json.has("10"));
+        assertTrue("json should have [10] "+json,json.has(10));
+    }
+
+    @Test
     public void toChain_doubleQuote_key(){
         List<String> chain = Json.toChain("a.\"1.2.3\".b");
         assertEquals("expect 3 entries: "+chain,3,chain.size());
@@ -134,6 +148,58 @@ public class JsonTest {
         Json root = new Json();
         root.set("first","uno");
         Json.chainSet(root,"first","dos");
+    }
+
+    @Test
+    public void chainSet_path_with_number_array_value(){
+        Json root = new Json();
+        Json.chainSet(root,"config-quickstart.JVM.10.foo",new Json(true));
+
+        Json target = null;
+        target = root.getJson("config-quickstart");
+        assertNotNull(target);
+        target = target.getJson("JVM");
+        assertNotNull(target);
+        target = target.getJson("10");
+        assertNotNull(target);
+        target = target.getJson("foo");
+        assertNotNull(target);
+        assertTrue("foo should be an array "+target,target.isArray());
+    }
+
+    @Test
+    public void chainSet_path_with_number(){
+        Json root = new Json();
+        Json.chainSet(root,"first.second.10.bar",10);
+        System.out.println(root);
+        Json target = null;
+        target = root.getJson("first");
+        assertNotNull(target);
+        target = target.getJson("second");
+
+        assertNotNull(target);
+        Json second = target;
+        assertFalse("first.second should not be an array",target.isArray());
+        assertEquals("first.second should have 1 entry: "+target,1,target.size());
+        assertTrue("first.second should have '10' as a key",target.has("10"));
+        target = second.getJson("10");
+        assertNotNull("first.second.`10` should exist",target);
+        assertTrue("first.second should have 10 as a key",second.has(10));
+        target = second.getJson(10);
+        assertNotNull("first.second.10 should exist",target);
+    }
+    @Test
+    public void chainSet_new_array(){
+        Json root = new Json();
+        Json.chainSet(root,"first.second.0.bar",10);
+        Json target = null;
+        target = root.getJson("first");
+        assertNotNull(target);
+        target = target.getJson("second");
+        assertNotNull(target);
+        assertTrue("first.second should be an array",target.isArray());
+        assertTrue("first.second should have '0' as a key",target.has("0"));
+        assertTrue("first.second should have 0 as a key",target.has(0));
     }
 
     @Test

@@ -372,10 +372,11 @@ public class Json {
                         }
                     }
                 }
-                if (!(target.get(id) instanceof Json)) {//this should never happen for our use case
+                Object found = target.get(id);
+                if (!(found instanceof Json)) {//this should never happen for our use case
                     synchronized (target) {
-                        if (!(target.get(id) instanceof Json)) {
-                            Object existing = target.get(id);
+                        if (!(found instanceof Json)) {
+                            Object existing = found;
                             target.set(id, new Json());
                             target.getJson(id).add(existing);
                         }
@@ -1342,7 +1343,9 @@ public class Json {
         if(! (key instanceof Integer || key instanceof Long) ){
             isArray = false;
         }else{
-            if(isEmpty()){
+            if( Integer.parseInt(key.toString()) > size()){
+                isArray = false;
+            }else if(isEmpty()){
                 isArray = true;
             }
         }
@@ -1419,15 +1422,10 @@ public class Json {
     }
 
     private Object box(Object key){
-        if(isArray()){
-            if(key instanceof Integer || key instanceof Long){
-                return ((Number)key).intValue();
-            }else if( key.toString().matches("\\d+")){
-                return Integer.parseInt(key.toString());
-            }
-        }
-        if(isArray() && (key instanceof Integer || key instanceof Long)){
-            key = ((Number)key).intValue();
+        if(key instanceof Integer || key instanceof Long){
+            return ((Number)key).intValue();
+        }else if( key.toString().matches("\\d+")){
+            return Integer.parseInt(key.toString());
         }
         return key;
     }
