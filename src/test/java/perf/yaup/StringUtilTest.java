@@ -369,7 +369,6 @@ public class StringUtilTest {
       try{
          Json json = Json.fromJs("[{key:'a',value:'ant'},{key:'b-b',value:'bat'},{key:'c',value:'cat'}]");
          Map<Object, Object> map = new HashMap<>();
-         System.out.println("json = "+json);
          map.put("data",json);
          String response = StringUtil.populatePattern("${{data[?(@.key==\"c\")]}}",map);
          assertEquals("response should be value of b","bat",response);

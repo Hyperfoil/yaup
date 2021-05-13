@@ -171,7 +171,6 @@ public class JsonTest {
     public void chainSet_path_with_number(){
         Json root = new Json();
         Json.chainSet(root,"first.second.10.bar",10);
-        System.out.println(root);
         Json target = null;
         target = root.getJson("first");
         assertNotNull(target);

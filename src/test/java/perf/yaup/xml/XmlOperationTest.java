@@ -121,10 +121,7 @@ public class XmlOperationTest {
     @Test
     public void replace_xmlns_attribute(){
         String search = "/foo[@xmlns=urn:foo:bar:biz]/bar[@xmlns:biz=foo:biz:buz]";
-
         String replaced = XmlOperation.replaceXmlnsAttribute(search);
-
-        System.out.println(replaced);
 
         assertFalse("should not find @xmlns but found: "+replaced,replaced.contains("@xmlns"));
         assertEquals("shoudl replace both references",
