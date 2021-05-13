@@ -159,7 +159,17 @@ public class StringUtilTest {
       assertEquals("length should be 4",4,value.intValue());
    }
 
-
+   @Test
+   public void jsEval_lambda_invalidJs(){
+      try {
+         Map<String, String> map = new HashMap<>();
+         map.put("foo", "FOO");
+         Object result = StringUtil.jsEval("(a,b)=>{return [b;}", "a", "b");
+         fail("invalid js should throw an exception");
+      }catch(IllegalStateException ise){
+         //expected
+      }
+   }
 
    @Test
    public void jsEval_function(){
@@ -354,13 +364,14 @@ public class StringUtilTest {
          fail(pe.getMessage());
       }
    }
-   @Test @Ignore /*Still working on how thsi should work for json in map*/
+   @Test @Ignore /*Still working on how this should work for json in map*/
    public void populatePattern_jsonpath_search(){
       try{
-         Json json = Json.fromJs("[{key:'a',value:'ant'},{key:'b',value:'bat'},{key:'c',value:'cat'}]");
+         Json json = Json.fromJs("[{key:'a',value:'ant'},{key:'b-b',value:'bat'},{key:'c',value:'cat'}]");
          Map<Object, Object> map = new HashMap<>();
+         System.out.println("json = "+json);
          map.put("data",json);
-         String response = StringUtil.populatePattern("${{data.[?(@.key=='b')].value}}",map);
+         String response = StringUtil.populatePattern("${{data[?(@.key==\"c\")]}}",map);
          assertEquals("response should be value of b","bat",response);
       }catch (PopulatePatternException pe) {
          fail(pe.getMessage());
@@ -584,6 +595,29 @@ public class StringUtilTest {
       }
 
 
+   }
+
+   @Test
+   public void populatePattern_javascript_toLowerCase(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("vm","VaLuE");
+      try {
+         String response = StringUtil.populatePattern("lowercase=\"${{=\"${{vm}}\".toLowerCase()}}\"",map);
+         assertEquals("lowercase=\"value\"",response);
+      }catch (PopulatePatternException pe){
+         fail("did not expect a pattern exception\n"+pe.getMessage());
+      }
+   }
+
+   @Test
+   public void populatePattern_quotes_in_default(){
+      Map<Object, Object> map = new HashMap<>();
+      try{
+         String response = StringUtil.populatePattern("${{missing:'not_found'}}",map);
+         assertEquals("'not_found'",response);
+      }catch (PopulatePatternException pe){
+         fail("did not expect a pattern exception\n"+pe.getMessage());
+      }
    }
 
    @Test
@@ -866,7 +900,17 @@ public class StringUtilTest {
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
       }
-
+   }
+   @Test
+   public void populatePattern_padding() {
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO", "foo");
+      try {
+         String response = StringUtil.populatePattern("${{  FOO  }}", map);
+         assertEquals("foo", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
    }
 
    @Test

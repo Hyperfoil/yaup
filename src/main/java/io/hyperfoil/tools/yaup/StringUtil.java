@@ -145,6 +145,7 @@ public class StringUtil {
         return jsEval(js,Collections.EMPTY_MAP,evals,args);
     }
     public static Object jsEval(String js, Map globals,Collection<String> evals,Object...args){
+        Object rtrn = null; //to return the exception if the js fails
         try(Context context = Context.newBuilder("js")
         .allowAllAccess(true)
         .allowExperimentalOptions(true)
@@ -178,6 +179,7 @@ public class StringUtil {
                 try { //evaluate the js to see if it directly returns a value
                     matcher = context.eval("js", js);
                 } catch (PolyglotException pge) {
+                    rtrn = pge;
                     //pge.printStackTrace();
                     //throw new RuntimeException("failed to evaluate "+js,pge);
                     try {
@@ -224,7 +226,7 @@ public class StringUtil {
                 context.leave();
             }
         }
-        return null;
+        return rtrn;
     }
     public static List<String> getPatternNames(String pattern, Map<Object,Object> map) throws PopulatePatternException{
         return getPatternNames(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
@@ -320,7 +322,7 @@ public class StringUtil {
                 if(nameStart > seenIndex && seenIndex >= 0){
                    seen.clear();
                 }
-                String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd);
+                String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd).trim();
                 String name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too

@@ -1043,6 +1043,27 @@ public class Json {
     }
     private static Configuration yaup = Configuration.builder().jsonProvider(new YaupJsonProvider()).options(Option.SUPPRESS_EXCEPTIONS,Option.DEFAULT_PATH_LEAF_TO_NULL).build();
 
+    public static boolean isJsonSearchPath(String path){
+        return path.contains("[?(") || path.contains("..");
+    }
+    public static String getPreSearchPath(String path){
+        if(path.startsWith("$.")){
+            path=path.substring("$.".length());
+        }
+        if(path.startsWith("$")){
+            path=path.substring("$".length());
+        }
+        while(isJsonSearchPath(path)){
+            if(path.contains("[?(")){
+                path=path.substring(0,path.indexOf("[?("));
+            }
+            if(path.contains("..")){
+                path=path.substring(0,path.indexOf(".."));
+            }
+        }
+        return path;
+    }
+
     public static Object find(Json input,String jsonPath){
         return find(input,jsonPath,null);
     }
