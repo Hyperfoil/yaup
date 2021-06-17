@@ -222,8 +222,7 @@ public class StringUtil {
                     try {
                         matcher = context.eval("js", "async  (async () => " + StringUtil.quote(js) + ")()");
                     } catch (PolyglotException pge2) {
-                        pge2.printStackTrace();
-                        Value factory = context.eval("js", "async new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
+                        Value factory = context.eval("js", "new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
                         matcher = factory.execute();
                         //pge2.printStackTrace();
                     }
