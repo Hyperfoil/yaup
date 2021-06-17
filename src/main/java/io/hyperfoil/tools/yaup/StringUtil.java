@@ -2,19 +2,22 @@ package io.hyperfoil.tools.yaup;
 
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
+import io.hyperfoil.tools.yaup.json.graaljs.JsFetch;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import io.hyperfoil.tools.yaup.json.graaljs.MapProxyWrapper;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.PolyglotException;
-import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.proxy.ProxyExecutable;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by wreicher
@@ -148,6 +151,8 @@ public class StringUtil {
         Object rtrn = null; //to return the exception if the js fails
         try(Context context = Context.newBuilder("js")
         .allowAllAccess(true)
+        .allowHostAccess(HostAccess.ALL)
+        .allowIO(true)
         .allowExperimentalOptions(true)
         .option("js.experimental-foreign-object-prototype", "true")
         .option("js.global-property","true")
@@ -175,6 +180,38 @@ public class StringUtil {
                         throw new RuntimeException("failed to evaluate " + s + " preparing for " + js, pge);
                     }
                 });
+
+                context.getBindings("js").putMember("_http",new JsFetch());
+                Source fetchSource = Source.newBuilder("js","fetch = async (url,options)=>{\n"+
+                        "return new Promise(async (resolve)=>{ \n"+
+                        "  const resp = _http.jsApply(url,options);\n"+
+//                        "  resolve(new Response(options,resp));\n"+
+                        "  resolve(resp);\n"+
+                        "});\n"+
+                        "}","fakeFetch").build();
+                context.eval(fetchSource);
+                context.eval("js","global.btoa = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').btoa(str)");
+                context.eval("js","global.atob = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').atob(str)");
+
+                context.eval(Source.newBuilder("js", new BufferedReader(new InputStreamReader(StringUtil.class.getClassLoader().getResourceAsStream("jsonpath.js"))).lines()
+                        .parallel().collect(Collectors.joining("\n")), "jsonpath.js").build());
+                context.eval(Source.newBuilder("js", new BufferedReader(new InputStreamReader(StringUtil.class.getClassLoader().getResourceAsStream("luxon.min.js"))).lines()
+                        .parallel().collect(Collectors.joining("\n")), "luxon.min.js").build());
+
+//                context.eval(Source.newBuilder("js", new BufferedReader(new InputStreamReader(StringUtil.class.getClassLoader().getResourceAsStream("luxon.min.js"))).lines()
+//                        .parallel().collect(Collectors.joining("\n")), "Response.js").build());
+
+                //this is so JsonProxyObjects pass instanceof object
+                //https://github.com/oracle/graaljs/issues/40
+                //https://github.com/oracle/graaljs/issues/40#issuecomment-513243243
+                context.getBindings("js").putMember("isInstanceLike", new JsonProxyObject.InstanceCheck());
+                context.eval("js",
+                        "Object.defineProperty(Object,Symbol.hasInstance, {\n" +
+                                "  value: function myinstanceof(obj) {\n" +
+                                "    return isInstanceLike(obj);\n" +
+                                "  }\n" +
+                                "});");
+
                 Value matcher = null;
                 try { //evaluate the js to see if it directly returns a value
                     matcher = context.eval("js", js);
@@ -183,9 +220,10 @@ public class StringUtil {
                     //pge.printStackTrace();
                     //throw new RuntimeException("failed to evaluate "+js,pge);
                     try {
-                        matcher = context.eval("js", "(() => " + js + ")()");
+                        matcher = context.eval("js", "async  (async () => " + StringUtil.quote(js) + ")()");
                     } catch (PolyglotException pge2) {
-                        Value factory = context.eval("js", "new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
+                        pge2.printStackTrace();
+                        Value factory = context.eval("js", "async new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
                         matcher = factory.execute();
                         //pge2.printStackTrace();
                     }
@@ -200,7 +238,10 @@ public class StringUtil {
                             for (int i = 0; i < args.length; i++) {
                                 if (args[i] != null && args[i] instanceof Json) {
                                     args[i] = JsonProxy.create((Json) args[i]);
+
                                 }
+                            }
+                            for (int i=0; i<args.length; i++){
                             }
                             Value result = matcher.execute(args);
                             if (result != null) {
@@ -208,13 +249,40 @@ public class StringUtil {
                             }
                         }
                     }
+
+                    if(matcher.toString().startsWith("Promise{[")){//hack to check if the function returned a promise
+                        List<Value> resolved = new ArrayList<>();
+                        List<Value> rejected = new ArrayList<>();
+                        Object invokeRtrn = matcher.invokeMember("then", new ProxyExecutable() {
+                            @Override
+                            public Object execute(Value... arguments) {
+                                resolved.addAll(Arrays.asList(arguments));
+                                return arguments;
+                            }
+                        }, new ProxyExecutable() {
+                            @Override
+                            public Object execute(Value... arguments) {
+                                rejected.addAll(Arrays.asList(arguments));
+                                return arguments;
+                            }
+                        });
+                        if(invokeRtrn instanceof Value){
+                            Value invokedValue = (Value)invokeRtrn;
+
+                        }
+                        if(rejected.size() > 0){
+                            matcher = rejected.get(0);
+                        }else if(resolved.size() == 1){
+                            matcher = resolved.get(0);
+                        }
+                    }
                     Object converted = ValueConverter.convert(matcher);
                     if (converted instanceof JsonProxyObject) {
-                        return ((JsonProxyObject) converted).getJson();
+                        rtrn = ((JsonProxyObject) converted).getJson();
                     } else if (converted instanceof Json) {
-                        return (Json) converted;
+                        rtrn = (Json) converted;
                     } else {
-                        return converted;
+                        rtrn = converted;
                     }
                 }
             }catch(PolyglotException pe){

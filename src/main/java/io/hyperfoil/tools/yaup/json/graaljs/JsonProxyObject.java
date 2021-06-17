@@ -3,6 +3,7 @@ package io.hyperfoil.tools.yaup.json.graaljs;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.ProxyExecutable;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
 import java.util.HashMap;
@@ -12,6 +13,18 @@ import java.util.function.Function;
 
 public class JsonProxyObject implements ProxyObject {
 
+   public static class InstanceCheck implements ProxyExecutable {
+
+      @Override
+      public Object execute(Value...args){
+         if(args.length<1){
+            return false;
+         }else{
+            Value obj = args[0];
+            return obj.isProxyObject() && obj.asProxyObject() instanceof JsonProxyObject || ValueConverter.convert(obj) instanceof Json;
+         }
+      }
+   }
 
    private Json json;
 //   private Map<String,Value> methods; //this code is unused
