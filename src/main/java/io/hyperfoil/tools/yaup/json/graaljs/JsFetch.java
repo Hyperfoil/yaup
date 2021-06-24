@@ -8,10 +8,7 @@ import org.graalvm.polyglot.proxy.ProxyObject;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.security.GeneralSecurityException;
 import java.security.KeyManagementException;
@@ -93,33 +90,31 @@ public class JsFetch {
          options.merge(DEFAULT_OPTIONS, false);
       }
       try {
-
-         TrustManager[] trustAllCerts = new TrustManager[] {
-                 new X509TrustManager() {
-                    public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                       return new X509Certificate[0];
+         if ("ignore".equals(options.getString("tls", ""))) {
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                       public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                          return new X509Certificate[0];
+                       }
+                       public void checkClientTrusted(
+                               java.security.cert.X509Certificate[] certs, String authType) {
+                       }
+                       public void checkServerTrusted(
+                               java.security.cert.X509Certificate[] certs, String authType) {
+                       }
                     }
-                    public void checkClientTrusted(
-                            java.security.cert.X509Certificate[] certs, String authType) {
-                    }
-                    public void checkServerTrusted(
-                            java.security.cert.X509Certificate[] certs, String authType) {
-                    }
-                 }
-         };
-
-// Install the all-trusting trust manager
-         try {
-            SSLContext sc = SSLContext.getInstance("SSL");
-            sc.init(null, trustAllCerts, new java.security.SecureRandom());
-            HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
-         } catch (GeneralSecurityException e) {
-            e.printStackTrace();
+            };
+            // Install the all-trusting trust manager
+            try {
+               SSLContext sc = SSLContext.getInstance("SSL");
+               sc.init(null, trustAllCerts, new java.security.SecureRandom());
+               HttpsURLConnection.setDefaultSSLSocketFactory(sc.getSocketFactory());
+            } catch (GeneralSecurityException e) {
+               e.printStackTrace();
+            }
          }
-
          HttpURLConnection con = (HttpURLConnection) new URL(url).openConnection();
-
-         if(con instanceof HttpsURLConnection){
+         if (con instanceof HttpsURLConnection) {
             ((HttpsURLConnection) con).setHostnameVerifier(new HostnameVerifier() {
                @Override
                public boolean verify(String s, SSLSession sslSession) {
@@ -127,21 +122,19 @@ public class JsFetch {
                }
             });
          }
-         con.setRequestMethod(options.getString("method","GET"));
-         con.setInstanceFollowRedirects("follow".equals(options.getString("redirect","")));
-         con.setConnectTimeout(10_000);
-         con.setReadTimeout(10_000);
+         con.setRequestMethod(options.getString("method", "GET"));
+         con.setInstanceFollowRedirects("follow".equals(options.getString("redirect", "")));
+         con.setConnectTimeout(30_000);
+         con.setReadTimeout(30_000);
 
-
-         options.getJson("headers",new Json()).forEach((key,value)->{
-            con.setRequestProperty(key.toString(),value.toString());
+         options.getJson("headers", new Json()).forEach((key, value) -> {
+            con.setRequestProperty(key.toString(), value.toString());
          });
 
-         if("POST".equals(options.getString("method","GET"))){
+         if ("POST".equals(options.getString("method", "GET"))) {
             con.setDoOutput(true);
             String body = options.get("body") == null ? "" : options.get("body").toString();
-
-            try(OutputStream os = con.getOutputStream()) {
+            try (OutputStream os = con.getOutputStream()) {
                byte[] input = body.getBytes("utf-8");
                os.write(input, 0, input.length);
             }
@@ -150,11 +143,11 @@ public class JsFetch {
          int status = con.getResponseCode();
 
 
-         if ( (status == HttpURLConnection.HTTP_MOVED_TEMP
-            || status == HttpURLConnection.HTTP_MOVED_PERM) && "follow".equals(options.getString("redirect",""))) {
+         if ((status == HttpURLConnection.HTTP_MOVED_TEMP
+                 || status == HttpURLConnection.HTTP_MOVED_PERM) && "follow".equals(options.getString("redirect", ""))) {
             String location = con.getHeaderField("Location");
             URL newUrl = new URL(location);
-            return apply(newUrl.toString(),options);//return the result of following the redirect
+            return apply(newUrl.toString(), options);//return the result of following the redirect
          }
 
          Reader streamReader = null;
@@ -168,35 +161,36 @@ public class JsFetch {
 
          String inputLine;
          StringBuffer content = new StringBuffer();
-         try (BufferedReader in = new BufferedReader(streamReader)){
+         try (BufferedReader in = new BufferedReader(streamReader)) {
             while ((inputLine = in.readLine()) != null) {
                content.append(inputLine);
             }
-         } catch (IOException e){
+         } catch (IOException e) {
             e.printStackTrace();
          }
 
-         Map<String,List<String>> headerFields = con.getHeaderFields();
+         Map<String, List<String>> headerFields = con.getHeaderFields();
 
          Json result = new Json();
-         result.set("status",status);
-         result.set("statusText",con.getResponseMessage());
-         result.set("headers",new Json());
+         result.set("status", status);
+         result.set("statusText", con.getResponseMessage());
+         result.set("headers", new Json());
          for (Map.Entry<String, List<String>> entries : con.getHeaderFields().entrySet()) {
             String values = "";
             for (String value : entries.getValue()) {
                values += value + ",";
-               result.getJson("headers").add(entries.getKey()==null ? "" : entries.getKey(),value);
+               result.getJson("headers").add(entries.getKey() == null ? "" : entries.getKey(), value);
             }
          }
 
-         if( (headerFields.containsKey("Content-Type") && headerFields.get("Content-Type").contains("application/json") ) || (headerFields.containsKey("content-type") && headerFields.get("content-type").contains("application/json"))){
-            result.set("body",Json.fromString(content.toString(),new Json(false)));
-         }else{
-            result.set("body",content.toString());
+         if ((headerFields.containsKey("Content-Type") && headerFields.get("Content-Type").contains("application/json")) || (headerFields.containsKey("content-type") && headerFields.get("content-type").contains("application/json"))) {
+            result.set("body", Json.fromString(content.toString(), new Json(false)));
+         } else {
+            result.set("body", content.toString());
          }
-
          return JsonProxy.create(result);
+      } catch (SocketTimeoutException e){
+         e.printStackTrace();
       } catch (ProtocolException e) {
          e.printStackTrace();
       } catch (MalformedURLException e) {
