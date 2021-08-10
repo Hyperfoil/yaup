@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup.json;
 
+import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyArray;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
 import org.graalvm.polyglot.Value;
@@ -40,8 +41,10 @@ public class ValueConverter {
          return value.asString();
       }else if (value.hasArrayElements()) {
          return convertArray(value);
-      }else if (value.canExecute()){
+      }else if (value.canExecute()) {
          return value.toString();
+      }else if (value.isException()){
+         return new JsException(value.toString());
       }else if (value.hasMembers()){
          return convertMapping(value);
       }else{

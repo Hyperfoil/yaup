@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
+import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
 import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.Ignore;
@@ -20,6 +21,18 @@ public class StringUtilTest {
            "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
            "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
    );
+
+   @Test
+   public void jsEval_error_lambda_undefined_variable(){
+      Map<Object,Object> globals = new HashMap<Object,Object>();
+      String js = "async (x)=>{return foo;}";
+      Object result = StringUtil.jsEval(js,globals);
+      assertTrue(result instanceof JsException);
+      JsException error = (JsException)result;
+      assertTrue(error.getMessage().contains("ReferenceError"));
+      assertTrue(error.getMessage().contains("foo"));
+      assertEquals(js,error.getJs());
+   }
 
    @Test
    public void jsEval_global_json_member_math(){

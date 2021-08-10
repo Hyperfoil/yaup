@@ -2,10 +2,7 @@ package io.hyperfoil.tools.yaup;
 
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
-import io.hyperfoil.tools.yaup.json.graaljs.JsFetch;
-import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
-import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
-import io.hyperfoil.tools.yaup.json.graaljs.MapProxyWrapper;
+import io.hyperfoil.tools.yaup.json.graaljs.*;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
@@ -278,6 +275,8 @@ public class StringUtil {
                     Object converted = ValueConverter.convert(matcher);
                     if (converted instanceof JsonProxyObject) {
                         rtrn = ((JsonProxyObject) converted).getJson();
+                    } else if (converted instanceof Exception){
+                        rtrn = new JsException(((Exception)converted).getMessage(),js);
                     } else if (converted instanceof Json) {
                         rtrn = (Json) converted;
                     } else {
