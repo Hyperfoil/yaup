@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.hyperfoil.tools</groupId>
   <artifactId>yaup</artifactId>
-  <version>0.8.7</version>
+  <version>0.8.8-SNAPSHOT</version>
   <name>Hyperfoil Yaup</name>
   <description>Yet Another Utility Project</description>
   <url>https://github.com/Hyperfoil/yaup</url>
@@ -24,7 +24,7 @@
     <connection>scm:git:git://github.com/Hyperfoil/yaup.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/yaup.git</developerConnection>
     <url>https://github.com/Hyperfoil/yaup</url>
-    <tag>yaup-0.8.7</tag>
+    <tag>HEAD</tag>
   </scm>
 
     <!-- Licenses -->
