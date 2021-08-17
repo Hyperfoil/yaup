@@ -1,6 +1,6 @@
 package io.hyperfoil.tools.yaup.json.graaljs;
 
-public class JsException extends Exception{
+public class JsException extends RuntimeException{
 
     private String js;
 
@@ -9,6 +9,10 @@ public class JsException extends Exception{
     }
     public JsException(String message,String js){
         super(message);
+        this.js = js;
+    }
+    public JsException(String message,String js,Throwable throwable){
+        super(message,throwable);
         this.js = js;
     }
 

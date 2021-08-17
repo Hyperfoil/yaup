@@ -173,13 +173,38 @@ public class StringUtilTest {
    }
 
    @Test
+   public void jsEval_async_await_fetch(){
+      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://www.redhat.com'); return rtrn;}","","");
+      assertFalse("async should not return until after fetch",result instanceof Boolean);
+      assertTrue("fetch should return json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json.status should exist",json.has("status"));
+   }
+   @Test
+   public void jsEval_async_await_fetch_insecure(){
+      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://www.redhat.com',\n"+
+              "      { \n" +
+              "        tls : 'ignore', \n" +
+              "        method: 'HEAD', \n" +
+              "        redirect: 'ignore', \n" +
+              "        headers: {\n" +
+              "          'Authorization' : 'Basic '+btoa(\"perf:100yard-\"),\n" +
+              "          'Content-Type' : 'application/json'\n" +
+              "        }\n" +
+              "      }\n" +
+              "); return rtrn;}","","");
+      assertFalse("async should not return until after fetch",result instanceof Boolean);
+      assertTrue("fetch should return json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json.status should exist",json.has("status"));
+   }
+
+   @Test
    public void jsEval_lambda_invalidJs(){
       try {
-         Map<String, String> map = new HashMap<>();
-         map.put("foo", "FOO");
          Object result = StringUtil.jsEval("(a,b)=>{return [b;}", "a", "b");
          fail("invalid js should throw an exception");
-      }catch(IllegalStateException ise){
+      }catch(JsException e){
          //expected
       }
    }

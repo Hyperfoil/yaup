@@ -285,9 +285,9 @@ public class StringUtil {
                 }
             }catch(PolyglotException pe){
                 //TODO do we log polyglot exceptions
-                throw new IllegalStateException("jsEval exception for:"+js,pe);
+                throw new JsException(pe.getMessage(),js,pe);
             }catch(Throwable e){
-                throw new IllegalStateException("jsEval exception for:"+js,e);
+                throw new JsException(e.getMessage(),js,e);
             }finally{
                 context.leave();
             }
