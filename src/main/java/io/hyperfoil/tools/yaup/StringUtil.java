@@ -421,7 +421,7 @@ public class StringUtil {
                         if (evalResult != null) {
                             replacement = evalResult.toString();
                         }
-                    }catch(IllegalStateException ise){
+                    }catch(JsException ise){
                         //TODO failed to run javascript, save exception in case it was meant to be javascript but there is an error
                     }
                 }
