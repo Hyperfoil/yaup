@@ -90,7 +90,7 @@
                 <!-- https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#ServicesResourceTransformer -->
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>io.hyperfoil.tools.yaup.JarMain</mainClass>
+                  <mainClass>io.hyperfoil.tools.yaup.Yaup</mainClass>
                 </transformer>
               </transformers>
             </configuration>
@@ -183,6 +183,12 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.32</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

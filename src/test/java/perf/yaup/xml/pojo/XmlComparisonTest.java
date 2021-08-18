@@ -800,13 +800,5 @@ public class XmlComparisonTest {
         diff.load("R", Xml.parse(xml2));
 
         List<XmlComparison.Entry> diffs = diff.getDiffs();
-
-//        diffs.forEach(entry -> {
-//            System.out.println(entry.getPath());
-//            for (String key : entry.keys()) {
-//                System.out.println("  " + key + "  " + entry.value(key));
-//            }
-//        });
-
     }
 }

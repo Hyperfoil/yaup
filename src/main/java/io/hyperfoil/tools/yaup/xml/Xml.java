@@ -1,5 +1,7 @@
 package io.hyperfoil.tools.yaup.xml;
 
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 import org.w3c.dom.*;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
@@ -9,6 +11,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
 /**
@@ -22,6 +25,8 @@ import java.util.*;
  *     see Xml#modify(java.lang.String)
  */
 public class Xml {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static final String ATTRIBUTE_VALUE_KEY = "=";
     public static final String ATTRIBUTE_KEY = "@";
@@ -77,7 +82,7 @@ public class Xml {
             }else if (resultObj instanceof String){
                 rtrn.add(new Xml(node.getOwnerDocument().createTextNode((String)resultObj)));
             }else{
-//                System.out.println("resultObject is "+resultObj.getClass());
+                logger.error("resultObject is "+resultObj.getClass());
             }
 
 
@@ -245,7 +250,7 @@ public class Xml {
                 }
                 break;
             default:
-                System.out.println("add("+value+") "+node.getNodeType());
+               logger.error("add("+value+") "+node.getNodeType());
         }
     }
     /**
@@ -269,7 +274,7 @@ public class Xml {
                 }
                 break;
             default:
-                System.out.println("set("+value+") "+node.getNodeType());
+                logger.error("set("+value+") "+node.getNodeType());
         }
     }
 
@@ -334,7 +339,7 @@ public class Xml {
                 }
                 break;
             default:
-                System.out.println("set("+value+") "+node.getNodeType());
+                logger.error("set("+value+") "+node.getNodeType());
         }
     }
     public void delete(){
@@ -351,7 +356,7 @@ public class Xml {
                 nodeParent.removeChild(node);
                 break;
             default:
-                System.out.println("unknown type="+node.getNodeType());
+                logger.error("unknown type="+node.getNodeType());
         }
 
     }

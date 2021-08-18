@@ -1,7 +1,10 @@
 package io.hyperfoil.tools.yaup.xml.pojo;
 
 import io.hyperfoil.tools.yaup.StringUtil;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,6 +25,8 @@ import java.util.stream.Collectors;
  * /node/foo/[1]
  */
 public class XmlPath {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static enum Scope {Descendant,Absolute,Relative}
 
@@ -552,7 +557,8 @@ public class XmlPath {
                                 }
                                 break;
                             default:
-                                System.out.println("text does not support method="+getMethod());
+
+                                logger.error("text does not support method="+getMethod());
                         }
                     }else{
                         matches.add(xml.getValueXml());

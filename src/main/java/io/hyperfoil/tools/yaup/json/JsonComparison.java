@@ -1,7 +1,10 @@
 package io.hyperfoil.tools.yaup.json;
 
 import io.hyperfoil.tools.yaup.StringUtil;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -15,6 +18,8 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 
 public class JsonComparison {
+
+   final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
    public static class Entry {
       private String path;
@@ -63,7 +68,7 @@ public class JsonComparison {
          return;
       }
       if(hasNull(jsons)){//if one if the jsons is missing or empty
-         System.out.println("THIS SHOULD BE CAUGHT BEFORE THIS POINT FOR ALL SUB_CALLS");
+         logger.error("THIS SHOULD BE CAUGHT BEFORE THIS POINT FOR ALL SUB_CALLS");
          Entry newEntry = new Entry(path);
          jsons.forEach((name,json)->{
             newEntry.put(name,json.toString(2));

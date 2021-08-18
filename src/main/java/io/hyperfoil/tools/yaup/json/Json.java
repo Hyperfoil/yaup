@@ -23,6 +23,8 @@ import org.graalvm.polyglot.Value;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.script.Bindings;
@@ -35,6 +37,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -63,6 +66,8 @@ import static java.util.Optional.ofNullable;
  * A javascript object representation that can be either an Array or Object.
  */
 public class Json {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static class MapBuilder {
         private final Json json = new Json();
@@ -346,7 +351,7 @@ public class Json {
                             existing.merge((Json) value, false);
                         }
                     }else{//key already exissts, points to an object, and we want to add some random value into it? this is probably by mistake
-                        System.out.println("MERGE_ACTION unexpected value type for existing json object\nkey\n"+key+"\nvalue\n"+value+"\nexisting\n"+existing);
+                        logger.error("MERGE_ACTION unexpected value type for existing json object\nkey\n"+key+"\nvalue\n"+value+"\nexisting\n"+existing);
                         existing.add(value);
                     }
                 }
@@ -1019,7 +1024,7 @@ public class Json {
                     if (value instanceof Json) {
                         Json fromValueJson = (Json) value;
                         if (fromValueJson.isArray()) {
-                            System.out.println("mergeStructure: what to do?\n  to[" + key + "] = " + toValueJson + "\n  from[" + key + "]=" + value);
+                            logger.error("mergeStructure: what to do?\n  to[" + key + "] = " + toValueJson + "\n  from[" + key + "]=" + value);
                         } else {
                             mergeStructure(toValueJson, fromValueJson);
                         }

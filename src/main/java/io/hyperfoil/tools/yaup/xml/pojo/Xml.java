@@ -6,6 +6,8 @@ import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -14,14 +16,18 @@ import javax.xml.stream.events.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static io.hyperfoil.tools.yaup.xml.XmlOperation.Operation;
 import static io.hyperfoil.tools.yaup.xml.XmlOperation.Operation.Add;
 import static io.hyperfoil.tools.yaup.xml.pojo.Xml.Type.Text;
 
 public class Xml {
+
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static final String JSON_ATTRIBUTE_PREFIX = "@";
     public static final String JSON_VALUE_KEY = "text()";
@@ -145,9 +151,8 @@ public class Xml {
 
                 }
             }
-        }catch (XMLStreamException e) {
-            System.out.println("XMLSException "+e.getMessage()+" for "+streamName);
-            parentStack.forEach(entry-> System.out.println(entry.getName()+" "+entry.getType()+" "+entry.getChildren().size()));
+        }catch (XMLStreamException ex) {
+            logger.error("XMLSException "+ex.getMessage()+" for "+streamName+"\n  "+parentStack.stream().map(e->e.getName()+" "+e.getType()+" "+e.getChildren().size()).collect(Collectors.joining("\n  ")));
             //e.printStackTrace();
         }
         return rtrn;
@@ -482,7 +487,7 @@ public class Xml {
                                     sb.append(Xml.ATTRIBUTE_VALUE_PREFIX);
                                     sb.append(StringUtil.quote(child.getValue()));
                                 }else{
-                                    System.out.println("cannot build ADD out of child "+child);
+                                    logger.error("cannot build ADD out of child "+child);
                                     sb.delete(0,sb.length());
                                     break;
                                 }
@@ -499,7 +504,7 @@ public class Xml {
                         found = xmlPath.getMatches(this);
                     }
                 }else{
-                    System.out.println("unsupported type = "+tail.getType());
+                    logger.error("unsupported type = "+tail.getType());
                 }
             }else{
 
@@ -548,7 +553,7 @@ public class Xml {
                                 x.parent().resetTextValue();
                             }
                         }else{
-                            System.out.println("Unsupported XMl type: cannot SET "+x+" to "+finalValue);
+                            logger.error("Unsupported XMl type: cannot SET "+x+" to "+finalValue);
                         }
                     });
                     break;
@@ -580,7 +585,7 @@ public class Xml {
                             }
 
                         }else{
-                            System.out.println("Unsupported XMl type: cannot ADD "+x+" to "+finalValue);
+                            logger.error("Unsupported XMl type: cannot ADD "+x+" to "+finalValue);
                         }
                     });
                     break;
@@ -594,13 +599,13 @@ public class Xml {
                             }else if (x.isText()){
                                 x.parent().removeChild(x);
                             }else {
-                                System.out.println("Unsupported XMl type: cannot DELETE "+x);
+                                logger.error("Unsupported XMl type: cannot DELETE "+x);
                             }
                         }
                     });
                     break;
                 default:
-                    System.out.println("unsupported opp "+opp+" on "+xmlPath.toString());
+                    logger.error("unsupported opp "+opp+" on "+xmlPath.toString());
             }
         }
         if(rtrn.toString().isEmpty() && found.size()>0){

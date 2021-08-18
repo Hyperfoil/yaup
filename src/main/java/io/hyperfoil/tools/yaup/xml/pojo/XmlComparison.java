@@ -5,8 +5,11 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.linux.Local;
+import org.slf4j.ext.XLogger;
+import org.slf4j.ext.XLoggerFactory;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 
 public class XmlComparison {
 
+    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static final XmlComparison domainXml(){
         XmlComparison rtrn = new XmlComparison();
@@ -250,7 +254,7 @@ public class XmlComparison {
         }
         List<String> paths = cmd.getArgList();
         if(paths.isEmpty()){
-            System.out.println("Missing file(s)");
+            logger.error("Missing file(s)");
             formatter.printHelp(cmdLineSyntax,options);
             System.exit(1);
             return;
@@ -290,7 +294,7 @@ public class XmlComparison {
                     Local local = new Local();
                     try {
                         File tmp = File.createTempFile("xmlComp-", ".xml");
-                        System.out.println("downloading " + path + " to " + tmp.getPath());
+                        logger.info("downloading " + path + " to " + tmp.getPath());
                         local.download(tmp.getPath(), path);
                         toDelete.add(tmp.getPath());
                         path = tmp.getPath();
@@ -305,7 +309,7 @@ public class XmlComparison {
             if(toLoad.exists()){
                 comp.load(name, Xml.parseFile(path));
             }else{
-                System.out.println(toLoad.getName());
+                logger.error("missing {}", toLoad.getName());
                 formatter.printHelp(cmdLineSyntax,options);
                 System.exit(1);
             }
@@ -322,18 +326,19 @@ public class XmlComparison {
 
         boolean c = cmd.hasOption("color");
         diffs.forEach(entry->{
-            System.out.printf("%s%s%s%n",
+            logger.info("{}}{}{}",
                 c ? AsciiArt.ANSI_LIGHT_BLUE : "",
                 entry.getPath(),
                 c ? AsciiArt.ANSI_RESET : ""
             );
             entry.keys().forEach(key->{
                 String value = entry.value(key);
-                System.out.printf("  %s%"+nameWidth+"s%s : %s%n",
-                        c ? AsciiArt.ANSI_WHITE : "",
-                        key,
-                        c ? AsciiArt.ANSI_RESET : "",
-                        value.contains("\n") ? "\n    "+value.replaceAll("\n","\n    ") : value);
+                logger.info(String.format("  %s%"+nameWidth+"s%s : %s%n",
+                    c ? AsciiArt.ANSI_WHITE : "",
+                    key,
+                    c ? AsciiArt.ANSI_RESET : "",
+                    value.contains("\n") ? "\n    "+value.replaceAll("\n","\n    ") : value)
+                );
             });
         });
 
@@ -377,7 +382,7 @@ public class XmlComparison {
                 rootXmls.put(name, xml);
             }
         }else{
-            System.out.println("cannot load "+name+" xml is invalid "+xml);
+            logger.error("cannot load "+name+" xml is invalid "+xml);
         }
     }
 
@@ -402,7 +407,7 @@ public class XmlComparison {
             return;
         }
         if(hasNull(xmls)){//if one of the xmls is missing
-            System.out.println("THIS SHOULD BE CAUGHT BEFORE THIS POINT FOR ALL SUB_CALLS");
+            logger.error("THIS SHOULD BE CAUGHT BEFORE THIS POINT FOR ALL SUB_CALLS");
              Entry newEntry = new Entry(path);
              xmls.forEach((xmlName,xml)->{
                  newEntry.put(xmlName,xml.documentString());
@@ -451,7 +456,7 @@ public class XmlComparison {
                         }
                         //we should now have a fully populated toDiff
                         if(toDiff.size() != namedChildrenMap.size()){
-                            System.out.println("toDiff "+toDiff.keySet()+"\n  namedChildren="+namedChildrenMap.keySet());
+                            logger.error("toDiff "+toDiff.keySet()+"\n  namedChildren="+namedChildrenMap.keySet());
                         }
                         //calculate the new path
                         StringBuffer toAdd = new StringBuffer("/");
@@ -497,7 +502,7 @@ public class XmlComparison {
                                 }
 
                             }else if (match.size() > 1){
-                                System.out.println("too many matches by "+xmlPath+"\n  on"+firstChild.toString());
+                                logger.error("too many matches by "+xmlPath+"\n  on"+firstChild.toString());
                                 //TODO what do we do
                             }else{
 
@@ -518,7 +523,7 @@ public class XmlComparison {
                             diff(newPath, diffs, toDiff);
                         }
                     }else{
-                        System.out.println("HOW DID WE GET AN INVALID ENTRY?");
+                        logger.error("HOW DID WE GET AN INVALID ENTRY?");
                     }
                     try {
                         TimeUnit.SECONDS.sleep(0);
@@ -538,7 +543,7 @@ public class XmlComparison {
                 List<Xml> otherMatched = path.getMatches(other);
                 if(baseMatched.size() != otherMatched.size()){
                     //TODO how to handle different matche length
-                    System.out.println("different match counts for "+path+
+                    logger.info("different match counts for "+path+
                             "\n  base "+base.documentString(0)+
                             "\n  baseMatched="+baseMatched.size()+
                             "\n  other "+other.documentString(0)+
