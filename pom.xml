@@ -18,7 +18,7 @@
     <version.maven.gpg>1.6</version.maven.gpg>
     <version.maven-core>3.5.4</version.maven-core>
     <version.maven-plugin-annotations>3.5.1</version.maven-plugin-annotations>
-    <graalvm.version>21.1.0</graalvm.version>
+    <graalvm.version>21.2.0</graalvm.version>
   </properties>
   <scm>
     <connection>scm:git:git://github.com/Hyperfoil/yaup.git</connection>
