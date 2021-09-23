@@ -1,5 +1,6 @@
 package io.hyperfoil.tools.yaup.json.graaljs;
 
+import com.oracle.truffle.js.builtins.PromiseFunctionBuiltins;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.graalvm.polyglot.HostAccess;
@@ -17,12 +18,14 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 
-public class JsFetch {
+public class JsFetch implements JsThenable, JsPromiseExecutor{
+
 
    public static final Json DEFAULT_OPTIONS = Json.fromString("{" +
-      "\"method\":\"GET\"," + // GET, POST, PUT, DELETE
+      "\"method\":\"GET\"," + // GET, POST, PUT, DELETE, HEAD
       "\"mode\":\"cors\","+ //no-cors, cors, same-origin
       "\"cache\":\"no-cache\","+ //default, no-cache, reload, force-cahe, only-if-cached
       "\"credentials\":\"same-origin\","+ //include, same-origin, omit
@@ -67,9 +70,41 @@ public class JsFetch {
       }
    }
 
+   private Value url;
+   private Value options;
 
-   public int count = 10;
+   public JsFetch(Value url,Value options){
+      this.url = url;
+      this.options = options;
+   }
 
+   @HostAccess.Export
+   public void onPromiseCreation(Value onResolve, Value onReject){
+      then(onResolve,onReject);
+   }
+
+   @HostAccess.Export
+   public void then(Value onResolve, Value onReject){
+      try{
+         Object rtrn = jsApply(url,options);
+         if(onResolve.hasMember("then")){
+            onResolve.invokeMember("then",rtrn);
+         }else{
+            if(onResolve.canExecute()){
+               onResolve.execute(rtrn);
+            }
+         }
+      }catch(Exception e){
+         if(onReject.hasMember("then")) {
+            onReject.invokeMember("then", e.getMessage());
+         }else{
+            if(onReject.canExecute()){
+               onReject.execute(e.getMessage());
+            }
+         }
+      }
+
+   }
    @HostAccess.Export
    public Object jsApply(Value url,Value options){
       if (url.isString()){
@@ -190,15 +225,20 @@ public class JsFetch {
          }
          return JsonProxy.create(result);
       } catch (SocketTimeoutException e){
+
          e.printStackTrace();
+         return Json.fromThrowable(e);
       } catch (ProtocolException e) {
          e.printStackTrace();
+         return Json.fromThrowable(e);
       } catch (MalformedURLException e) {
          e.printStackTrace();
+         return Json.fromThrowable(e);
       } catch (IOException e) {
-         e.printStackTrace();
+         //e.printStackTrace();
+         throw new JsException(e.getMessage(),"fetch("+url+","+options+")",e);
       }
-      return null;
+      //return null;
    }
 
    public static String btoa(Value input){

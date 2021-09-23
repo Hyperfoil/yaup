@@ -1,5 +1,6 @@
 package perf.yaup;
 
+import com.google.common.collect.Lists;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -21,6 +22,8 @@ public class StringUtilTest {
            "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
            "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
    );
+
+
 
    @Test
    public void jsEval_error_lambda_undefined_variable(){
@@ -180,6 +183,24 @@ public class StringUtilTest {
       Json json = (Json)result;
       assertTrue("json.status should exist",json.has("status"));
    }
+
+
+   @Test
+   public void jsEval_asynch_new_fetch(){
+      Object result = StringUtil.jsEval("async (a,b)=>await fetch2('https://www.redhat.com',{})",
+              Arrays.asList("fetch2 = async (url,options)=>new Promise(new (Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch'))(url,options));"),"","");
+
+      assertTrue("fetch should return json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json.status should exist",json.has("status"));
+   }
+
+   @Test
+   public void jsEval_async_await_fetch_invalid_host(){
+      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://fail.fail.www.redhat.com').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); console.log('rtrn',rtrn); return rtrn;}","","");
+      assertTrue("fetch should return json: "+result,result instanceof String);
+      assertEquals("fetch should use reject handler","reject",(String)result);
+   }
    @Test
    public void jsEval_async_await_fetch_insecure(){
       Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://www.redhat.com',\n"+
@@ -194,7 +215,7 @@ public class StringUtilTest {
               "      }\n" +
               "); return rtrn;}","","");
       assertFalse("async should not return until after fetch",result instanceof Boolean);
-      assertTrue("fetch should return json",result instanceof Json);
+      assertTrue("fetch should return json "+result,result instanceof Json);
       Json json = (Json)result;
       assertTrue("json.status should exist",json.has("status"));
    }
@@ -398,6 +419,18 @@ public class StringUtilTest {
          List<String> names = StringUtil.getPatternNames("${{FOO}}",map);
          assertEquals("names should have 2 entries: "+names.toString(),2,names.size());
          assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO","BAR")));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void getPatternNames_pattern_with_dots(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("FOO","${{BAR}}");
+      try {
+         List<String> names = StringUtil.getPatternNames("${{foo.bar.biz}}",map);
+         assertEquals("names should have 1 entry: "+names.toString(),1,names.size());
+         assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("foo.bar.biz")));
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
       }

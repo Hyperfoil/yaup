@@ -17,4 +17,9 @@ public class JsException extends RuntimeException{
     }
 
     public String getJs(){return js;}
+
+    @Override
+    public String toString(){
+        return "JsException: "+getMessage()+" "+getJs()+" "+getCause();
+    }
 }

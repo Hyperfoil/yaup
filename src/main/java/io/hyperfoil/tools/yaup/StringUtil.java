@@ -174,18 +174,24 @@ public class StringUtil {
                     try {
                         context.eval("js", s);
                     } catch (PolyglotException pge) {
-                        throw new RuntimeException("failed to evaluate " + s + " preparing for " + js, pge);
+                        throw new RuntimeException("failed to evaluate " + s + " preparing for js = " + js, pge);
                     }
                 });
 
-                context.getBindings("js").putMember("_http",new JsFetch());
-                Source fetchSource = Source.newBuilder("js","fetch = async (url,options)=>{\n"+
-                        "return new Promise(async (resolve)=>{ \n"+
-                        "  const resp = _http.jsApply(url,options);\n"+
-//                        "  resolve(new Response(options,resp));\n"+
-                        "  resolve(resp);\n"+
-                        "});\n"+
-                        "}","fakeFetch").build();
+                context.getBindings("js").putMember("_http",new JsFetch(null,null));
+
+//                Source fetchSource = Source.newBuilder("js","fetch = async (url,options)=>{\n"+
+//                        "return new Promise(async (resolve,reject)=>{ \n"+
+//                        "  try{ \n"+
+//                        "const resp = _http.jsApply(url,options);\n"+
+//                        "  resolve(resp);\n"+
+//                        "   } catch (e){ reject(e); }\n"+
+//                        "});\n"+
+//                        "}","fakeFetch").build();
+
+                Source fetchSource = Source.newBuilder("js",
+                        "fetch = async (url,options)=>new Promise(new (Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch'))(url,options));","fakeFetch").build();
+
                 context.eval(fetchSource);
                 context.eval("js","global.btoa = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').btoa(str)");
                 context.eval("js","global.atob = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').atob(str)");
@@ -225,6 +231,7 @@ public class StringUtil {
                     }
                 }
                 if (matcher == null) {
+                    throw new JsException("failed to evaluate result with arguments = "+args,js);
                     //TODO raise issue that the return from graaljs is missing
                 } else {
                     if (!matcher.canExecute()) {
@@ -237,12 +244,12 @@ public class StringUtil {
 
                                 }
                             }
-                            for (int i=0; i<args.length; i++){
-                            }
                             Value result = matcher.execute(args);
                             if (result != null) {
                                 matcher = result;
                             }
+
+
                         }
                     }
 
@@ -276,7 +283,7 @@ public class StringUtil {
                     if (converted instanceof JsonProxyObject) {
                         rtrn = ((JsonProxyObject) converted).getJson();
                     } else if (converted instanceof Exception){
-                        rtrn = new JsException(((Exception)converted).getMessage(),js);
+                        rtrn = new JsException(((Exception)converted).getMessage(),js,(Throwable)converted);
                     } else if (converted instanceof Json) {
                         rtrn = (Json) converted;
                     } else {
