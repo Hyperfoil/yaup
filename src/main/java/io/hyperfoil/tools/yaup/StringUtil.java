@@ -336,6 +336,7 @@ public class StringUtil {
     private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
         boolean replaceMissing = false;
         PopulatePatternException toThrow = null;
+        JsException jsEvalException = null;
         if(map == null){
             map = new HashMap<>();
         }
@@ -429,7 +430,7 @@ public class StringUtil {
                             replacement = evalResult.toString();
                         }
                     }catch(JsException ise){
-                        //TODO failed to run javascript, save exception in case it was meant to be javascript but there is an error
+                        jsEvalException = ise;
                     }
                 }
                 if((replacement == null || "".equals(replacement))){
@@ -449,6 +450,9 @@ public class StringUtil {
             }
         }while(replaced);
         if(toThrow!=null){
+            if(jsEvalException != null){
+                throw new PopulatePatternException("Failed to evaluate JS: " + jsEvalException.getMessage(), rtrn, true);
+            }
             toThrow.setResult(rtrn);
             throw toThrow;
         }
