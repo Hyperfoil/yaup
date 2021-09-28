@@ -632,6 +632,25 @@ public class StringUtilTest {
       }
       fail("expected an exception from missing value");
    }
+
+   @Test
+   public void populatePattern_javascript_incorrect_filter(){
+      Map<Object, Object> map = new HashMap<>();
+      Json servers = Json.fromString("[ {\"name\":\"server-01\", \"idrac\":\"server01-drac.example.com\" } ]");
+      map.put("servers",servers);
+      map.put("missingTarget", "server01");
+
+      try {
+         String response = StringUtil.populatePattern("${{= ${{servers}}.filter(server => server.name === '${{missingTarget}}' )[0].idrac }}",map);
+      } catch (PopulatePatternException pe) {
+         assertTrue(pe.isJsFailure());
+         return;
+      }
+      fail("expected an exception from missing value");
+   }
+
+
+
    @Test(timeout = 10_000)
    public void populatePattern_looped_references(){
       Map<Object, Object> map = new HashMap<>();
