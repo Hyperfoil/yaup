@@ -29,7 +29,7 @@ public class OverloadConstructor extends Constructor{
         }
     }
     public static Json json(Node node){
-        Json rtrn = new Json();
+        Json rtrn = new Json(node instanceof SequenceNode);
         if(node instanceof MappingNode){
             MappingNode mappingNode = (MappingNode)node;
             mappingNode.getValue().forEach(nodeTuple -> {
