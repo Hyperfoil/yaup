@@ -69,7 +69,7 @@ public class ValueConverter {
       return json;
    }
    public static Json convertMapping(Value value){
-      Json json = new Json();
+      Json json = new Json(false);
       for(String key : value.getMemberKeys()){
          json.set(key,convert(value.getMember(key)));
       }
