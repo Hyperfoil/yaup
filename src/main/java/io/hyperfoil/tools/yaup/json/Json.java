@@ -1275,7 +1275,7 @@ public class Json {
         });
     }
     public Json clone(){
-        Json rtrn = new Json();
+        Json rtrn = new Json(isArray);
         for(Object key : data.keySet()){
             Object value = data.get(key);
             if(value instanceof Json){
