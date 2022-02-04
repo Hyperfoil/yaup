@@ -897,6 +897,29 @@ public class StringUtilTest {
       }
    }
    @Test
+   public void populatePattern_constant_in_evals(){
+      Map<Object,Object> state = new HashMap<>();
+      String response = null;
+      try {
+         response = StringUtil.populatePattern("${{=foo}}",state,Arrays.asList("const foo = 'bar'\nfunction doit(){return 'biz'}"),StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+      } catch (PopulatePatternException e) {
+         fail(e.getMessage());
+      }
+      assertEquals("response should be set from javascript constant","bar",response);
+   }
+   @Test
+   public void populatePattern_constant_function_in_evals(){
+      Map<Object,Object> state = new HashMap<>();
+      String response = null;
+      try {
+         response = StringUtil.populatePattern("${{=doit()}}",state,Arrays.asList("const foo = 'bar'\nfunction doit(){return 'biz'}"),StringUtil.PATTERN_PREFIX,StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX,StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+      } catch (PopulatePatternException e) {
+         fail(e.getMessage());
+      }
+      assertEquals("response should be set from javascript constant","biz",response);
+   }
+
+   @Test
    public void populatePattern_javascript_seconds_concat(){
       Map<Object,Object> state = new HashMap<>();
       state.put("FOO", "10");
