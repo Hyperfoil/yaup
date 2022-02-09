@@ -181,7 +181,7 @@ public class Json {
         Map<Object,Object> rtrn = new LinkedHashMap<>();
         json.forEach((k,v)->{
             if(v instanceof Json){
-                rtrn.put(k,toObjectMap((Json)v));
+                rtrn.put(k,toObject((Json)v));
             }else{//scalar
                 rtrn.put(k,v);
             }
