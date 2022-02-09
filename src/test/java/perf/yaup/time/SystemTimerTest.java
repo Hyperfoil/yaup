@@ -41,7 +41,7 @@ public class SystemTimerTest {
       SystemTimer timer = new SystemTimer("one");
       long start = System.currentTimeMillis();
       for(int i=0; i<count; i++){
-         timer.start("next",false);
+         timer.start("next",null,false);
       }
       long stop = System.currentTimeMillis();
 
@@ -52,12 +52,12 @@ public class SystemTimerTest {
    @Test
    public void parallel_children_not_stop_parent(){
       SystemTimer timer = new SystemTimer("top");
-      SystemTimer parallelTimer = timer.start("parallel",true);
+      SystemTimer parallelTimer = timer.start("parallel",null,true);
       sleep(100);
-      parallelTimer.start("parallel2",false);
+      parallelTimer.start("parallel2",null,false);
       SystemTimer serialTimer = timer.start("serial");
       sleep(100);
-      parallelTimer.start("parallel3",false);
+      parallelTimer.start("parallel3",null,false);
       sleep(100);
       timer.stop();
 
@@ -78,7 +78,7 @@ public class SystemTimerTest {
    @Test
    public void serial_not_stop_parallel(){
       SystemTimer timer = new SystemTimer("top");
-      timer.start("parallel",true);
+      timer.start("parallel",null,true);
       try {
          Thread.sleep(100);
       } catch (InterruptedException e) {

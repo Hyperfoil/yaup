@@ -63,6 +63,17 @@ public class JsonComparison {
       return criteria.size();
    }
 
+   public JsonComparison(){
+      rootJson = new LinkedHashMap<>();
+      criteria = new LinkedHashMap<>();
+      ordered = true;
+   }
+
+   public boolean isOrdered(){return ordered;}
+
+   //diff does not support unordered
+//   public void setOrdered(boolean ordered){this.ordered = ordered;}
+
    private void diff(String path, List<Entry> diffs, Map<String,Json> jsons){
       if(isEmtpy(jsons)){
          return;
@@ -101,7 +112,7 @@ public class JsonComparison {
       }
    }
    public List<Entry> getDiffs(){
-      if(rootJson.size()>1){
+      if(rootJson.size()<=1){
          return Collections.emptyList();
       }
       LinkedList<Entry> rtrn = new LinkedList<>();
@@ -151,7 +162,11 @@ public class JsonComparison {
       if(!allHave(key,jsons)){
          Entry newDiff = new Entry(path);
          jsons.forEach((name,json)->{
-            newDiff.put(name,json.toString(2));
+            if(json.has(key)){
+               newDiff.put(name,json.get(key).toString());
+            }else{
+               //newDiff.put(name,null); //TODO do we add a missing value as null
+            }
          });
          diffs.add(newDiff);
       }else{
@@ -165,7 +180,7 @@ public class JsonComparison {
             Map<String,Object> values = new HashMap<>();
             HashSet<Object> uniqueValues = new HashSet<>();
             jsons.forEach((name,json)->{
-               Object jsonValue = json.getJson(key);
+               Object jsonValue = json.get(key);
                values.put(name,jsonValue);
                uniqueValues.add(jsonValue);
             });

@@ -418,7 +418,8 @@ public class XmlComparison {
             diffAttributes(path,diffs,xmls);
             diffValues(path,diffs,xmls);
             if(ordered){
-
+                //does ordered split children by tag names or look at all children
+                //[position()=n] or [n]
             }else{
                 Map<String,XmlNamedChildren> namedChildrenMap = buildNamedChildren(xmls);
 
