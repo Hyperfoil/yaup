@@ -1,13 +1,18 @@
 package io.hyperfoil.tools.yaup.json.vertx;
 
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 
 /**
- * Used with Vertx EventBus to add support for yaup Json 
+ * Used with Vertx EventBus to add support for yaup Json. Does not appear to work with
  */
 public class JsonMessageCodec implements MessageCodec<Json, Json> {
+
+    public JsonMessageCodec(){
+    }
+
     @Override
     public void encodeToWire(Buffer buffer, Json json) {
         String jsonStr = json.toString();
@@ -28,16 +33,16 @@ public class JsonMessageCodec implements MessageCodec<Json, Json> {
 
     @Override
     public Json transform(Json json) {
-        return null;
+        return json;
     }
 
     @Override
     public String name() {
-        return null;
+        return getClass().getSimpleName();
     }
 
     @Override
     public byte systemCodecID() {
-        return 0;
+        return -1;
     }
 }
