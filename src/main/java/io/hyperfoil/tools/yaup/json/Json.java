@@ -17,7 +17,6 @@ import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
-import jdk.nashorn.api.scripting.ScriptObjectMirror;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Value;
 import org.json.JSONArray;
@@ -910,17 +909,6 @@ public class Json {
                 return defaultContext.getScopes();
             }
         };
-        try {
-            Object foo = engine.eval("var rtrn = "+js+"; rtrn",context);
-
-            if(foo instanceof ScriptObjectMirror){
-                ScriptObjectMirror scriptObjectMirror = (ScriptObjectMirror)foo;
-                rtrn = fromBindings(scriptObjectMirror);
-            }
-
-        } catch (ScriptException e) {
-            e.printStackTrace();
-        }
 
         return rtrn;
     }
