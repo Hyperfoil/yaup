@@ -1171,6 +1171,15 @@ public class StringUtilTest {
    }
 
    @Test
+   public void escapeBash(){
+      assertEquals("escape \\u001b","\\\u001b",StringUtil.escapeBash("\u001b"));
+      assertEquals("don't double escape \\\\u001b","\\\u001b",StringUtil.escapeBash("\\\u001b"));
+      assertEquals("escape newline","\\n",StringUtil.escapeBash("\n"));
+      assertEquals("don't double escape \\n","\\n",StringUtil.escapeBash("\\n"));
+      assertEquals("escape character return","\\r",StringUtil.escapeBash("\r"));
+   }
+
+   @Test
    public void escapeRegex() {
 
       assertEquals(". literals", "foo\\.bar\\.biz\\.buz", StringUtil.escapeRegex("foo.bar.biz.buz"));

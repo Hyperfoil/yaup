@@ -622,6 +622,15 @@ public class StringUtil {
         }
         return rtrn.toString();
     }
+    public static String escapeBash(String input){
+        if(input==null){ return "";}
+
+        String rtrn = input;
+        rtrn = rtrn.replaceAll("\u001b(?<!\\\\\u001b)","\\\\\u001b");
+        rtrn = rtrn.replaceAll("\r","\\\\r");
+        rtrn = rtrn.replaceAll("\n","\\\\n");
+        return rtrn;
+    }
     public static String escapeRegex(String input){
         if(input==null){ return "";}
 

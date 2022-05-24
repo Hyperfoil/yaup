@@ -1338,7 +1338,7 @@ public class Json {
         }else if(o instanceof Json){
             return ((Json)o).toString();
         } else {
-            return o.toString().replaceAll("\"", "\\\\\"");
+            return o.toString().replaceAll("\"", "\\\\\"").replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n");
         }
     }
 
