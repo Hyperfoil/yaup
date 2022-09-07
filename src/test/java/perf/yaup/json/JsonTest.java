@@ -1,6 +1,7 @@
 package perf.yaup.json;
 
 import io.hyperfoil.tools.yaup.json.Json;
+import io.vertx.core.json.JsonObject;
 import org.json.JSONObject;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -217,6 +218,13 @@ public class JsonTest {
         Json.chainSet(root,"first.second.fourth",20);
         assertTrue("second[fourth] should exist\n"+second.toString(2),second.has("fourth"));
         assertEquals("second[fourth] should be 20",20, second.get("fourth"));
+    }
+
+    @Test
+    public void new_jsonobject(){
+        Json event = Json.fromString("{'foo':'bar'}");
+        JsonObject converted = new JsonObject(event.toString());
+        assertNotNull(converted);
     }
 
     @Test

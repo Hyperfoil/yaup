@@ -1,17 +1,19 @@
 package perf.yaup;
 
-import com.google.common.collect.Lists;
+
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.graaljs.JsException;
-import io.hyperfoil.tools.yaup.json.graaljs.JsonProxy;
-import org.graalvm.polyglot.proxy.ProxyObject;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
