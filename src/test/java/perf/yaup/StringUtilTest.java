@@ -1177,6 +1177,7 @@ public class StringUtilTest {
       assertEquals("escape newline","\\n",StringUtil.escapeBash("\n"));
       assertEquals("don't double escape \\n","\\n",StringUtil.escapeBash("\\n"));
       assertEquals("escape character return","\\r",StringUtil.escapeBash("\r"));
+      assertEquals("escape character return","\\t",StringUtil.escapeBash("\t"));
    }
 
    @Test

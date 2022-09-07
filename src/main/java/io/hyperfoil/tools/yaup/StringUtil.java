@@ -629,6 +629,7 @@ public class StringUtil {
         rtrn = rtrn.replaceAll("\u001b(?<!\\\\\u001b)","\\\\\u001b");
         rtrn = rtrn.replaceAll("\r","\\\\r");
         rtrn = rtrn.replaceAll("\n","\\\\n");
+        rtrn = rtrn.replaceAll("\t","\\\\t");
         return rtrn;
     }
     public static String escapeRegex(String input){
