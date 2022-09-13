@@ -1218,7 +1218,7 @@ public class Json {
                 rtrn.append(escape(key));
                 rtrn.append(":");
                 if(value instanceof String){
-                rtrn.append(escape(value));
+                    rtrn.append(escape(value));
                 }else{
                     rtrn.append(escape(value));
                 }
@@ -1230,10 +1230,12 @@ public class Json {
     private String escape(Object o){
         if(o == null){
             return "null";
-        }else if(o instanceof Json){
-            return ((Json)o).toString();
-        } else {
+        }else if(o instanceof Json) {
+            return ((Json) o).toString();
+        }else if(o instanceof String){
             return JSONObject.quote(o.toString());
+        } else {
+            return o.toString();
         }
     }
 
