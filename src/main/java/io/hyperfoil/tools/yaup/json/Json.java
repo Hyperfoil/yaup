@@ -1199,9 +1199,7 @@ public class Json {
                     //newline
                 }
                 if(value instanceof String){
-                    rtrn.append("\"");
                     rtrn.append(escape(value));
-                    rtrn.append("\"");
                 }else{
                     rtrn.append(escape(value));
                 }
@@ -1217,13 +1215,10 @@ public class Json {
                 }
                 first=false;
 
-                rtrn.append("\"");
                 rtrn.append(escape(key));
-                rtrn.append("\":");
+                rtrn.append(":");
                 if(value instanceof String){
-                    rtrn.append("\"");
-                    rtrn.append(escape(value));
-                    rtrn.append("\"");
+                rtrn.append(escape(value));
                 }else{
                     rtrn.append(escape(value));
                 }
@@ -1238,7 +1233,7 @@ public class Json {
         }else if(o instanceof Json){
             return ((Json)o).toString();
         } else {
-            return o.toString().replaceAll("\"", "\\\\\"").replaceAll("\r", "\\\\r").replaceAll("\n", "\\\\n");
+            return JSONObject.quote(o.toString());
         }
     }
 
@@ -1263,7 +1258,7 @@ public class Json {
             isArray = false;
         }
         checkKeyType(key);
-        data.put(key,value);
+        data.put(key, value);
     }
     private void checkKeyType(Object key){
         if(! (key instanceof Integer || key instanceof Long) ){

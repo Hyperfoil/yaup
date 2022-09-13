@@ -228,6 +228,21 @@ public class JsonTest {
     }
 
     @Test
+    public void string_escape_tab(){
+        Json event = new Json();
+        event.add("foo","bar\tbiz");
+        try {
+            JsonObject test = new JsonObject(event.toString());
+        }catch(Exception e){
+            fail(e.getMessage());
+        }
+    }
+    @Test
+    public void string_escape_bash(){
+
+    }
+
+    @Test
     public void fromJs_oc_array(){
         String input="" +
            "[\n" +
