@@ -146,7 +146,11 @@ public class StringUtil {
     }
     public static Object jsEval(String js, Map globals,Collection<String> evals,Object...args){
         Object rtrn = null; //to return the exception if the js fails
-        try(Context context = Context.newBuilder("js")
+        try(Engine engine = Engine.newBuilder()
+        .option("engine.WarnInterpreterOnly", "false")
+        .build();
+        Context context = Context.newBuilder("js")
+        .engine(engine)
         .allowAllAccess(true)
         .allowHostAccess(HostAccess.ALL)
         .allowIO(true)

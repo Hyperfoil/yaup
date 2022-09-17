@@ -18,6 +18,7 @@ import com.jayway.jsonpath.ReadContext;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -794,7 +795,10 @@ public class Json {
     }
     public static Json fromJs(String js) {
         Json rtrn = new Json();
-        try (Context context = Context.newBuilder("js").allowAllAccess(true).allowHostAccess(true).build()) {
+        try (Engine engine = Engine.newBuilder()
+        .option("engine.WarnInterpreterOnly", "false")
+        .build();
+        Context context = Context.newBuilder("js").engine(engine).allowAllAccess(true).allowHostAccess(true).build()) {
             context.enter();
             try {
                Value obj = context.eval("js", "const walker = (parent,key,value)=>{\n" +
