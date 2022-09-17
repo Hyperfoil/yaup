@@ -211,7 +211,7 @@ public class StringUtilTest {
               "        method: 'HEAD', \n" +
               "        redirect: 'ignore', \n" +
               "        headers: {\n" +
-              "          'Authorization' : 'Basic '+btoa(\"perf:100yard-\"),\n" +
+              "          'Authorization' : 'Basic '+btoa(\"foo:bar\"),\n" +
               "          'Content-Type' : 'application/json'\n" +
               "        }\n" +
               "      }\n" +
