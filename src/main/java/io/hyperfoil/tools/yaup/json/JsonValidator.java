@@ -3,13 +3,15 @@ package io.hyperfoil.tools.yaup.json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.json.schema.*;
 public class JsonValidator {
+
+
    private Json schemaJson;
    private Validator validator;
    public JsonValidator(Json schema) {
       this.schemaJson = schema;
       JsonObject object = new JsonObject(schemaJson.toString());
       JsonSchema jsonSchema = JsonSchema.of(object);
-      validator = Validator.create(jsonSchema, new JsonSchemaOptions()/*.setDraft(Draft.DRAFT7)*/.setBaseUri("https://hyperfoil.io"));
+      validator = Validator.create(jsonSchema, new JsonSchemaOptions().setDraft(Draft.DRAFT202012)/*.setDraft(Draft.DRAFT7)*/.setBaseUri("https://hyperfoil.io"));
    }
 
    public Json validate(Json input) {

@@ -216,8 +216,8 @@ public class StringUtilTest {
               "        }\n" +
               "      }\n" +
               "); return rtrn;}","","");
-      assertFalse("async should not return until after fetch",result instanceof Boolean);
-      assertTrue("fetch should return json "+result,result instanceof Json);
+      assertFalse("async should not return until after fetch "+(result!=null?result.getClass():"null")+" "+result,result instanceof Boolean);
+      assertTrue("fetch should return json "+(result!=null?result.getClass():"null")+" "+result,result instanceof Json);
       Json json = (Json)result;
       assertTrue("json.status should exist",json.has("status"));
    }

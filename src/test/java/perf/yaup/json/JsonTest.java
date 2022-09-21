@@ -13,6 +13,18 @@ import static org.junit.Assert.*;
 
 public class JsonTest {
 
+
+    @Test
+    public void fromYaml_emptyKey(){
+        Json json = Json.fromYaml("foo:\n  bar:");
+        assertTrue(json.has("foo"));
+        Object foo = json.get("foo");
+        assertTrue("foo should be json",foo instanceof Json);
+        Json fooJson = (Json)foo;
+        assertTrue("foo.bar should exist",fooJson.has("bar"));
+        assertNull("foo.bar should be null",fooJson.get("bar"));
+
+    }
     @Test
     public void has_array_string_index(){
         Json json = new Json();
@@ -241,7 +253,6 @@ public class JsonTest {
     public void string_escape_bash(){
 
     }
-
     @Test
     public void fromJs_oc_array(){
         String input="" +

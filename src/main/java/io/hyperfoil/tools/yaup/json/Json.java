@@ -15,6 +15,7 @@ import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
+import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.graalvm.polyglot.Context;
@@ -442,7 +443,9 @@ public class Json {
         Json rtrn = new Json(false);
 
         map.forEach((key,value)->{
-            if(value instanceof Map){
+            if(value == null){
+                rtrn.set(key,value);
+            }else if(value instanceof Map){
                 rtrn.set(key,fromMap((Map)value));
             }else if (value instanceof Collection){
                 rtrn.set(key,fromCollection((Collection)value));
