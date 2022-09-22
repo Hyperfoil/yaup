@@ -329,7 +329,7 @@ public class Json {
 
                 }
             }else{
-
+                target.add(value);
             }
         }else if(!target.has(key)){
             target.set(key,value);
@@ -1246,6 +1246,9 @@ public class Json {
         }
     }
 
+    public void clear(){
+        data.clear();
+    }
     public void remove(Object key){
         key = box(key);
         if(isArray() && (key instanceof Integer || key instanceof Long)){
