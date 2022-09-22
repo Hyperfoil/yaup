@@ -1,0 +1,46 @@
+= Pattern substitution
+
+
+== Introduction
+
+Yaup pattern substitution is based on the "double mustache."
+```
+${{variable}}
+```
+It uses double curly-braces to avoid collision with javascript and bash variable substitution that both use single curly-braces.
+Patterns can include a default value after a `:` separator to use whenever the variable is empty or missing
+```
+${{variable:defaultValue}}
+```
+The variable and default value can be patterns themselves
+```
+${{${{anotherVariable}}:${{backupVariable:defaultBackupValue}}}}
+```
+but it is uncommon to need to have a deep nest of patterns.
+
+== Javascript
+Yaup can also execute javascript expressions by adding a `=` javascript prefix after the `${{` pattern prefix
+```
+${{=Date.now()}}
+```
+The javascript expressions can work with pattern substitution but remember to quote values that should be treated as strings.
+For example, if `var = "hello, world"` then we could change the greeting with:
+```
+${{="${{var}}".replace("hello","hola")}}
+```
+Notice that we quote `"${{var}}"` otherwise when the value is replaced the javascript expression will see `hello, world.relace(...)` and that is not valid javascript.
+
+=== Javascript arrays
+The javsacript execution makes it easier to work with variables that are arrays.
+For example, say we want to work with an existing array `var=['one','two']` but we want to create a new array merging in `biz=['uno','dos']`
+```
+${{= [...${{var:[]}},...${{biz:[]}}] }}
+```
+Notice how we used the default values of `[]` to ensure the javascript evaluated with an array like object if `var` or `biz` were missing.
+
+=== Javascript objects
+The default pattern prefix `${{`, separator `:`, and suffix `}}` can cause problems when trying to create new javascript objects in a pattern.
+Javascript objects and json use similar reserved characters (`{`,`:`,`}`).
+Yaup supports overriding the default prefix, separator, and suffix. We can also override the javascript prefix `=` but that is seldom necessary
+
+
