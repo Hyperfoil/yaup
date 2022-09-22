@@ -441,7 +441,9 @@ public class Json {
 
     public static Json fromMap(Map map){
         Json rtrn = new Json(false);
-
+        if(map == null){
+            return rtrn;
+        }
         map.forEach((key,value)->{
             if(value == null){
                 rtrn.set(key,value);
