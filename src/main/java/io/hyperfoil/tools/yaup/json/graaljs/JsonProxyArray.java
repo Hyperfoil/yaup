@@ -14,6 +14,10 @@ public class JsonProxyArray implements ProxyArray {
 
    public Json getJson(){return json;}
 
+   public void add(Object o){
+      this.json.add(o);
+   }
+
    @Override
    public Object get(long index) {
       Object rtrn = null;

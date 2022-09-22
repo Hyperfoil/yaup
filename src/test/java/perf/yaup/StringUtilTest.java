@@ -137,6 +137,18 @@ public class StringUtilTest {
       assertTrue("json should contain three: "+json,json.values().contains("three"));
    }
    @Test
+   public void jsEval_array_push_lambda(){
+      Json input = Json.fromString("[\"one\",\"two\"]");
+      Object result = StringUtil.jsEval("(a)=>{a.push('three'); return a;}",input);
+      assertNotNull("result should not be null",result);
+      assertTrue("result should be Json",result instanceof Json);
+      Json json = (Json)result;
+      assertTrue("json should be an array: "+json,json.isArray());
+      assertEquals("json should have 3 entries: "+json,3,json.size());
+      assertTrue("json should contain three: "+json,json.values().contains("three"));
+      assertTrue("input should contain three: "+input,input.values().contains("three"));
+   }
+   @Test
    public void jsEval_array_concat(){
       Object result = StringUtil.jsEval("(a)=>{return a.concat(['a','b']);}",Json.fromString("[\"one\",\"two\"]"));
       assertNotNull("result should not be null",result);
@@ -197,6 +209,14 @@ public class StringUtilTest {
       assertTrue("json.status should exist",json.has("status"));
    }
 
+   @Test
+   public void isJsFnLike(){
+      assertTrue(StringUtil.isJsFnLike("(a,b,c)=>a"));
+      assertTrue(StringUtil.isJsFnLike("(a,b,c)=>{ return a }"));
+      assertTrue(StringUtil.isJsFnLike("()=>'a'"));
+      assertTrue(StringUtil.isJsFnLike("()=>{return 'a'} "));
+      assertTrue(StringUtil.isJsFnLike("({a,b},c)=>'a'"));
+   }
    @Test
    public void jsEval_async_await_fetch_invalid_host(){
       Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://fail.fail.www.redhat.com').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); console.log('rtrn',rtrn); return rtrn;}","","");
