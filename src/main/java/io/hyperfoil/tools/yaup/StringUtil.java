@@ -155,7 +155,8 @@ public class StringUtil {
         .allowHostAccess(HostAccess.ALL)
         .allowIO(true)
         .allowExperimentalOptions(true)
-        .option("js.experimental-foreign-object-prototype", "true")
+        //.option("js.experimental-foreign-object-prototype", "true")
+        .option("js.foreign-object-prototype", "true")
         .option("js.global-property","true")
         .build()){
             context.enter();
