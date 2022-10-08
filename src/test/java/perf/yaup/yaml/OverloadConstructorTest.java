@@ -36,6 +36,23 @@ public class OverloadConstructorTest {
         assertFalse("key should be an object, not array",asJson.isArray());
 
     }
-
+    @Test
+    public void json_string_value_object(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Node n = yaml.compose(new StringReader("key: \"0.20\""));
+        Json json = OverloadConstructor.json(n);
+        assertTrue("json[key] should exist",json.has("key"));
+        Object value = json.get("key");
+        assertFalse("json[key] should be a number: "+value.getClass(),value instanceof Number);
+    }
+    @Test
+    public void json_number_value_object(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Node n = yaml.compose(new StringReader("key: 0.20"));
+        Json json = OverloadConstructor.json(n);
+        assertTrue("json[key] should exist",json.has("key"));
+        Object value = json.get("key");
+        assertTrue("json[key] should be a number: "+value.getClass(),value instanceof Number);
+    }
 
 }
