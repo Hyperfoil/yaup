@@ -1224,7 +1224,7 @@ public class Json {
                 }
                 first=false;
 
-                rtrn.append(escape(key));
+                rtrn.append(escape(key, true)); //All keys should be escaped as strings
                 rtrn.append(":");
                 if(value instanceof String){
                     rtrn.append(escape(value));
@@ -1236,12 +1236,16 @@ public class Json {
         }
         return rtrn.toString();
     }
-    private String escape(Object o){
+
+    private String escape(Object o) {
+        return this.escape(o, false);
+    }
+    private String escape(Object o, boolean force){
         if(o == null){
             return "null";
         }else if(o instanceof Json) {
             return ((Json) o).toString();
-        }else if(o instanceof String){
+        }else if(o instanceof String || force){
             return JSONObject.quote(o.toString());
         } else {
             return o.toString();
