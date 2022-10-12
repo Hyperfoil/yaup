@@ -307,7 +307,17 @@ public class JsonTest {
         }
     }
 
-
+    @Test
+    public void toString_escapedKeys(){
+        Json json = new Json();
+        json.set(1,1);
+        json.set(2,2);
+        try {
+            assertEquals("{\"1\":1,\"2\":2}", json.toString());
+        }catch(Exception e){
+            Assert.fail("failed to parse with JSONObject");
+        }
+    }
     @Test
     public void equals(){
         Json a = new Json();
