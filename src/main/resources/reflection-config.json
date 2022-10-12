@@ -1,0 +1,11 @@
+[
+  {
+    "name" : "io.hyperfoil.tools.yaup.json.graaljs.JsFetch",
+    "queryAllDeclaredConstructors" : true,
+    "queryAllPublicConstructors" : true,
+    "queryAllDeclaredMethods" : true,
+    "queryAllPublicMethods" : true,
+    "allDeclaredFields" : true,
+    "allPublicFields" : true
+  }
+]
