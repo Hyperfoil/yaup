@@ -526,10 +526,10 @@ public class FileUtility {
                      // if there is name filtering
                      if (nameSubstring != null && !nameSubstring.isEmpty()) {
                         if (sub.getName().contains(nameSubstring) /*&& !isArchive(sub)*/) {
-                           rtrn.add(sub.getAbsolutePath());
+                           rtrn.add(sub.toPath().normalize().toFile().getAbsolutePath());
                         }
                      } else {
-                        rtrn.add(sub.getAbsolutePath());
+                        rtrn.add(sub.toPath().normalize().toFile().getAbsolutePath());
                      }
                   }
                   if (inArchive && sub.isFile() && isArchive(sub)) {
@@ -550,6 +550,8 @@ public class FileUtility {
                   if (f.getName().contains(nameSubstring) /*&& !isArchive(sub)*/) {
                      rtrn.add(f.getAbsolutePath());
                   }
+               }else{
+                  rtrn.add(f.getAbsolutePath());
                }
             }
             if (inArchive && f.isFile() && isArchive(f)) {
