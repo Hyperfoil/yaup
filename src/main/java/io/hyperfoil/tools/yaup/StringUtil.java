@@ -347,9 +347,11 @@ public class StringUtil {
         }
         String rtrn = pattern;
         boolean replaced;
+        boolean fromJs=false;
         int skip=0;
         int seenIndex=-1; //index where seen becomes invalid
         do {
+            fromJs=false;
             replaced = false;
             int nameStart=-1;
             int nameEnd=-1;
@@ -424,7 +426,6 @@ public class StringUtil {
                     StringUtil.findAny(name,"()/*^+-") > -1 ||
                     name.matches(".*?\\.\\.\\.\\s*[{\\[].*")
                 ) {
-                    String value = null;
                     try {
                         Object evalResult = jsEval(
                            name,
@@ -433,12 +434,17 @@ public class StringUtil {
                         );
                         if (evalResult != null) {
                             replacement = evalResult.toString();
+                            fromJs = true;
                         }
                     }catch(JsException ise){
                         jsEvalException = ise;
                     }
                 }
-                if((replacement == null || "".equals(replacement))){
+                //why are we preventing empty string replacements? none of the StringUtil tests hit this case
+                if((replacement == null || ("".equals(replacement) && !fromJs ) )){
+                    if("".equals(replacement)){
+                        System.out.println(AsciiArt.ANSI_RED+" empty string replacement in ["+pattern+"]"+AsciiArt.ANSI_RESET);
+                    }
                     replacement = defaultValue != null ? defaultValue : (map.containsKey(name) && map.get(name) != null ? map.get(name).toString() : null);
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();

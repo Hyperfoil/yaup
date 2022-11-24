@@ -1,6 +1,10 @@
 package io.hyperfoil.tools.yaup.json.graaljs;
 
+import com.oracle.truffle.js.runtime.objects.Null;
+import com.oracle.truffle.js.runtime.objects.Undefined;
 import io.hyperfoil.tools.yaup.json.Json;
+import org.graalvm.polyglot.proxy.Proxy;
+import org.graalvm.polyglot.proxy.ProxyObject;
 
 import java.util.*;
 
@@ -35,7 +39,10 @@ public class MapProxyWrapper implements Map<Object,Object> {
     @Override
     public Object get(Object o) {
         Object rtrn = map.get(o);
-        if(rtrn!=null && rtrn instanceof Json){
+        if(rtrn == null){
+            rtrn = Null.instance;
+            //rtrn = Undefined.instance;
+        }else if(rtrn!=null && rtrn instanceof Json){
             rtrn = JsonProxy.create((Json)rtrn);
         }else if (rtrn!=null && rtrn instanceof Map){
             rtrn = new MapProxyWrapper((Map)rtrn);

@@ -480,6 +480,35 @@ public class StringUtilTest {
          fail(pe.getMessage());
       }
    }
+   @Test
+   public void populatePattern_javascript_if_variable_exists(){
+      try{
+         Map<Object, Object> map = new HashMap<>();
+         map.put("missing",true);
+         map.put("bar","eek");
+         String response = StringUtil.populatePattern("${{= missing ? \"foo\" : `` }}",map,"${{","__","}}","=");
+         assertEquals("foo",response);
+      }catch (PopulatePatternException e){
+         fail(e.getMessage());
+      }
+   }
+
+   @Test
+   public void populatePattern_javascript_if_variable_missing_empty_result(){
+      try{
+         Map<Object, Object> map = new HashMap<>();
+         map.put("missing",false);
+         map.put("bar","eek");
+         String response = StringUtil.populatePattern("${{= (missing ? \"foo\" : \"\") }}",map,"${{","__","}}","=");
+         assertEquals("",response);
+         response = StringUtil.populatePattern("${{= (missing ? \"foo\" : `` ) }}",map,"${{","__","}}","=");
+         assertEquals("",response);
+         response = StringUtil.populatePattern("${{= (missing ? \"foo\" : '' ) }}",map,"${{","__","}}","=");
+         assertEquals("",response);
+      }catch (PopulatePatternException e){
+         fail(e.getMessage());
+      }
+   }
 
    @Test
    public void populatePattern_cat_jq_issue() {
