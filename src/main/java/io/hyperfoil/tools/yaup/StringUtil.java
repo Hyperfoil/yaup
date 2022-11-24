@@ -347,10 +347,12 @@ public class StringUtil {
         }
         String rtrn = pattern;
         boolean replaced;
+        boolean fromJs=false;
         int skip=0;
         int seenIndex=-1; //index where seen becomes invalid
         do {
             replaced = false;
+            fromJs=false;
             int nameStart=-1;
             int nameEnd=-1;
             int defaultStart=-1;
@@ -433,12 +435,14 @@ public class StringUtil {
                         );
                         if (evalResult != null) {
                             replacement = evalResult.toString();
+                            fromJs = true;
                         }
                     }catch(JsException ise){
                         jsEvalException = ise;
                     }
                 }
-                if((replacement == null || "".equals(replacement))){
+                //why do we trap for empty replacement again? That condition does not trigger in StringUtil test suite
+                if((replacement == null || (!fromJs && "".equals(replacement))) ){
                     replacement = defaultValue != null ? defaultValue : (map.containsKey(name) && map.get(name) != null ? map.get(name).toString() : null);
                 }
                 int end = Math.max(nameEnd,defaultEnd)+PATTERN_SUFFIX.length();

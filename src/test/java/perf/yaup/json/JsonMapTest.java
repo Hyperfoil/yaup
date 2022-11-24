@@ -15,12 +15,24 @@ public class JsonMapTest {
 
     @Test
     public void get_jsonpath_keys(){
-        Json foo = Json.fromJs("{ foo: { bar: { biz: 'buz' } }, found: true }");
+        Json foo = Json.fromJs("{ foo: { bar: { biz: 'buz' } }, found: { foo: true } }");
         JsonMap map = new JsonMap(foo);
         try{
 
-            String response = StringUtil.populatePattern("${{=${{found}} ? '${{foo.bar.biz}}' : 'fail' }}",map,"${{","__","}}","=");
+            String response = StringUtil.populatePattern("${{=found.foo ? `${foo.bar.biz}` : 'fail' }}",map,"${{","__","}}","=");
             assertEquals("buz",response);
+        }catch (PopulatePatternException e){
+            fail(e.getMessage());
+        }
+    }
+    @Test
+    public void get_jsonpath_keys_missing(){
+        Json foo = Json.fromJs("{ foo: { bar: { biz: 'buz' } }, found: { foo: true } }");
+        JsonMap map = new JsonMap(foo);
+        try{
+
+            String response = StringUtil.populatePattern("${{=found.bar ? `${foo.bar.buz}` : 'fail' }}",map,"${{","__","}}","=");
+            assertEquals("fail",response);
         }catch (PopulatePatternException e){
             fail(e.getMessage());
         }
