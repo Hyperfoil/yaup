@@ -26,7 +26,6 @@ public class StringUtilTest {
    );
 
 
-
    @Test
    public void jsEval_error_lambda_undefined_variable(){
       Map<Object,Object> globals = new HashMap<Object,Object>();
@@ -471,6 +470,17 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_missing_nested_pattern_uses_default(){
+      try {
+         Map<Object, Object> map = new HashMap<>();
+         String response = StringUtil.populatePattern("${{${{afk}}:default}}",map);
+         assertEquals( "default", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+
+   @Test
    public void populatePattern_javascript_expand_object() {
       try {
          Map<Object, Object> map = new HashMap<>();
@@ -575,6 +585,93 @@ public class StringUtilTest {
 
    }
 
+   /**
+    * Tests that default separator is not detected when it appears as part of the boolean operator
+    */
+   @Test
+   public void populatePattern_javascript_boolean_expression_no_default(){
+      Map<Object, Object> map = new HashMap();
+      map.put("missing",false);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=missing ? \"found\" : \"missing\"}}", map);
+         assertEquals("missing",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_boolean_expression_default(){
+      Map<Object, Object> map = new HashMap();
+      map.put("missing",false);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=missing ? \"found\" : \"missing\" : \"bad\"}}", map);
+         assertEquals("missing",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_nested_boolean_expression_no_separator(){
+      Map<Object, Object> map = new HashMap();
+      map.put("test",true);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=test ? bar ? \"bar\" : \"no-bar\" : \"missing\"}}", map);
+         assertEquals("bar",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_quoted_question_not_boolean_expression(){
+      Map<Object, Object> map = new HashMap();
+      map.put("test",true);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=\"?${{afk}}:${{bar}}\":defaultValue}}", map);
+         assertEquals("defaultValue",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_single_quote_question(){
+      Map<Object, Object> map = new HashMap();
+      map.put("test",true);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=\'?${{afk}}${{bar:}}\':defaultValue}}", map);
+         assertEquals("defaultValue",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_string_template(){
+      Map<Object, Object> map = new HashMap();
+      map.put("test",true);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=`?${afk}${bar}`:defaultValue}}", map);
+         assertEquals("defaultValue",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_quoted_separator_no_default(){
+      Map<Object, Object> map = new HashMap();
+      map.put("test",true);
+      map.put("bar","dos");
+      try {
+         String response = StringUtil.populatePattern("${{=\"${{test}}:${{bar}}\".toLowerCase()}}", map);
+         assertEquals("true:dos",response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
    @Test
    public void populatePattern_javascript_array_spread() {
       Map<Object, Object> map = new HashMap();

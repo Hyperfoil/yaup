@@ -127,7 +127,6 @@ public class StringUtil {
 
     private static final Pattern NAMED_CAPTURE = java.util.regex.Pattern.compile("\\(\\?<([^>]+)>");
     private static final String VALID_REGEX_NAME_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
     public static List<String> getCaptureNames(String pattern) {
         Matcher fieldMatcher = NAMED_CAPTURE.matcher(pattern);
         List<String> names = new LinkedList<>();
@@ -360,6 +359,8 @@ public class StringUtil {
             int count=0;
             char quoteChar='"';
             boolean inQuote=false;
+            boolean isJs = false;
+            int isJsBoolean = 0;
             for(int i=skip; i<rtrn.length(); i++){
                 char targetChar = rtrn.charAt(i);
                 if(inQuote){
@@ -368,18 +369,30 @@ public class StringUtil {
                    }
                 }else{
                     // added ` for string template patterns in javascript, do we need to make sure it's js to accept `?
-                    // only care about count > 0 quotes so we ignore quotes outside of ${{...}}
+                    // only care about count > 0 quotes. Ignore quotes outside of ${{...}}
                    if(count > 0 && (rtrn.charAt(i) == '"' || rtrn.charAt(i) == '\'' || rtrn.charAt(i) == '`')){ //TODO do we ignore escaped ' and "?
                       quoteChar=rtrn.charAt(i);
                       inQuote=true;
                    }
+                }
+                if(rtrn.startsWith("?",i) && isJs && !inQuote){
+                    isJsBoolean++;
+                }
+                if(rtrn.startsWith(":",i) && !inQuote){
+                    if(isJs && isJsBoolean>0){
+                        i++;//
+                        isJsBoolean--;
+                    }
                 }
                 if(rtrn.startsWith(prefix,i)){
                     if(count==0){
                         nameStart=i;
                     }
                     count++;
-                    i+=prefix.length()-1;
+                    i+=prefix.length()-1;//-1 because we increment i in the for loop
+                    if(rtrn.startsWith(javascriptPrefix,i+1) && count==1){
+                        isJs=true;
+                    }
                 }else if (rtrn.startsWith(separator,i) && !inQuote){ // '${{FOO:foo}}' doesn't work if checking for inQuote
                     if(count==1){
                         nameEnd=i;
@@ -404,10 +417,23 @@ public class StringUtil {
                    seen.clear();
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd).trim();
-                String name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                String name = namePattern;
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too
-                    defaultValue = populatePattern(defaultValue,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                    try {
+                        defaultValue = populatePattern(defaultValue, map, evals, prefix, separator, suffix, javascriptPrefix, seen, fullScan);
+                    }catch(PopulatePatternException ppe){
+                        //could not resolve the default, do we care if name resolved?
+                        defaultValue=null;//we do not have a valid default value
+                    }
+                }
+                try{
+                    name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                }catch (PopulatePatternException ppe){
+                    //could not resolve the value in name
+                    if(defaultValue==null){
+                        toThrow = ppe;//the failure is fatal because we don't
+                    }
                 }
                 boolean isJavascript = false;
                 if(name.startsWith(javascriptPrefix)){
@@ -426,19 +452,22 @@ public class StringUtil {
                     StringUtil.findAny(name,"()/*^+-") > -1 ||
                     name.matches(".*?\\.\\.\\.\\s*[{\\[].*")
                 ) {
-                    String value = null;
-                    try {
-                        Object evalResult = jsEval(
-                           name,
-                           map,
-                           evals
-                        );
-                        if (evalResult != null) {
-                            replacement = evalResult.toString();
-                            fromJs = true;
+                    //jsEval does not work on patterns. a pattern here is an error
+                    if(!name.contains(prefix)){
+                        String value = null;
+                        try {
+                            Object evalResult = jsEval(
+                                    name,
+                                    map,
+                                    evals
+                            );
+                            if (evalResult != null) {
+                                replacement = evalResult.toString();
+                                fromJs = true;
+                            }
+                        }catch(JsException ise){
+                            jsEvalException = ise;
                         }
-                    }catch(JsException ise){
-                        jsEvalException = ise;
                     }
                 }
                 //why do we trap for empty replacement again? That condition does not trigger in StringUtil test suite
