@@ -13,6 +13,17 @@ import static org.junit.Assert.*;
 
 public class JsonTest {
 
+    @Test
+    public void isJsonSearchPath(){
+        assertTrue("search should be jsonpath",
+                Json.isJsonSearchPath("$.foo[?(bar)]"));
+        assertTrue("path tree search should match",
+                Json.isJsonSearchPath("$.foo..bar"));
+
+        assertFalse("array spread is not the same as json path tree search",
+                Json.isJsonSearchPath("${{=[ \"${{hostname}}\" , ...${{RUN.FOO:[]}} ]}}")
+        );
+    }
 
     @Test
     public void fromYaml_emptyKey(){

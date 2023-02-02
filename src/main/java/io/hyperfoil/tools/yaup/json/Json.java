@@ -958,7 +958,7 @@ public class Json {
     private static Configuration yaup = Configuration.builder().jsonProvider(new YaupJsonProvider()).options(Option.SUPPRESS_EXCEPTIONS,Option.DEFAULT_PATH_LEAF_TO_NULL).build();
 
     public static boolean isJsonSearchPath(String path){
-        return path.contains("[?(") || path.contains("..");
+        return path.contains("[?(") || (path.contains("..") && !path.contains("..."));
     }
     public static String getPreSearchPath(String path){
         if(path.startsWith("$.")){

@@ -541,6 +541,28 @@ public class StringUtilTest {
    }
 
    @Test
+   public void populatePattern_javascript_array_spread_with_default(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("hostname","foo.bar.biz.buz");
+      try {
+         String response = StringUtil.populatePattern("${{=[ \"${{hostname}}\" , ...${{RUN.FOO:[]}} ]}}",map,StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+      } catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+   }
+   @Test
+   public void populatePattern_javascript_array_spread_in_reference(){
+      Map<Object, Object> map = new HashMap<>();
+      map.put("hostname","foo.bar.biz.buz");
+      map.put("value","${{=[ \"${{hostname}}\" , ...${{RUN.FOO:[]}} ]}}");
+      try {
+         String response = StringUtil.populatePattern("${{value:${{hostname}}}}",map,StringUtil.PATTERN_PREFIX, StringUtil.PATTERN_DEFAULT_SEPARATOR,StringUtil.PATTERN_SUFFIX, StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+      } catch (PopulatePatternException pe){
+         fail(pe.getMessage());
+      }
+   }
+
+   @Test
    public void populatePattern_javascript_array_spread_append_object() {
       Map<Object, Object> map = new HashMap();
       map.put("FOO", new Json(true));
