@@ -440,6 +440,9 @@ public class StringUtil {
                     isJavascript = true;
                     name = name.substring(javascriptPrefix.length());
                 }
+                if(name.contains("...")){//hack to identify the 
+                    isJavascript = true;
+                }
                 String replacement = null;
                 if(!isJavascript && map.containsKey(name) && map.get(name)!=null && !map.get(name).toString().isEmpty()){
                     if (seen.contains(name)) {

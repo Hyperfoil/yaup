@@ -422,6 +422,21 @@ public class StringUtilTest {
       }
    }
    @Test
+   public void getPatternNames_array_expansion(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{ [...${{RUN.FOO}},{'test':'worked'}] }}",map,
+                 StringUtil.PATTERN_PREFIX,
+                 "_",
+                 StringUtil.PATTERN_SUFFIX,
+                 StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+         assertEquals("names should have 1 entry: "+names,1,names.size());
+         assertEquals("names[0] should be RUN.FOO: "+names,"RUN.FOO",names.get(0));
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+   }
+   @Test
    public void getPatternNames_multiple_patterns(){
       Map<Object, Object> map = new HashMap<>();
       try {
