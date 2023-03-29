@@ -19,7 +19,7 @@
     <version.maven-core>3.5.4</version.maven-core>
     <version.maven-plugin-annotations>3.5.1</version.maven-plugin-annotations>
     <graalvm.version>21.2.0</graalvm.version>
-    <jackson.version>2.12.7</jackson.version>
+    <jackson.version>2.12.7.1</jackson.version>
   </properties>
   <scm>
     <connection>scm:git:git://github.com/Hyperfoil/yaup.git</connection>
