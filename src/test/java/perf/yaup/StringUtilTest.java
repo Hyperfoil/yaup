@@ -215,6 +215,12 @@ public class StringUtilTest {
       assertTrue(StringUtil.isJsFnLike("()=>'a'"));
       assertTrue(StringUtil.isJsFnLike("()=>{return 'a'} "));
       assertTrue(StringUtil.isJsFnLike("({a,b},c)=>'a'"));
+      assertTrue(StringUtil.isJsFnLike("(all,json,state)=>{\n" +
+              "  (!('lts_payload' in all)){\n" +
+              "    all.lts_payload=[]\n" +
+              "  }\n" +
+              "  all.lts_payload.push(json)\n" +
+              "}\n"));
    }
    @Test
    public void jsEval_async_await_fetch_invalid_host(){
@@ -319,6 +325,13 @@ public class StringUtilTest {
    }
 
    @Test
+   public void jsEval_object_assign_entry(){
+      Json input = new Json(false);
+      Object result = StringUtil.jsEval("(a)=>{if(!('foo' in a)){a.foo=[]}}",input);
+      assertTrue("json should have foo key:"+input,input.has("foo"));
+   }
+
+   @Test
    public void countOccurrances_jsonpaths() {
       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
          "$.faban.run.SPECjEnterprise.\"fa:runConfig\".\"fa:runControl\".\"fa:rampUp\".\"text()\"",
@@ -376,6 +389,17 @@ public class StringUtilTest {
       assertEquals("two groups", 2, grouped.size());
       assertTrue("groups are [one, onetwo]", grouped.keys().containsAll(Arrays.asList("one", "onetwo")));
       assertEquals("group onetwo should have 2 entries", 2, grouped.get("onetwo").size());
+   }
+
+   @Test
+   public void getPatternNames_nested(){
+      Map<Object, Object> map = new HashMap<>();
+      try {
+         List<String> names = StringUtil.getPatternNames("${{foo.${{bar}}.biz}}",map);
+         assertEquals("expect 2 entries: "+names,2,names.size());
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
    }
 
    @Test

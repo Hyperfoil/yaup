@@ -10,8 +10,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import java.io.StringReader;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class OverloadConstructorTest {
 
@@ -53,6 +52,26 @@ public class OverloadConstructorTest {
         assertTrue("json[key] should exist",json.has("key"));
         Object value = json.get("key");
         assertTrue("json[key] should be a number: "+value.getClass(),value instanceof Number);
+    }
+    @Test
+    public void json_multiline(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Node n = yaml.compose(new StringReader("key: >\n foo\n bar"));
+        Json json = OverloadConstructor.json(n);
+        assertTrue("json[key] should exist",json.has("key"));
+        Object value = json.get("key");
+        assertTrue("json[key] should be a string"+value.getClass(),value instanceof String);
+        assertEquals("json[key] value check","foo bar",value.toString());
+    }
+    @Test
+    public void json_multiline_spaced(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Node n = yaml.compose(new StringReader("key: >\n foo\n\n bar"));
+        Json json = OverloadConstructor.json(n);
+        assertTrue("json[key] should exist",json.has("key"));
+        Object value = json.get("key");
+        assertTrue("json[key] should be a string"+value.getClass(),value instanceof String);
+        assertEquals("json[key] value check","foo\nbar",value.toString());
     }
 
 }

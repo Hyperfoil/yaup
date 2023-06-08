@@ -849,7 +849,7 @@ public class StringUtil {
 
     public static boolean isJsFnLike(String input){
         return input != null && !input.isEmpty() && (
-                input.trim().matches("^\\([^\\)]*\\)\\s*=>.*") ||
+                input.trim().matches("(?s)^\\([^\\)]*\\)\\s*=>.*") ||
                 (input.trim().startsWith("function") && input.trim().endsWith("}")));
     }
     public static boolean isQuoted(String value){
