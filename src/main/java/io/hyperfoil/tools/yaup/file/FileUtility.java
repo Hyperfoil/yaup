@@ -94,12 +94,24 @@ public class FileUtility {
     *
     * @param baseDir       the full path to the directory to start the search
     * @param nameSubstring the substring to find in the file name
-    * @param recursive     - search subdirectories if <code>true</code>
+    * @param recursive     search subdirectories if <code>true</code>
     * @return an <code>Immutable</code> list of the files which match the search
     */
    public static List<String> getFiles(String baseDir, String nameSubstring,
                                        boolean recursive) {
       return search(baseDir, nameSubstring, recursive, true, false, false);
+   }
+   /**
+    * Get a <code>List</code> of all the files in baseDir that contain nameSubstring
+    *
+    * @param baseDir       the full path to the directory to start the search
+    * @param nameSubstring the substring to find in the file name
+    * @param recursive     search subdirectories if <code>true</code>
+    * @param inArchive     search inside archives (e.g. tar) if <code>true</code>
+    * @return an <code>Immutable</code> list of the files which match the search
+    */
+   public static List<String> getFiles(String baseDir, String nameSubstring, boolean recursive, boolean inArchive){
+      return search(baseDir, nameSubstring, recursive, true, false, true);
    }
 
    /**
