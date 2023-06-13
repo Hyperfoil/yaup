@@ -1,5 +1,6 @@
 package perf.yaup.json;
 
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.vertx.core.json.JsonObject;
 import org.json.JSONObject;
@@ -7,7 +8,9 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 
@@ -154,6 +157,43 @@ public class JsonTest {
         assertNotNull(found);
     }
 
+    //the Array.prototype.push method is not threadsafe in graaljs (because javascript objects are not sharable)
+    @Test @Ignore
+    public void array_add_concurrency(){
+        int limit = 10;
+        int concurrency = 1;
+        CountDownLatch start = new CountDownLatch(concurrency);
+        CountDownLatch stop = new CountDownLatch(concurrency);
+
+
+        Json json = new Json(true);
+        Runnable r = ()->{
+            start.countDown();
+            try {
+                start.await();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            for(int i=0;i<limit; i++){
+                StringUtil.jsEval("(v,i)=>{v.push(i)}", Arrays.asList("Array.prototype.push=(v,a,b,c)=>{for (var key in this) {\n" +
+                        "    print(key);\n" +
+                        "}console.log(v,this);}"),json,i);
+                //json.add(i);
+            }
+            stop.countDown();
+        };
+        for(int i=0; i < concurrency; i++){
+            Thread t = new Thread(r);
+            t.start();
+        }
+        try {
+            stop.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println(json.size());
+        assertEquals("wrong number of entries",limit*concurrency,json.size());
+    }
     @Test
     public void chainSet_array_reference(){
         Json root = Json.fromString("{\"v\":[{},{}]}");

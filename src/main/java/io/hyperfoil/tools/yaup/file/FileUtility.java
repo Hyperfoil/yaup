@@ -111,7 +111,7 @@ public class FileUtility {
     * @return an <code>Immutable</code> list of the files which match the search
     */
    public static List<String> getFiles(String baseDir, String nameSubstring, boolean recursive, boolean inArchive){
-      return search(baseDir, nameSubstring, recursive, true, false, true);
+      return search(baseDir, nameSubstring, recursive, true, false, inArchive);
    }
 
    /**
@@ -549,7 +549,7 @@ public class FileUtility {
                      List<String> entries = getArchiveEntries(sub.getPath());
                      for (String entry : entries) {
                         if (entry.contains(nameSubstring)) {
-                           rtrn.add(entry);
+                           rtrn.add(sub.getPath()+ARCHIVE_KEY+entry);
                         }
                      }
                   }
