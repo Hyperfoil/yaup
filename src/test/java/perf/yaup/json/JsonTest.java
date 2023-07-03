@@ -160,8 +160,8 @@ public class JsonTest {
     //the Array.prototype.push method is not threadsafe in graaljs (because javascript objects are not sharable)
     @Test @Ignore
     public void array_add_concurrency(){
-        int limit = 10;
-        int concurrency = 1;
+        int limit = 5;
+        int concurrency = 5;
         CountDownLatch start = new CountDownLatch(concurrency);
         CountDownLatch stop = new CountDownLatch(concurrency);
 
@@ -175,9 +175,7 @@ public class JsonTest {
                 throw new RuntimeException(e);
             }
             for(int i=0;i<limit; i++){
-                StringUtil.jsEval("(v,i)=>{v.push(i)}", Arrays.asList("Array.prototype.push=(v,a,b,c)=>{for (var key in this) {\n" +
-                        "    print(key);\n" +
-                        "}console.log(v,this);}"),json,i);
+                StringUtil.jsEval("(v,i)=>{v.push(i);}", Arrays.asList(""),json,i);
                 //json.add(i);
             }
             stop.countDown();
@@ -191,8 +189,7 @@ public class JsonTest {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(json.size());
-        assertEquals("wrong number of entries",limit*concurrency,json.size());
+        assertEquals("wrong number of entries\n"+json,limit*concurrency,json.size());
     }
     @Test
     public void chainSet_array_reference(){

@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -67,7 +68,6 @@ import static java.util.Optional.ofNullable;
  * A javascript object representation that can be either an Array or Object.
  */
 public class Json {
-
     final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
 
     public static class MapBuilder {
@@ -1320,7 +1320,9 @@ public class Json {
     }
 
     public void add(Object value){
-        add(data.size(),value,false);
+        synchronized (data) {
+            add(data.size(), value, false);
+        }
     }
     public void add(Object key,Object value){ add(key,value,false); }
     public void add(Object key,Object value,boolean forceArray){
