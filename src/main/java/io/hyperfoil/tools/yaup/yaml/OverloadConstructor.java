@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.yaup.yaml;
 
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.composer.Composer;
 import org.yaml.snakeyaml.constructor.AbstractConstruct;
 import org.yaml.snakeyaml.constructor.Construct;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -162,6 +163,10 @@ public class OverloadConstructor extends Constructor{
 
     }
 
+    @Override
+    public void setComposer(Composer composer) {
+        super.setComposer(composer);
+    }
     public boolean isExactMatchOnly(){return exactMatchOnly;}
     public void setExactMatchOnly(boolean exactMatchOnly){
         this.exactMatchOnly = exactMatchOnly;
