@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -68,12 +69,15 @@ public class StringUtil {
         public void clear() {}
     }
     public static class HasItAllMap<K,V> implements Map<K,V> {
-
         private final Map<K,V> map;
-        private final V value;
+        private final Function<Object,V> valueFactory;
+
         public HasItAllMap(Map<K,V> map,V value){
+            this(map,(v)->value);
+        }
+        public HasItAllMap(Map<K,V> map,Function<Object,V> valueFactory){
             this.map = map;
-            this.value = value;
+            this.valueFactory = valueFactory;
         }
 
         @Override
@@ -89,7 +93,7 @@ public class StringUtil {
         public boolean containsValue(Object o) {return true;}
 
         @Override
-        public V get(Object o) {return map.containsKey(o) ? map.get(o) : value;}
+        public V get(Object o) {return map.containsKey(o) ? map.get(o) : valueFactory.apply(o);}
 
         @Override
         public V put(Object o, Object o2) {return null;}
@@ -115,11 +119,10 @@ public class StringUtil {
     public static final String MINUTES = "m";
     public static final String SECONDS = "s";
     public static final String MILLISECONDS = "ms";
+    public static final String MICROSECONDS = "µs";
+    public static final String NANOSECONDS = "ns";
     public static final String HOURS = "h";
-
-    private static final Pattern timeUnitPattern = Pattern.compile("(?<amount>\\d+)(?<unit>"+MILLISECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+")?");
-
-
+    private static final Pattern timeUnitPattern = Pattern.compile("(?<amount>\\d+)(?<unit>"+NANOSECONDS+"|"+MICROSECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+")?");
     public static final String PATTERN_PREFIX = "${{";
     public static final String PATTERN_JAVASCRIPT_PREFIX = "=";
     public static final String PATTERN_SUFFIX = "}}";
@@ -306,11 +309,11 @@ public class StringUtil {
         return rtrn;
     }
     public static List<String> getPatternNames(String pattern, Map<Object,Object> map) throws PopulatePatternException{
-        return getPatternNames(pattern,map,PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+        return getPatternNames(pattern,map,(v)->"_",PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
-    public static List<String> getPatternNames(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
+    public static List<String> getPatternNames(String pattern, Map<Object,Object> map,Function<Object,Object> getValue, String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
         UnclearableSet<String> rtrn = new UnclearableSet<>();
-        populatePattern(pattern,new HasItAllMap<Object,Object>(map,"_"),prefix,separator,suffix,javascriptPrefix,rtrn,true);
+        populatePattern(pattern,new HasItAllMap<Object,Object>(map,getValue),prefix,separator,suffix,javascriptPrefix,rtrn,true);
         return new ArrayList(rtrn);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
@@ -529,9 +532,9 @@ public class StringUtil {
         return rtrn;
     }
 
-    public static long parseToMs(String amount){
+    public static double parseToMs(String amount){
         amount = amount.replaceAll("_","");
-        long rtrn = 0;
+        double rtrn = 0;
         Matcher m = timeUnitPattern.matcher(amount);
         while(m.find()){
             long toAdd = Long.parseLong(m.group("amount"));
@@ -547,11 +550,17 @@ public class StringUtil {
                 case SECONDS:
                     timeUnit = TimeUnit.SECONDS;
                     break;
+                case MICROSECONDS:
+                    timeUnit = TimeUnit.MICROSECONDS;
+                    break;
+                case NANOSECONDS:
+                    timeUnit = TimeUnit.NANOSECONDS;
+                    break;
                 case MILLISECONDS:
                 default:
                     timeUnit = TimeUnit.MILLISECONDS;
             }
-            long increment = timeUnit.toMillis(toAdd);
+            double increment = timeUnit.compareTo(TimeUnit.MILLISECONDS) > 0 ? timeUnit.toMillis(toAdd) : timeUnit.toNanos(toAdd)/1_000_000.0;
             rtrn += increment;
         }
         return rtrn;

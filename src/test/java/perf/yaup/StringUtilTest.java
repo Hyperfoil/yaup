@@ -197,6 +197,12 @@ public class StringUtilTest {
       assertTrue("json.status should exist",json.has("status"));
    }
 
+   @Test
+   public void parseToMs(){
+      assertEquals("no units should be milliseconds",10.0,StringUtil.parseToMs("10"),.0001);
+      assertEquals("seconds",1000,StringUtil.parseToMs("1s"),0.0001);
+      assertEquals("microsecond",0.001,StringUtil.parseToMs("1"+StringUtil.MICROSECONDS),0.0001);
+   }
 
    @Test
    public void jsEval_asynch_new_fetch(){
@@ -450,6 +456,7 @@ public class StringUtilTest {
       Map<Object, Object> map = new HashMap<>();
       try {
          List<String> names = StringUtil.getPatternNames("${{ [...${{RUN.FOO}},{'test':'worked'}] }}",map,
+                 (v)->v,
                  StringUtil.PATTERN_PREFIX,
                  "_",
                  StringUtil.PATTERN_SUFFIX,
@@ -737,6 +744,21 @@ public class StringUtilTest {
    public void populatePattern_javascript_array_spread() {
       Map<Object, Object> map = new HashMap();
       map.put("alpha", Arrays.asList("\"ant\"", "\"apple\""));
+      map.put("bravo", Arrays.asList("\"bear\"", "\"bull\""));
+      map.put("charlie", "\"cat\"");
+
+      try {
+         String response = StringUtil.populatePattern("${{ [${{charlie}}, ...${{alpha}}, ...${{bravo}} ] }}", map);
+         assertEquals("expect arrays to be combined", "[\"cat\",\"ant\",\"apple\",\"bear\",\"bull\"]", response);
+      } catch (PopulatePatternException pe) {
+         fail(pe.getMessage());
+      }
+
+   }
+   @Test
+   public void populatePattern_javascript_array_spread_quote_in_value() {
+      Map<Object, Object> map = new HashMap();
+      map.put("alpha", Arrays.asList("\"ant\"", "\"a\"\"pple\""));
       map.put("bravo", Arrays.asList("\"bear\"", "\"bull\""));
       map.put("charlie", "\"cat\"");
 
