@@ -14,6 +14,10 @@ import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.Sets;
 
 import java.io.*;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -128,11 +132,19 @@ public class FileUtility {
    }
 
    /**
+    * returns true if the fileName matches the pattern for an archive entry
+    * @param fileName
+    * @return
+    */
+   public static boolean isArchiveEntryPattern(String fileName){
+       return fileName != null && fileName.contains(ARCHIVE_KEY);
+   }
+   /**
     * @param fileName      file name to search for within an archive
     * @return <code>true</code> if fileName refers to an entry within an archive file and is not an existing file
     */
    public static boolean isArchiveEntryPath(String fileName) {
-      if (fileName == null || !fileName.contains(ARCHIVE_KEY)) {
+      if (!isArchiveEntryPattern(fileName)) {
          return false;
       }
       File parentFile = new File(fileName.substring(0, fileName.indexOf(ARCHIVE_KEY)));
@@ -347,38 +359,86 @@ public class FileUtility {
       return rtrn;
    }
 
+   private static File getFileFromArchive(String archivePath,String entryPath){
+      try{
+         FileSystem fs = FileSystems.newFileSystem(Paths.get(archivePath), FileUtility.class.getClassLoader());
+         Path entry = fs.getPath(entryPath);
+         String prefix = entryPath;
+         if (prefix.contains("/")) {
+            prefix = prefix.substring(prefix.lastIndexOf("/"));
+         }
+         Path tmp = Files.createTempFile(prefix + "_", ".yaup");
+         Files.copy(entry, tmp, StandardCopyOption.REPLACE_EXISTING);
+         File rtrn = tmp.toFile();
+         return rtrn;
+      } catch (IOException e){
+         //TODO logging of error
+      }
+      return new File(archivePath+ARCHIVE_KEY+entryPath);
+   }
+
+   /**
+    * creates a java.io.File for local file, archive entry, or url
+    * @param fullPath
+    * @param delete sets deleteOnExit for any newly created files
+    * @return null if the file could not be located, or a valid File
+    */
    public static File getFile(String fullPath,boolean delete){
       String archivePath = fullPath;
       String entryPath = "";
-      if(isArchiveEntryPath(fullPath)){
+      File found = new File(fullPath);
+      if(!found.exists() && isArchiveEntryPath(fullPath)){ //if the path includes a #
          archivePath = getArchiveFilePath(fullPath);
          entryPath = getArchiveEntrySubPath(fullPath);
-      }
-      if(isArchive(archivePath)){
-         try {
-            FileSystem fs = FileSystems.newFileSystem(Paths.get(archivePath),FileUtility.class.getClassLoader());
-            Path entry = fs.getPath(entryPath);
-            String prefix = entryPath;
-            if(prefix.contains("/")){
-               prefix = prefix.substring(prefix.lastIndexOf("/"));
-            }
-            Path tmp = Files.createTempFile(prefix+"_",".yaup");
-            Files.copy(entry, tmp, StandardCopyOption.REPLACE_EXISTING);
-            File rtrn = tmp.toFile();
+         if(isArchive(archivePath)) { //if the file exists
+            found = getFileFromArchive(archivePath,entryPath);
             if(delete){
-               rtrn.deleteOnExit();
+               found.deleteOnExit();
             }
-            return rtrn;
-         } catch (IOException e) {
-            e.printStackTrace();
-            return null;
          }
-
-      }else{
-         return new File(fullPath);
       }
+      if (!found.exists() && fullPath.startsWith("http")){ //fetch a http or https remote file
+         File tmp = null; //store the remote file from http request
+         try {
+            File.createTempFile("yaup-"+fullPath,".tmp");
+         }catch (IOException e){
+            e.printStackTrace();
+         }
+         if(tmp!=null){
+            try (ReadableByteChannel readableByteChannel = Channels.newChannel((new URL(fullPath)).openStream());
+                 FileOutputStream fileOutputStream = new FileOutputStream(tmp.getPath());
+                 FileChannel fileChannel = fileOutputStream.getChannel();
+            ) {
+               if(delete) {
+                  tmp.deleteOnExit();
+               }
+               fileOutputStream.getChannel()
+                       .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+               fileChannel.close();
+               fileOutputStream.flush();
+               fileOutputStream.close();
+            } catch (IOException e) {
+               e.printStackTrace();
+            }
+            //we have a local copy, check if we need a file inside it
+            if(isArchiveEntryPattern(fullPath)){
+               archivePath = getArchiveFilePath(fullPath);
+               entryPath = getArchiveEntrySubPath(fullPath);
+               found = getFileFromArchive(tmp.getPath(),entryPath);
+               if(delete){
+                  found.deleteOnExit();
+               }
+               if(found.exists()){
+                  //we are good
+               }else{
 
-
+               }
+            }else {
+               found = tmp;
+            }
+         }
+      }
+      return found;
    }
    public static InputStream getInputStream(String fullPath) {
       InputStream rtrn = null;
@@ -683,8 +743,9 @@ public class FileUtility {
    }
 
    public static boolean isArchive(File file) {
+
       String n = file.getName();
-      if (n.endsWith(".zip")
+      if (file.exists() && (n.endsWith(".zip")
          || n.endsWith(".tar")
          || n.endsWith("tar.gz")
          || n.endsWith(".tgz")
@@ -692,7 +753,7 @@ public class FileUtility {
          || n.endsWith(".jar")
          || n.endsWith(".ear")
          || n.endsWith(".war")
-         || n.endsWith(".bzip2")) {
+         || n.endsWith(".bzip2"))) {
          return true;
       }
       return false;
