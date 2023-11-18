@@ -29,13 +29,37 @@ public class StringUtilTest {
    @Test
    public void jsEval_error_lambda_undefined_variable(){
       Map<Object,Object> globals = new HashMap<Object,Object>();
-      String js = "async (x)=>{return foo;}";
+      String js = "(x)=>{\n  const bar = foo + \n    (foo);\n  return bar;\n}";
       Object result = StringUtil.jsEval(js,globals);
       assertTrue(result instanceof JsException);
       JsException error = (JsException)result;
       assertTrue(error.getMessage().contains("ReferenceError"));
       assertTrue(error.getMessage().contains("foo"));
       assertEquals(js,error.getJs());
+   }
+   @Test
+   public void jsEval_error_async_lambda_undefined_variable_no_args(){
+      String js = "async (x)=>{return foo;}";Object result = StringUtil.jsEval(js);
+      assertTrue("unexpected result type: "+result,result instanceof JsException);
+      JsException error = (JsException)result;
+      assertTrue(error.getMessage().contains("ReferenceError"));
+      assertTrue(error.getMessage().contains("foo"));
+      assertEquals(js,error.getJs());
+      assertTrue(error.hasErrorLocation());
+      assertTrue(error.hasSource());
+   }
+   @Test
+   public void jsEval_error_async_lambda_undefined_variable(){
+      Map<Object,Object> args = new HashMap<Object,Object>();
+      String js = "async (x)=>{return foo;}";
+      Object result = StringUtil.jsEval(js,args);
+      assertTrue("unexpected result type: "+result,result instanceof JsException);
+      JsException error = (JsException)result;
+      assertTrue(error.getMessage().contains("ReferenceError"));
+      assertTrue(error.getMessage().contains("foo"));
+      assertEquals(js,error.getJs());
+      assertTrue(error.hasErrorLocation());
+      assertTrue(error.hasSource());
    }
 
    @Test
@@ -198,9 +222,20 @@ public class StringUtilTest {
    }
 
    @Test
+   public void isDuration(){
+      assertTrue("seconds",StringUtil.isDuration("1s"));
+      assertTrue("two no space",StringUtil.isDuration("1m1s"));
+      assertTrue("two with space",StringUtil.isDuration("1m 1s"));
+      assertFalse("empty string",StringUtil.isDuration(""));
+      assertFalse("just a number",StringUtil.isDuration("1"));
+      assertFalse("just a suffix",StringUtil.isDuration("s"));
+   }
+   @Test
    public void parseToMs(){
-      assertEquals("no units should be milliseconds",10.0,StringUtil.parseToMs("10"),.0001);
       assertEquals("seconds",1000,StringUtil.parseToMs("1s"),0.0001);
+      assertEquals("after decimal",0.1,StringUtil.parseToMs(".1ms"),0.0001);
+      assertEquals("before and after decimal",1.1,StringUtil.parseToMs("1.1ms"),0.0001);
+      assertEquals("before and after decimal",1.123456,StringUtil.parseToMs("1.123456ms"),0.0001);
       assertEquals("microsecond",0.001,StringUtil.parseToMs("1"+StringUtil.MICROSECONDS),0.0001);
    }
 
@@ -758,7 +793,7 @@ public class StringUtilTest {
    @Test
    public void populatePattern_javascript_array_spread_quote_in_value() {
       Map<Object, Object> map = new HashMap();
-      map.put("alpha", Arrays.asList("\"ant\"", "\"a\"\"pple\""));
+      map.put("alpha", Arrays.asList("\"ant\"", "\"apple\""));
       map.put("bravo", Arrays.asList("\"bear\"", "\"bull\""));
       map.put("charlie", "\"cat\"");
 

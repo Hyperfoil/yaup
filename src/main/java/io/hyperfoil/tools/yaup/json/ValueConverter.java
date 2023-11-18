@@ -3,6 +3,9 @@ package io.hyperfoil.tools.yaup.json;
 import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyArray;
 import io.hyperfoil.tools.yaup.json.graaljs.JsonProxyObject;
+import org.graalvm.polyglot.PolyglotException;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.SourceSection;
 import org.graalvm.polyglot.Value;
 
 public class ValueConverter {
@@ -44,7 +47,18 @@ public class ValueConverter {
       }else if (value.canExecute()) {
          return value.toString();
       }else if (value.isException()){
-         return new JsException(value.toString());
+         try{
+            value.throwException();
+         }catch(RuntimeException e){
+            if (e instanceof PolyglotException){
+               PolyglotException pe = (PolyglotException) e;
+               return new JsException(value.toString(),pe);
+            }else{
+               //Have not seen this condition occur
+               return new JsException(value.toString(),"unknown",e);
+            }
+         }
+         return new JsException(value.asString());
       }else if (value.hasMembers()){
          return convertMapping(value);
       }else{
