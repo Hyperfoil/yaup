@@ -1,14 +1,30 @@
 package perf.yaup.yaml;
 
+import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.yaml.OverloadConstructor;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.TypeDescription;
 import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.nodes.Node;
-import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.composer.Composer;
+import org.yaml.snakeyaml.constructor.Construct;
+import org.yaml.snakeyaml.error.YAMLException;
+import org.yaml.snakeyaml.nodes.*;
+import org.yaml.snakeyaml.parser.Parser;
+import org.yaml.snakeyaml.parser.ParserImpl;
+import org.yaml.snakeyaml.reader.StreamReader;
+import org.yaml.snakeyaml.representer.Representer;
+import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.io.StringReader;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -22,6 +38,75 @@ public class OverloadConstructorTest {
         yaml = new Yaml(constructor);
     }
 
+
+
+    @Test @Ignore
+    public void pattern_in_mapping(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Resolver resolver = new Resolver(){
+
+            @Override
+            public Tag resolve(NodeId kind, String value, boolean implicit) {
+                Tag resolved = super.resolve(kind,value,implicit);
+                return resolved;
+            }
+        };
+        resolver.addImplicitResolver(new Tag("pattern"),Pattern.compile("\u200B\u200C.*?\u200C\u200B"),"\u200B");
+        resolver.addImplicitResolver(new Tag("pattern"),Pattern.compile("$\\{\\{.*?}}"),"$");
+        constructor.addConstruct(new Tag("pattern"), new Construct() {
+            @Override
+            public Object construct(Node node) {
+                if(node instanceof ScalarNode){
+                    String value= ((ScalarNode)node).getValue();//it doesn't strip the surrounding values, need to re-convert them
+                    return new StringUtil.PatternRef(value,"${{","}}");
+                }
+                return 42;
+            }
+            @Override
+            public void construct2ndStep(Node node, Object o) {
+
+            }
+        });
+        StreamReader sreader = new StreamReader("foo: ${{ref}}");
+        Parser parser = new ParserImpl(sreader);
+        Composer composer = new Composer(parser, resolver);
+
+        //Node n = yaml.compose(new StringReader("key: { foo: ${{ref}} }"));
+        //Object obj = yaml.load("{ foo: ${{ref}} }");
+        constructor.setComposer(composer);
+        Object obj = constructor.getSingleData(Object.class);
+        assertTrue(obj instanceof Map);
+        Map map = (Map)obj;
+        assertTrue("map should contain foo "+map.keySet(),map.containsKey("foo"));
+        Object foo = map.get("foo");
+        //foo is a String, but we want it to auto-box to 42
+    }
+    @Test @Ignore
+    public void pattern_in_flow_mapping(){
+        OverloadConstructor constructor = new  OverloadConstructor();
+        Resolver resolver = new Resolver(){
+
+            @Override
+            public Tag resolve(NodeId kind, String value, boolean implicit) {
+                Tag resolved = super.resolve(kind,value,implicit);
+                return resolved;
+            }
+        };
+        resolver.addImplicitResolver(new Tag("pattern"), Pattern.compile("\\$"),"$",Integer.MAX_VALUE);
+
+
+        yaml = new Yaml(constructor,new Representer(), new DumperOptions(),resolver);
+
+        StreamReader sreader = new StreamReader("{ foo: ${{ref}} }");
+        Parser parser = new ParserImpl(sreader);
+        Composer composer = new Composer(parser, resolver);
+
+        //Node n = yaml.compose(new StringReader("key: { foo: ${{ref}} }"));
+        //Object obj = yaml.load("{ foo: ${{ref}} }");
+        constructor.setComposer(composer);
+        Object obj = constructor.getSingleData(Object.class);
+
+    }
 
     @Test
     public void json_value_object(){
