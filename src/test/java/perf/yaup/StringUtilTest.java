@@ -30,12 +30,15 @@ public class StringUtilTest {
    public void jsEval_error_lambda_undefined_variable(){
       Map<Object,Object> globals = new HashMap<Object,Object>();
       String js = "(x)=>{\n  const bar = foo + \n    (foo);\n  return bar;\n}";
-      Object result = StringUtil.jsEval(js,globals);
-      assertTrue(result instanceof JsException);
-      JsException error = (JsException)result;
-      assertTrue(error.getMessage().contains("ReferenceError"));
-      assertTrue(error.getMessage().contains("foo"));
-      assertEquals(js,error.getJs());
+      try {
+         Object result = StringUtil.jsEval(js, globals);
+      }catch(JsException error){
+         assertTrue(error.getMessage().contains("ReferenceError"));
+         assertTrue(error.getMessage().contains("foo"));
+         assertEquals(js,error.getJs());
+         return;
+      }
+      fail("expected JsException");
    }
    @Test
    public void jsEval_error_async_lambda_undefined_variable_no_args(){

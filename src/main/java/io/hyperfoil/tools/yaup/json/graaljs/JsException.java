@@ -94,10 +94,11 @@ public class JsException extends RuntimeException{
     public String toString(){
         StringBuilder sb = new StringBuilder();
         sb.append(getMessage());
-
         String split[] = js.split(System.lineSeparator());
         for(int i=0; i<split.length; i++){
-            sb.append(System.lineSeparator());
+            if(i>0) {
+                sb.append(System.lineSeparator());
+            }
             sb.append(split[i]);
             if((i+1)==lineStart){//one based
                 sb.append(System.lineSeparator());
