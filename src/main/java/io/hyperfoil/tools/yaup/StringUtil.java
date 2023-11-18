@@ -6,6 +6,7 @@ import io.hyperfoil.tools.yaup.json.graaljs.*;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
+import javax.xml.transform.SourceLocator;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
@@ -23,6 +24,25 @@ import java.util.stream.Collectors;
 @SuppressWarnings({"unused", "WeakerAccess"})
 public class StringUtil {
 
+    public static class PatternRef {
+        String pattern;
+        String prefix;
+        String suffix;
+
+        public PatternRef(String pattern,String prefix,String suffix){
+            this.pattern = pattern;
+            this.prefix = prefix;
+            this.suffix = suffix;
+        }
+        public String getPattern(){return pattern;}
+        public void updatePrefixSuffix(String prefix,String suffix){
+            pattern = pattern.replaceAll(this.prefix,prefix).replaceAll(this.suffix,suffix);
+            this.prefix = prefix;
+            this.suffix = suffix;
+        }
+
+
+    }
     public static class UnclearableSet<V> implements Set<V> {
 
         private final Set<V> set;
@@ -115,14 +135,14 @@ public class StringUtil {
         @Override
         public Set<Entry<K,V>> entrySet() { return map.entrySet();}
     }
-
     public static final String MINUTES = "m";
     public static final String SECONDS = "s";
     public static final String MILLISECONDS = "ms";
     public static final String MICROSECONDS = "µs";
     public static final String NANOSECONDS = "ns";
     public static final String HOURS = "h";
-    private static final Pattern timeUnitPattern = Pattern.compile("(?<amount>\\d+)(?<unit>"+NANOSECONDS+"|"+MICROSECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+")?");
+    public static final String DURATION_PATTERN = "(?<amount>\\d*\\.?\\d+)(?<unit>"+NANOSECONDS+"|"+MICROSECONDS+"|"+MILLISECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+")";
+    private static final Pattern timeUnitPattern = Pattern.compile(DURATION_PATTERN);
     public static final String PATTERN_PREFIX = "${{";
     public static final String PATTERN_JAVASCRIPT_PREFIX = "=";
     public static final String PATTERN_SUFFIX = "}}";
@@ -184,21 +204,9 @@ public class StringUtil {
                         throw new RuntimeException("failed to evaluate " + s + " preparing for js = " + js, pge);
                     }
                 });
-
                 context.getBindings("js").putMember("_http",new JsFetch(null,null));
-
-//                Source fetchSource = Source.newBuilder("js","fetch = async (url,options)=>{\n"+
-//                        "return new Promise(async (resolve,reject)=>{ \n"+
-//                        "  try{ \n"+
-//                        "const resp = _http.jsApply(url,options);\n"+
-//                        "  resolve(resp);\n"+
-//                        "   } catch (e){ reject(e); }\n"+
-//                        "});\n"+
-//                        "}","fakeFetch").build();
-
                 Source fetchSource = Source.newBuilder("js",
                         "fetch = async (url,options)=>new Promise(new (Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch'))(url,options));","fakeFetch").build();
-
                 context.eval(fetchSource);
                 context.eval("js","global.btoa = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').btoa(str)");
                 context.eval("js","global.atob = (str)=>Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch').atob(str)");
@@ -207,10 +215,8 @@ public class StringUtil {
                         .parallel().collect(Collectors.joining("\n")), "jsonpath.js").build());
                 context.eval(Source.newBuilder("js", new BufferedReader(new InputStreamReader(StringUtil.class.getClassLoader().getResourceAsStream("luxon.min.js"))).lines()
                         .parallel().collect(Collectors.joining("\n")), "luxon.min.js").build());
-
 //                context.eval(Source.newBuilder("js", new BufferedReader(new InputStreamReader(StringUtil.class.getClassLoader().getResourceAsStream("luxon.min.js"))).lines()
 //                        .parallel().collect(Collectors.joining("\n")), "Response.js").build());
-
                 //this is so JsonProxyObjects pass instanceof object
                 //https://github.com/oracle/graaljs/issues/40
                 //https://github.com/oracle/graaljs/issues/40#issuecomment-513243243
@@ -243,23 +249,20 @@ public class StringUtil {
                 } else {
                     if (!matcher.canExecute()) {
                         //the result of evaluating the javascript is an object
+                        //TODO should we return the value of matcher if it isn't executable?
                     } else {
                         if (args != null && args.length > 0) {
                             for (int i = 0; i < args.length; i++) {
                                 if (args[i] != null && args[i] instanceof Json) {
                                     args[i] = JsonProxy.create((Json) args[i]);
-
                                 }
                             }
-                            Value result = matcher.execute(args);
-                            if (result != null) {
-                                matcher = result;
-                            }
-
-
+                        }
+                        Value result = matcher.execute(args);
+                        if (result != null) {
+                            matcher = result;
                         }
                     }
-
                     if(matcher.toString().startsWith("Promise{[")){//hack to check if the function returned a promise
                         List<Value> resolved = new ArrayList<>();
                         List<Value> rejected = new ArrayList<>();
@@ -278,7 +281,6 @@ public class StringUtil {
                         });
                         if(invokeRtrn instanceof Value){
                             Value invokedValue = (Value)invokeRtrn;
-
                         }
                         if(rejected.size() > 0){
                             matcher = rejected.get(0);
@@ -290,7 +292,12 @@ public class StringUtil {
                     if (converted instanceof JsonProxyObject) {
                         rtrn = ((JsonProxyObject) converted).getJson();
                     } else if (converted instanceof Exception){
-                        rtrn = new JsException(((Exception)converted).getMessage(),js,(Throwable)converted);
+                        rtrn = converted;
+                        if(rtrn instanceof JsException){
+                            JsException jsException = (JsException) rtrn;
+                            jsException.getContext().set("args",new Json());
+                            Arrays.stream(args).forEach(arg->jsException.getContext().getJson("args").add(arg));
+                        }
                     } else if (converted instanceof Json) {
                         rtrn = (Json) converted;
                     } else {
@@ -532,35 +539,50 @@ public class StringUtil {
         return rtrn;
     }
 
+    public static boolean isDuration(String amount){
+        String pattern = "(?:\\s*\\d*\\.?\\d+(?:"+NANOSECONDS+"|"+MICROSECONDS+"|"+MILLISECONDS+"|"+MINUTES+"|"+SECONDS+"|"+HOURS+"))+";
+        Pattern p = Pattern.compile(pattern);
+        return p.matcher(amount).matches();
+    }
     public static double parseToMs(String amount){
+        if(amount == null || amount.isEmpty()){
+            return 0;
+        }
         amount = amount.replaceAll("_","");
         double rtrn = 0;
         Matcher m = timeUnitPattern.matcher(amount);
         while(m.find()){
-            long toAdd = Long.parseLong(m.group("amount"));
+            double toAdd = Double.parseDouble(m.group("amount"));
             String unit = m.group("unit") == null ? "" : m.group("unit"); //in case there isn't a unit
             TimeUnit timeUnit;
+            double toMs = 1;
             switch (unit){
                 case HOURS:
                     timeUnit = TimeUnit.HOURS;
+                    toMs = 1000 * 60 * 60;
                     break;
                 case MINUTES:
                     timeUnit = TimeUnit.MINUTES;
+                    toMs = 1000 * 60;
                     break;
                 case SECONDS:
                     timeUnit = TimeUnit.SECONDS;
+                    toMs = 1000;
                     break;
                 case MICROSECONDS:
                     timeUnit = TimeUnit.MICROSECONDS;
+                    toMs = 0.001;
                     break;
                 case NANOSECONDS:
                     timeUnit = TimeUnit.NANOSECONDS;
+                    toMs = 1e-6;
                     break;
                 case MILLISECONDS:
                 default:
                     timeUnit = TimeUnit.MILLISECONDS;
             }
-            double increment = timeUnit.compareTo(TimeUnit.MILLISECONDS) > 0 ? timeUnit.toMillis(toAdd) : timeUnit.toNanos(toAdd)/1_000_000.0;
+            //double increment = timeUnit.compareTo(TimeUnit.MILLISECONDS) > 0 ? timeUnit.toMillis(toAdd) : timeUnit.toNanos(toAdd)/1_000_000.0;
+            double increment = toAdd * toMs;
             rtrn += increment;
         }
         return rtrn;
