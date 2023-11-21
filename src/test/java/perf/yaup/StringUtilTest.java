@@ -49,7 +49,6 @@ public class StringUtilTest {
       String js = "(min,max)=>{\nreturn Array.from(Array(max-min).keys())\n}";
       try {
          Object result = StringUtil.jsEval(js, 0,-1);
-         System.out.println("result="+result);
       }catch(JsException error){
          error.printStackTrace();
          assertTrue(error.getMessage(),error.getMessage().contains("Invalid array length"));
