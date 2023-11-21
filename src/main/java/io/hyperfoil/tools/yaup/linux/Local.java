@@ -13,8 +13,6 @@ import java.nio.file.FileSystems;
  */
 public class Local {
     final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-
     private static final int DEFAULT_PORT = 22;
     private static final String DEFAULT_SSH = "/usr/bin/ssh";
     private static final String DEFAULT_SSH_ADD = "/usr/bin/ssh-add";
@@ -23,18 +21,13 @@ public class Local {
     private static final String DEAULLT_IDENTITY = System.getProperty("user.home")+"/.ssh/id_rsa";
     public static final String DEFAULT_PASSPHRASE = null;
     public static final int DEFAULT_SSH_TIMEOUT = 5;
-
     private String sshPath = DEFAULT_SSH;
     private String sshAddPath = DEFAULT_SSH_ADD;
     private String rsyncPath = DEFAULT_RSYNC;
-
     private boolean useRsync = true;
-
     private String identity = DEAULLT_IDENTITY;
     private String knownHosts = DEFAULT_KNOWN_HOSTS;
     private String passphrase = DEFAULT_PASSPHRASE;
-
-
     public Local(){
         this(null,null,null);
     }

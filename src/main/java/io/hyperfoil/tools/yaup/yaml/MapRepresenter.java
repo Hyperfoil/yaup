@@ -99,6 +99,13 @@ public class MapRepresenter extends Representer implements Defer {
         addRepresent(clazz,new ObjectWrapper<T>(encoder));
     }
 
+    public MapRepresenter() {
+        this(new DumperOptions());
+    }
+    public MapRepresenter(DumperOptions options) {
+        super(options);
+    }
+
     protected void addRepresent(Class<?> clazz,Represent represent){
         representers.putIfAbsent(clazz,represent);
     }

@@ -1,6 +1,7 @@
 package io.hyperfoil.tools.yaup.yaml;
 
 import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.composer.Composer;
 import org.yaml.snakeyaml.constructor.AbstractConstruct;
 import org.yaml.snakeyaml.constructor.Construct;
@@ -141,6 +142,10 @@ public class OverloadConstructor extends Constructor{
     SortedMap<Json,Tag> typeStructures;
 
     public OverloadConstructor(){
+        this(new LoaderOptions());
+    }
+    public OverloadConstructor(LoaderOptions loaderOptions){
+        super(loaderOptions);
         this.yamlConstructors.put(Tag.MAP,new MapOverride(this.yamlConstructors.get(Tag.MAP)));
         this.yamlConstructors.put(Tag.STR,new StrOverride(this.yamlConstructors.get(Tag.STR)));
         this.keySets = new TreeMap<>((a, b)->{
@@ -182,7 +187,7 @@ public class OverloadConstructor extends Constructor{
         if(newTag!=null && !newTag.equals(node.getTag())) {
             node.setTag(newTag);
             //Force reset of org.yaml.snakeyaml.constructor.BaseConstructor.recursiveObjects so we can re-construct with new tagging
-            Mark fakeMark = new Mark("fake", 0, 0, 0, "fake", 0);
+            Mark fakeMark = new Mark("fake", 0, 0, 0, "fake".toCharArray(), 0);
             Object throwaway = constructDocument(new ScalarNode(Tag.STR, "throwaway", fakeMark, fakeMark, DumperOptions.ScalarStyle.DOUBLE_QUOTED));
             return constructObject(node);
         }

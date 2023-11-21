@@ -5,6 +5,8 @@ import org.graalvm.polyglot.PolyglotException;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
 
+import java.util.Arrays;
+
 public class JsException extends RuntimeException{
 
     private String js;
@@ -51,6 +53,12 @@ public class JsException extends RuntimeException{
         }
 
     }
+    public void addArgs(Object...args){
+        if(!getContext().has("args")){
+            getContext().set("args",new Json(true));
+        }
+        Arrays.stream(args).forEach(arg->getContext().getJson("args").add(arg));
+    }
     public JsException(String message,String js,Throwable throwable){
         super(message,throwable);
         this.js=js;
@@ -96,13 +104,15 @@ public class JsException extends RuntimeException{
         sb.append(getMessage());
         String split[] = js.split(System.lineSeparator());
         for(int i=0; i<split.length; i++){
-            if(i>0) {
-                sb.append(System.lineSeparator());
-            }
+            sb.append(System.lineSeparator());
             sb.append(split[i]);
             if((i+1)==lineStart){//one based
                 sb.append(System.lineSeparator());
-                sb.append(String.format("%"+columnStart+"s","^")+String.format("%"+(columnEnd-columnStart)+"s","^").replaceAll(" ","-"));
+                if(columnEnd == columnStart){
+                    sb.append(String.format("%" + columnStart + "s", "^"));
+                } else {
+                    sb.append(String.format("%" + columnStart + "s", "^") + String.format("%" + (columnEnd - columnStart) + "s", "^").replaceAll(" ", "-"));
+                }
             }
         }
         if(!getContext().isEmpty()){

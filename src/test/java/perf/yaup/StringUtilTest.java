@@ -33,8 +33,27 @@ public class StringUtilTest {
       try {
          Object result = StringUtil.jsEval(js, globals);
       }catch(JsException error){
+         error.printStackTrace();
          assertTrue(error.getMessage().contains("ReferenceError"));
          assertTrue(error.getMessage().contains("foo"));
+         assertEquals(js,error.getJs());
+         return;
+      }
+      fail("expected JsException");
+   }
+   @Test
+   public void jsEval_error_lambda_invalid_array_args(){
+      Map<Object,Object> globals = new HashMap<Object,Object>();
+      globals.put("min",1);
+      globals.put("max",0);
+      String js = "(min,max)=>{\nreturn Array.from(Array(max-min).keys())\n}";
+      try {
+         Object result = StringUtil.jsEval(js, 0,-1);
+         System.out.println("result="+result);
+      }catch(JsException error){
+         error.printStackTrace();
+         assertTrue(error.getMessage(),error.getMessage().contains("Invalid array length"));
+         assertTrue(error.getMessage(),error.getMessage().contains("RangeError"));
          assertEquals(js,error.getJs());
          return;
       }

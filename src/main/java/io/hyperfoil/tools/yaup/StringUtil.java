@@ -5,13 +5,10 @@ import io.hyperfoil.tools.yaup.json.ValueConverter;
 import io.hyperfoil.tools.yaup.json.graaljs.*;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
-
-import javax.xml.transform.SourceLocator;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -295,8 +292,7 @@ public class StringUtil {
                         rtrn = converted;
                         if(rtrn instanceof JsException){
                             JsException jsException = (JsException) rtrn;
-                            jsException.getContext().set("args",new Json());
-                            Arrays.stream(args).forEach(arg->jsException.getContext().getJson("args").add(arg));
+                            jsException.addArgs(args);
                         }
                     } else if (converted instanceof Json) {
                         rtrn = (Json) converted;
@@ -306,9 +302,13 @@ public class StringUtil {
                 }
             }catch(PolyglotException pe){
                 //TODO do we log polyglot exceptions
-                throw new JsException(pe.getMessage(),js,pe);
+                JsException toThrow = new JsException(pe.getMessage(),js,pe);
+                toThrow.addArgs(args);
+                throw toThrow;
             }catch(Throwable e){
-                throw new JsException(e.getMessage(),js,e);
+                JsException toThrow = new JsException(e.getMessage(),js,e);
+                toThrow.addArgs(args);
+                throw toThrow;
             }finally{
                 context.leave();
             }
@@ -553,33 +553,27 @@ public class StringUtil {
         Matcher m = timeUnitPattern.matcher(amount);
         while(m.find()){
             double toAdd = Double.parseDouble(m.group("amount"));
-            String unit = m.group("unit") == null ? "" : m.group("unit"); //in case there isn't a unit
-            TimeUnit timeUnit;
+            String unit = m.group("unit") == null ? "" : m.group("unit"); //in case there isn't a unitTimeUnit timeUnit;
             double toMs = 1;
             switch (unit){
                 case HOURS:
-                    timeUnit = TimeUnit.HOURS;
                     toMs = 1000 * 60 * 60;
                     break;
                 case MINUTES:
-                    timeUnit = TimeUnit.MINUTES;
                     toMs = 1000 * 60;
                     break;
                 case SECONDS:
-                    timeUnit = TimeUnit.SECONDS;
                     toMs = 1000;
                     break;
                 case MICROSECONDS:
-                    timeUnit = TimeUnit.MICROSECONDS;
                     toMs = 0.001;
                     break;
                 case NANOSECONDS:
-                    timeUnit = TimeUnit.NANOSECONDS;
                     toMs = 1e-6;
                     break;
                 case MILLISECONDS:
                 default:
-                    timeUnit = TimeUnit.MILLISECONDS;
+                    toMs = 1;
             }
             //double increment = timeUnit.compareTo(TimeUnit.MILLISECONDS) > 0 ? timeUnit.toMillis(toAdd) : timeUnit.toNanos(toAdd)/1_000_000.0;
             double increment = toAdd * toMs;
