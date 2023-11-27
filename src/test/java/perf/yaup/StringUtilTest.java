@@ -98,8 +98,8 @@ public class StringUtilTest {
          assertEquals(js,error.getJs());
          assertEquals(1,error.getLineStart());
          assertEquals(1,error.getLineEnd());
-         assertEquals(18,error.getColumnStart());
-         assertEquals(25,error.getColumnEnd());
+         assertEquals(1,error.getColumnStart());
+         assertEquals(9,error.getColumnEnd());
          return;
       }
       fail("expect a JsException");
