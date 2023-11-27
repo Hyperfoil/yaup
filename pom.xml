@@ -16,7 +16,7 @@
     <version.maven.gpg>1.6</version.maven.gpg>
     <version.maven-core>3.5.4</version.maven-core>
     <version.maven-plugin-annotations>3.5.1</version.maven-plugin-annotations>
-    <graalvm.version>22.3.4</graalvm.version><!--22.3.4-->
+    <graalvm.version>23.1.1</graalvm.version><!--22.3.4-->
     <jackson.version>2.12.7</jackson.version>
   </properties>
   <scm>
@@ -78,7 +78,7 @@
               <goal>verify</goal>
             </goals>
             <configuration>
-              <skipTests>true</skipTests>
+              <skipTests>false</skipTests>
               <systemPropertyVariables>
                 <uberJarPath>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</uberJarPath>
               </systemPropertyVariables>
@@ -202,14 +202,19 @@
     <dependency>
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>graal-sdk</artifactId>
-      <version>23.0.2</version>
+      <version>${graalvm.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.graalvm.js</groupId>
-      <artifactId>js</artifactId>
-      <version>23.0.2</version>
-      <scope>compile</scope>
+      <groupId>org.graalvm.polyglot</groupId>
+      <artifactId>polyglot</artifactId>
+      <version>${graalvm.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.graalvm.polyglot</groupId>
+      <artifactId>js-community</artifactId>
+      <version>${graalvm.version}</version>
+      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
