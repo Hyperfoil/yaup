@@ -17,9 +17,9 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.ibm.icu.impl.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class FileUtilityTest {
 
@@ -127,7 +127,7 @@ public class FileUtilityTest {
          assertTrue("entries should start with zip path: "+entries,entries.contains(pathZip+FileUtility.ARCHIVE_KEY+"bar/biz/bar.txt"));
          assertTrue("entries should start with zip path: "+entries,entries.contains(pathZip+FileUtility.ARCHIVE_KEY+"biz.txt"));
       } catch (IOException e) {
-         fail(e);
+         fail(e.getMessage());
       }
    }
 
