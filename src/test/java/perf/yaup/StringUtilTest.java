@@ -1,6 +1,8 @@
 package perf.yaup;
 
-
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 import io.hyperfoil.tools.yaup.HashedLists;
 import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
@@ -9,6 +11,10 @@ import io.hyperfoil.tools.yaup.json.graaljs.JsException;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -18,14 +24,52 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class StringUtilTest {
+   private class CloseableServer implements Closeable {
+      private HttpServer httpServer;
+      public String getUrl(){
+         if(httpServer!=null){
+            return "http://"+getHostname()+":"+getPort();
+         }
+         return "";
+      }
+      public String getHostname(){
+         if(httpServer!=null){
+            return httpServer.getAddress().getHostName();
+         }else{
+            return "";
+         }
+      }
+      public int getPort(){
+         if(httpServer!=null){
+            return httpServer.getAddress().getPort();
+         }else{
+            return 0;
+         }
+      }
+      public CloseableServer(String endpoint,String response) throws IOException {
+            httpServer = HttpServer.create(new InetSocketAddress(InetAddress.getLocalHost().getHostName(),0), 0); // or use InetSocketAddress(0) for ephemeral port
+            httpServer.createContext(endpoint, new HttpHandler() {
+               public void handle(HttpExchange exchange) throws IOException {
+                  exchange.sendResponseHeaders(HttpURLConnection.HTTP_OK, response.getBytes().length);
+                  exchange.getResponseBody().write(response.getBytes());
+                  exchange.close();
+               }
+            });
+            httpServer.start();
+      }
 
+      @Override
+      public void close() throws IOException {
+         if(httpServer!=null){
+            httpServer.stop(0);
+         }
+      }
+   }
    static List<String> evals = Arrays.asList(
            "function milliseconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)}",
            "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
            "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
    );
-
-
    @Test
    public void jsEval_error_lambda_undefined_variable(){
       Map<Object,Object> globals = new HashMap<Object,Object>();
@@ -33,19 +77,50 @@ public class StringUtilTest {
       try {
          Object result = StringUtil.jsEval(js, globals);
       }catch(JsException error){
-         error.printStackTrace();
          assertTrue(error.getMessage().contains("ReferenceError"));
          assertTrue(error.getMessage().contains("foo"));
          assertEquals(js,error.getJs());
+         assertEquals(2,error.getLineStart());
+         assertEquals(2,error.getLineEnd());
+         assertEquals(15,error.getColumnStart());
+         assertEquals(17,error.getColumnEnd());
          return;
       }
       fail("expected JsException");
    }
+
+   @Test
+   public void jsEval_looking_for_source_position(){
+      String js = "Array(-1).keys()";
+      try {
+         Object result = StringUtil.jsEval(js, "name");
+      }catch(JsException error){
+         assertEquals(js,error.getJs());
+         assertEquals(1,error.getLineStart());
+         assertEquals(1,error.getLineEnd());
+         assertEquals(18,error.getColumnStart());
+         assertEquals(25,error.getColumnEnd());
+         return;
+      }
+      fail("expect a JsException");
+   }
+   @Test
+   public void jsEval_looking_for_source_position_function(){
+      String js = "const foo = (v)=>Array(v).keys(); foo(-1)";
+      try {
+         Object result = StringUtil.jsEval(js, "name");
+      }catch(JsException error){
+         assertEquals(js,error.getJs());
+         assertEquals(1,error.getLineStart());
+         assertEquals(1,error.getLineEnd());
+         assertEquals(18,error.getColumnStart());
+         assertEquals(25,error.getColumnEnd());
+         return;
+      }
+      fail("expect a JsException");
+   }
    @Test
    public void jsEval_error_lambda_invalid_array_args(){
-      Map<Object,Object> globals = new HashMap<Object,Object>();
-      globals.put("min",1);
-      globals.put("max",0);
       String js = "(min,max)=>{\nreturn Array.from(Array(max-min).keys())\n}";
       try {
          Object result = StringUtil.jsEval(js, 0,-1);
@@ -54,6 +129,10 @@ public class StringUtilTest {
          assertTrue(error.getMessage(),error.getMessage().contains("Invalid array length"));
          assertTrue(error.getMessage(),error.getMessage().contains("RangeError"));
          assertEquals(js,error.getJs());
+         assertEquals(2,error.getLineStart());
+         assertEquals(2,error.getLineEnd());
+         assertEquals(19,error.getColumnStart());
+         assertEquals(32,error.getColumnEnd());
          return;
       }
       fail("expected JsException");
@@ -68,6 +147,8 @@ public class StringUtilTest {
       assertEquals(js,error.getJs());
       assertTrue(error.hasErrorLocation());
       assertTrue(error.hasSource());
+      assertEquals(20,error.getColumnStart());
+      assertEquals(22,error.getColumnEnd());
    }
    @Test
    public void jsEval_error_async_lambda_undefined_variable(){
@@ -235,11 +316,16 @@ public class StringUtilTest {
 
    @Test
    public void jsEval_async_await_fetch(){
-      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://www.redhat.com'); return rtrn;}","","");
-      assertFalse("async should not return until after fetch",result instanceof Boolean);
-      assertTrue("fetch should return json",result instanceof Json);
-      Json json = (Json)result;
-      assertTrue("json.status should exist",json.has("status"));
+      try (CloseableServer server = new CloseableServer("/","ok")){
+         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('"+server.getUrl()+"'); return rtrn;}","","");
+         assertFalse("async should not return until after fetch",result instanceof Boolean);
+         assertTrue("fetch should return json",result instanceof Json);
+         Json json = (Json)result;
+         assertTrue("json.status should exist",json.has("status"));
+      } catch (IOException e) {
+         fail(e.getMessage());
+      }
+
    }
 
    @Test
@@ -262,12 +348,15 @@ public class StringUtilTest {
 
    @Test
    public void jsEval_asynch_new_fetch(){
-      Object result = StringUtil.jsEval("async (a,b)=>await fetch2('https://www.redhat.com',{})",
-              Arrays.asList("fetch2 = async (url,options)=>new Promise(new (Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch'))(url,options));"),"","");
-
-      assertTrue("fetch should return json",result instanceof Json);
-      Json json = (Json)result;
-      assertTrue("json.status should exist",json.has("status"));
+      try (CloseableServer server = new CloseableServer("/","ok")){
+         Object result = StringUtil.jsEval("async (a,b)=>await fetch2('"+server.getUrl()+"',{})",
+                 Arrays.asList("fetch2 = async (url,options)=>new Promise(new (Java.type('io.hyperfoil.tools.yaup.json.graaljs.JsFetch'))(url,options));"),"","");
+         assertTrue("fetch should return json",result instanceof Json);
+         Json json = (Json)result;
+         assertTrue("json.status should exist",json.has("status"));
+      } catch (IOException e) {
+         fail(e.getMessage());
+      }
    }
 
    @Test
@@ -278,37 +367,46 @@ public class StringUtilTest {
       assertTrue(StringUtil.isJsFnLike("()=>{return 'a'} "));
       assertTrue(StringUtil.isJsFnLike("({a,b},c)=>'a'"));
       assertTrue(StringUtil.isJsFnLike("(all,json,state)=>{\n" +
-              "  (!('lts_payload' in all)){\n" +
-              "    all.lts_payload=[]\n" +
-              "  }\n" +
-              "  all.lts_payload.push(json)\n" +
-              "}\n"));
+        "  (!('lts_payload' in all)){\n" +
+        "    all.lts_payload=[]\n" +
+        "  }\n" +
+        "  all.lts_payload.push(json)\n" +
+        "}\n")
+      );
    }
    @Test
    public void jsEval_async_await_fetch_invalid_host(){
-      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://fail.fail.www.redhat.com').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); console.log('rtrn',rtrn); return rtrn;}","","");
-      assertTrue("fetch should return json: "+result,result instanceof String);
-      assertEquals("fetch should use reject handler","reject",(String)result);
+      try (CloseableServer server = new CloseableServer("/","ok")){
+         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('http://nah.nah."+server.getHostname()+":"+server.getPort()+"').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); return rtrn;}", "", "");
+         assertTrue("fetch should return json: " + result, result instanceof String);
+         assertEquals("fetch should use reject handler", "reject", (String) result);
+      } catch (IOException e) {
+         fail(e.getMessage());
+      }
+
    }
    @Test
    public void jsEval_async_await_fetch_insecure(){
-      Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('https://www.redhat.com',\n"+
-              "      { \n" +
-              "        tls : 'ignore', \n" +
-              "        method: 'HEAD', \n" +
-              "        redirect: 'ignore', \n" +
-              "        headers: {\n" +
-              "          'Authorization' : 'Basic '+btoa(\"foo:bar\"),\n" +
-              "          'Content-Type' : 'application/json'\n" +
-              "        }\n" +
-              "      }\n" +
-              "); return rtrn;}","","");
-      assertFalse("async should not return until after fetch "+(result!=null?result.getClass():"null")+" "+result,result instanceof Boolean);
-      assertTrue("fetch should return json "+(result!=null?result.getClass():"null")+" "+result,result instanceof Json);
-      Json json = (Json)result;
-      assertTrue("json.status should exist",json.has("status"));
+      try (CloseableServer server = new CloseableServer("/","ok")) {
+         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('"+server.getUrl()+"',\n" +
+                 "      { \n" +
+                 "        tls : 'ignore', \n" +
+                 "        method: 'HEAD', \n" +
+                 "        redirect: 'ignore', \n" +
+                 "        headers: {\n" +
+                 "          'Authorization' : 'Basic '+btoa(\"foo:bar\"),\n" +
+                 "          'Content-Type' : 'application/json'\n" +
+                 "        }\n" +
+                 "      }\n" +
+                 "); return rtrn;}", "", "");
+         assertFalse("async should not return until after fetch " + (result != null ? result.getClass() : "null") + " " + result, result instanceof Boolean);
+         assertTrue("fetch should return json " + (result != null ? result.getClass() : "null") + " " + result, result instanceof Json);
+         Json json = (Json) result;
+         assertTrue("json.status should exist", json.has("status"));
+      } catch (IOException e) {
+         fail(e.getMessage());
+      }
    }
-
    @Test
    public void jsEval_lambda_invalidJs(){
       try {
@@ -326,22 +424,20 @@ public class StringUtilTest {
       Object result = StringUtil.jsEval("function(a,b){return b;}","a","b");
       assertEquals("expect function to evaluate with input","b",result);
    }
-
    @Test
    public void jsEval_math(){
       Object result = StringUtil.jsEval("2+2");
       assertNotNull("result should not be null default",result);
       assertTrue("result should be a Long "+result,result instanceof Long);
-      assertEquals("result should be 4",new Long(4),result);
+      assertEquals("result should be 4",4l,result);
    }
    @Test
    public void jsEval_math_lambda(){
       Object result = StringUtil.jsEval("(a,b)=>a+b",1,2);
       assertNotNull("result should not be null default",result);
       assertTrue("result should be a Long "+result,result instanceof Long);
-      assertEquals("result should be 4",new Long(3),result);
+      assertEquals("result should be 4",3l,result);
    }
-
    @Test
    public void jsEval_json_dot_notation(){
       Object result = StringUtil.jsEval("(a)=>a.foo",Json.fromString("{\"foo\":\"bar\"}"));
@@ -385,7 +481,6 @@ public class StringUtilTest {
       assertTrue("json[0] should be json: "+json.get(0),json.get(0) instanceof Json);
       assertTrue("json[0] should be an array: "+json.get(0),json.getJson(0).isArray());
    }
-
    @Test
    public void jsEval_object_assign_entry(){
       Json input = new Json(false);
@@ -414,12 +509,10 @@ public class StringUtilTest {
       assertTrue("expect faban group", grouped.containsKey("$.faban"));
       assertEquals("expect 2 entries for $.faban.run.SPECjEnterprise.\"fa:runConfig\"", 2, grouped.get("$.faban.run.SPECjEnterprise.\"fa:runConfig\"").size());
    }
-
    @Test
    public void countOccurrances_nonOverlapping() {
       assertEquals("don't let pattern overlap", 2, StringUtil.countOccurances("{{{{", "{{"));
    }
-
    @Test
    public void groupCommonPrefixes_no_omatches() {
       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
@@ -429,7 +522,6 @@ public class StringUtilTest {
       ));
       assertEquals("separate group for each input", 3, grouped.size());
    }
-
    @Test
    public void groupCommonPrefixes_all_matches() {
       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
@@ -440,7 +532,6 @@ public class StringUtilTest {
       assertEquals("all in one group", 1, grouped.size());
       assertTrue("group name is one", grouped.keys().contains("one"));
    }
-
    @Test
    public void groupCommonPrefixes_longest_match() {
       HashedLists grouped = StringUtil.groupCommonPrefixes(Arrays.asList(
@@ -452,7 +543,6 @@ public class StringUtilTest {
       assertTrue("groups are [one, onetwo]", grouped.keys().containsAll(Arrays.asList("one", "onetwo")));
       assertEquals("group onetwo should have 2 entries", 2, grouped.get("onetwo").size());
    }
-
    @Test
    public void getPatternNames_nested(){
       Map<Object, Object> map = new HashMap<>();
@@ -463,7 +553,6 @@ public class StringUtilTest {
          fail(pe.getMessage());
       }
    }
-
    @Test
    public void getPatternNames_no_names(){
       Map<Object, Object> map = new HashMap<>();

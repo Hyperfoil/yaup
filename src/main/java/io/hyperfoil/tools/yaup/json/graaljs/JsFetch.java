@@ -1,6 +1,5 @@
 package io.hyperfoil.tools.yaup.json.graaljs;
 
-import com.oracle.truffle.js.builtins.PromiseFunctionBuiltins;
 import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.json.Json;
 import org.graalvm.polyglot.HostAccess;

@@ -232,12 +232,17 @@ public class StringUtil {
                     rtrn = pge;
                     //pge.printStackTrace();
                     //throw new RuntimeException("failed to evaluate "+js,pge);
-                    try {
+                    try {//is this for REPL that starts with await?
                         matcher = context.eval("js", "async  (async () => " + StringUtil.quote(js) + ")()");
+                        if(matcher!=null && rtrn instanceof Exception){
+                            rtrn = null;//clear out the pge
+                        }
                     } catch (PolyglotException pge2) {
                         Value factory = context.eval("js", "new Function('return '+" + StringUtil.quote(js) + ")"); //this method didn't work with multi-line string literals
                         matcher = factory.execute();
-                        //pge2.printStackTrace();
+                        if(matcher!=null && rtrn instanceof Exception){
+                            rtrn = null;//clear out the pge
+                        }
                     }
                 }
                 if (matcher == null) {
@@ -303,6 +308,10 @@ public class StringUtil {
             }catch(PolyglotException pe){
                 //TODO do we log polyglot exceptions
                 JsException toThrow = new JsException(pe.getMessage(),js,pe);
+                if(rtrn!=null && rtrn instanceof PolyglotException){
+                    PolyglotException prev = (PolyglotException)rtrn;
+                    toThrow = new JsException(prev.getMessage(),js,prev);
+                }
                 toThrow.addArgs(args);
                 throw toThrow;
             }catch(Throwable e){

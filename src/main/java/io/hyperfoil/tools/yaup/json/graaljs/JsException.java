@@ -6,6 +6,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.SourceSection;
 
 import java.util.Arrays;
+import java.util.Iterator;
 
 public class JsException extends RuntimeException{
 
@@ -72,6 +73,20 @@ public class JsException extends RuntimeException{
                 this.lineEnd = sourceSection.getEndLine();
                 this.columnStart = sourceSection.getStartColumn();
                 this.columnEnd = sourceSection.getEndColumn();
+                if(columnStart == columnEnd && columnStart == 1){//1,1 usually means we have to check the stack
+                    Iterable<PolyglotException.StackFrame> iterator = pe.getPolyglotStackTrace();
+                    Iterator<PolyglotException.StackFrame> iter = iterator.iterator();
+                    if(iter.hasNext()){
+                        PolyglotException.StackFrame sf = iter.next();
+                        SourceSection ss = sf.getSourceLocation();
+                        if(ss!=null){
+                            this.lineStart = ss.getStartLine();
+                            this.lineEnd = ss.getEndLine();
+                            this.columnStart = ss.getStartColumn();
+                            this.columnEnd = ss.getEndColumn();
+                        }
+                    }
+                }
             }
         }else{
             this.lineStart=-1;
