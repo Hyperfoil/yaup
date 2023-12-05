@@ -57,7 +57,7 @@
             <organization>Red Hat</organization>
             <organizationUrl>http://www.redhat.com</organizationUrl>
         </developer>
-</developers>
+      </developers>
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
@@ -102,7 +102,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.2.1</version>
+        <version>3.5.1</version>
         <executions>
           <execution>
             <phase>package</phase>
@@ -121,6 +121,14 @@
                   <mainClass>io.hyperfoil.tools.yaup.Yaup</mainClass>
                 </transformer>
               </transformers>
+              <filters>
+                  <filter>
+                      <artifact>*:*</artifact>
+                      <excludes>
+                          <exclude>module-info.class</exclude>
+                      </excludes>
+                  </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
@@ -171,6 +179,12 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.35</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.25</version>
       <scope>compile</scope>
@@ -203,7 +217,6 @@
       <groupId>org.graalvm.sdk</groupId>
       <artifactId>graal-sdk</artifactId>
       <version>${graalvm.version}</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.graalvm.polyglot</groupId>
@@ -215,17 +228,17 @@
       <artifactId>js-community</artifactId>
       <version>${graalvm.version}</version>
       <type>pom</type>
+      <scope>import</scope>
     </dependency>
+    <dependency>
+        <groupId>org.graalvm.regex</groupId>
+        <artifactId>regex</artifactId>
+        <version>${graalvm.version}</version>
+    </dependency>    
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.13.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>1.7.32</version>
       <scope>test</scope>
     </dependency>
       <dependency>

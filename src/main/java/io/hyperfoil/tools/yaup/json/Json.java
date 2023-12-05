@@ -857,6 +857,12 @@ public class Json {
         return rtrn;
     }
 
+    /**
+     * Calculate a type structure of the input Json object. Type Structure identifies the shape of the json object and
+     * the primative value types that can occupy each key. Array entries
+     * @param target
+     * @return
+     */
     public static Json typeStructure(Json target) {
         Json rtrn;
         if (target.isArray()) {

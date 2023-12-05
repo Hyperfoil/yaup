@@ -4,7 +4,6 @@ import io.hyperfoil.tools.yaup.PopulatePatternException;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.JsonMap;
-import org.apache.commons.compress.harmony.pack200.Pack200Exception;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
