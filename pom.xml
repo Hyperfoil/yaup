@@ -70,6 +70,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>3.2.2</version>
+        <configuration>
+          <skipTests>false</skipTests>
+          <systemPropertyVariables>
+            <uberJarPath>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</uberJarPath>
+          </systemPropertyVariables>
+        </configuration>
         <executions>
           <execution>
             <phase>integration-test</phase>
@@ -77,12 +83,6 @@
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
-            <configuration>
-              <skipTests>false</skipTests>
-              <systemPropertyVariables>
-                <uberJarPath>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</uberJarPath>
-              </systemPropertyVariables>
-            </configuration>
           </execution>
         </executions>
       </plugin>
