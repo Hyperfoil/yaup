@@ -647,6 +647,33 @@ public class StringUtilTest {
          fail(pe.getMessage());
       }
    }
+
+   @Test
+   public void populatePattern_nested(){
+      try{
+         Map<Object, Object> map = new HashMap();
+         String response= StringUtil.populatePattern("echo ${{${{foo}}.bar}}", map);
+         fail("should not see response due to missing pattern: "+response);
+      }catch (PopulatePatternException pe) {
+         String result = pe.getResult();
+         assertEquals("the exception message should be the input","echo ${{${{foo}}.bar}}",result);         
+      }
+   }
+   @Test
+   public void populatePattern_partial_match_in_exception(){
+      try{
+         Map<Object, Object> map = new HashMap<>();         
+         //map.put("foo",10);
+         String response = StringUtil.populatePattern("${{= ${{foo}} + ${{bar:10}} }}",map);
+         fail("should not see response due to missing pattern: "+response);
+      }catch (PopulatePatternException pe) {
+         String result = pe.getResult();
+         assertFalse("result should not contain patterns that could be populated: "+result,result.contains("bar"));
+         return;
+      }
+      fail("expected an exception for missing pattern");
+   }
+
    @Test @Ignore /*Still working on how this should work for json in map*/
    public void populatePattern_jsonpath_search(){
       try{
@@ -1502,18 +1529,18 @@ public class StringUtilTest {
    }
 
    @Test
-   public void findNotQuotedSimple() {
+   public void findNotQuoted_simple() {
 
       assertEquals("foo\" bar\"", StringUtil.findNotQuoted("foo\" bar\" ", " "));
    }
 
    @Test
-   public void findNotQuotedNotFund() {
+   public void findNotQuoted_not_found() {
       assertEquals("12345", StringUtil.findNotQuoted("12345", " "));
    }
 
    @Test
-   public void findNotQuotedFirstChar() {
+   public void findNotQuoted_first_char() {
       assertEquals("", StringUtil.findNotQuoted("12345", " 1"));
    }
 

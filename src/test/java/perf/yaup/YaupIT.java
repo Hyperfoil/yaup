@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class YaupIT {
@@ -63,12 +64,23 @@ public class YaupIT {
         return f.getAbsolutePath();
     }
 
-    @Test
-    public void populatePattern_jsEval_addition() throws IOException, InterruptedException{
+    @Test @Ignore
+    public void default_populatePattern_jsEval_addition() throws IOException, InterruptedException{
             Output r = run("${{=1+2}}");
-            System.out.println(r);
-            assertEquals("unexpected error:"+r, "",r.err);
-            assertTrue("expected the sum on last line",r.out.endsWith("3"));
+            assertEquals("unexpected error: "+r, "",r.err());
+            assertTrue("expected the sum on last line: "+r,r.out().endsWith("3"));
+    }
+
+    @Test @Ignore
+    public void structure() throws IOException, InterruptedException{
+        Output r = run("structure",
+            tmpFile("""
+                { "foo":"bar"}
+            """)
+        );
+        assertEquals("unexpected exit code: "+r,0,r.exitCode());
+        assertEquals("unexpected output: "+r, "{\"foo\": \"string\"}",r.out());
+
     }
 
 

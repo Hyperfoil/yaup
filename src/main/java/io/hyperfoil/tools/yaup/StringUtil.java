@@ -357,8 +357,9 @@ public class StringUtil {
         );
     }
     private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
-        boolean replaceMissing = false;
+        //boolean replaceMissing = false;
         PopulatePatternException toThrow = null;
+        boolean caughtThrow = false;
         JsException jsEvalException = null;
         if(map == null){
             map = new HashMap<>();
@@ -452,6 +453,12 @@ public class StringUtil {
                     //could not resolve the value in name
                     if(defaultValue==null){
                         toThrow = ppe;//the failure is fatal because we don't
+                        if(toThrow.getResult().equals(namePattern)){
+                            //nothing was changed
+                        }else{
+                            caughtThrow = true;//TODO do we rename this variable to "caughtSomethingDifferent?"
+                        }
+                        
                     }
                 }
                 boolean isJavascript = false;
@@ -508,12 +515,20 @@ public class StringUtil {
                     seenIndex = nameStart + replacement.length()-1;
                 }
             }
+            //if we didn't replace a pattern but there is more to scan
+            if(!replaced && skip < rtrn.length() && nameStart>-1 && toThrow != null){
+                replaced = true;
+            }
         }while(replaced);
         if(toThrow!=null){
             if(jsEvalException != null){
                 throw new PopulatePatternException("Failed to evaluate JS: " + jsEvalException.getMessage(), rtrn, true);
             }
-            toThrow.setResult(rtrn);
+            if(!caughtThrow){
+                toThrow.setResult(rtrn);
+            }else{
+                //ignoring the rtrn because 
+            }
             throw toThrow;
         }
         return rtrn;
