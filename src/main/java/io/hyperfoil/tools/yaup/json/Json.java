@@ -1182,9 +1182,6 @@ public class Json {
                             }
                         }
                     }
-                    if(get(key) instanceof Json && value instanceof Json){
-                       ((Json)get(key)).merge((Json)value,override);
-                    }
                 }
             }
         });

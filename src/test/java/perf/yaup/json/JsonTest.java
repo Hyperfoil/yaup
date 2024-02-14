@@ -16,6 +16,58 @@ import static org.junit.Assert.*;
 
 public class JsonTest {
 
+
+    @Test
+    public void merge_two_arrays(){
+        Json from = Json.fromString("{ \"key\": [\"uno\",\"dos\"]}");
+        Json to = Json.fromString("{ \"key\": [\"one\",\"two\"]}");
+        to.merge(from,false);
+        assertEquals("expect json to have 1 key",1,to.keys().size());
+        assertTrue("expect json to have key",to.has("key"));
+        assertTrue("expect json[key] to be json",to.get("key") instanceof Json);
+        Json keyJson = to.getJson("key");
+        assertEquals("expect json[key] to have 4 entries: "+keyJson,4,keyJson.size());
+        assertTrue("expect json[key] to contain ",keyJson.values().containsAll(Arrays.asList("one","two","uno","dos")));
+    }
+
+    @Test
+    public void merge_two_objects_no_conflict(){
+        Json from = Json.fromString("{ \"key\": {\"a\": \"apple\"}}");
+        Json to = Json.fromString("{ \"key\": {\"b\": \"banana\"}}");
+        to.merge(from,false);
+        assertEquals("expect json to have 1 key",1,to.keys().size());
+        assertTrue("expect json to have key",to.has("key"));
+        assertTrue("expect json[key] to be json",to.get("key") instanceof Json);
+        Json keyJson = to.getJson("key");
+        assertEquals("expect json[key] to have 2 entries: "+keyJson,2,keyJson.size());
+        assertTrue("expect json[key] to contain ",keyJson.keys().containsAll(Arrays.asList("a","b")));
+    }
+    @Test
+    public void merge_two_objects_conflict_no_override(){
+        Json from = Json.fromString("{ \"key\": {\"a\": \"apple\"}}");
+        Json to = Json.fromString("{ \"key\": {\"a\": \"ant\"}}");
+        to.merge(from,false);
+        assertEquals("expect json to have 1 key",1,to.keys().size());
+        assertTrue("expect json to have key",to.has("key"));
+        assertTrue("expect json[key] to be json",to.get("key") instanceof Json);
+        Json keyJson = to.getJson("key");
+        assertTrue("expect json[key] to have a "+keyJson,keyJson.has("a"));
+        assertEquals("expect json[key][a] to not change "+keyJson,"ant",keyJson.get("a"));
+    }
+    @Test
+    public void merge_two_objects_conflict_yes_override(){
+        Json from = Json.fromString("{ \"key\": {\"a\": \"apple\"}}");
+        Json to = Json.fromString("{ \"key\": {\"a\": \"ant\"}}");
+        to.merge(from,true);
+        assertEquals("expect json to have 1 key",1,to.keys().size());
+        assertTrue("expect json to have key",to.has("key"));
+        assertTrue("expect json[key] to be json",to.get("key") instanceof Json);
+        Json keyJson = to.getJson("key");
+        assertTrue("expect json[key] to have a "+keyJson,keyJson.has("a"));
+        assertEquals("expect json[key][a] to not change "+keyJson,"apple",keyJson.get("a"));
+    }
+
+
     @Test
     public void isJsonSearchPath(){
         assertTrue("search should be jsonpath",
