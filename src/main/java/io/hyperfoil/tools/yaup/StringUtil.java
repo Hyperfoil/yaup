@@ -4,6 +4,7 @@ import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.json.ValueConverter;
 import io.hyperfoil.tools.yaup.json.graaljs.*;
 import org.graalvm.polyglot.*;
+import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -172,7 +173,8 @@ public class StringUtil {
         .engine(engine)
         .allowAllAccess(true)
         .allowHostAccess(HostAccess.ALL)
-        .allowIO(true)
+        //.allowIO(true)
+        .allowIO(IOAccess.newBuilder().allowHostSocketAccess(true).allowHostFileAccess(true).build())
         .allowExperimentalOptions(true)
         //.option("js.experimental-foreign-object-prototype", "true")
         .option("js.foreign-object-prototype", "true")
