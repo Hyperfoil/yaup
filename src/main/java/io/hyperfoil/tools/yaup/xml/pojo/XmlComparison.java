@@ -5,8 +5,7 @@ import io.hyperfoil.tools.yaup.AsciiArt;
 import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.linux.Local;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class XmlComparison {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final XmlComparison domainXml(){
         XmlComparison rtrn = new XmlComparison();
@@ -309,7 +308,7 @@ public class XmlComparison {
             if(toLoad.exists()){
                 comp.load(name, Xml.parseFile(path));
             }else{
-                logger.error("missing {}", toLoad.getName());
+                logger.errorf("missing %s", toLoad.getName());
                 formatter.printHelp(cmdLineSyntax,options);
                 System.exit(1);
             }
@@ -326,18 +325,18 @@ public class XmlComparison {
 
         boolean c = cmd.hasOption("color");
         diffs.forEach(entry->{
-            logger.info("{}}{}{}",
+            logger.infof("%s%s%s",
                 c ? AsciiArt.ANSI_LIGHT_BLUE : "",
                 entry.getPath(),
                 c ? AsciiArt.ANSI_RESET : ""
             );
             entry.keys().forEach(key->{
                 String value = entry.value(key);
-                logger.info(String.format("  %s%"+nameWidth+"s%s : %s%n",
+                logger.infof("  %s%"+nameWidth+"s%s : %s%n",
                     c ? AsciiArt.ANSI_WHITE : "",
                     key,
                     c ? AsciiArt.ANSI_RESET : "",
-                    value.contains("\n") ? "\n    "+value.replaceAll("\n","\n    ") : value)
+                    value.contains("\n") ? "\n    "+value.replaceAll("\n","\n    ") : value
                 );
             });
         });

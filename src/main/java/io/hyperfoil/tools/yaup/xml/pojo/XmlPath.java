@@ -1,8 +1,7 @@
 package io.hyperfoil.tools.yaup.xml.pojo;
 
 import io.hyperfoil.tools.yaup.StringUtil;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.*;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
  */
 public class XmlPath {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static enum Scope {Descendant,Absolute,Relative}
 

@@ -317,11 +317,12 @@ public class StringUtilTest {
    @Test
    public void jsEval_async_await_fetch(){
       try (CloseableServer server = new CloseableServer("/","ok")){
-         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('"+server.getUrl()+"'); return rtrn;}","","");
+         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('"+server.getUrl()+"'); console.log(rtrn.status); return rtrn;}","","");
          assertFalse("async should not return until after fetch",result instanceof Boolean);
          assertTrue("fetch should return json",result instanceof Json);
          Json json = (Json)result;
          assertTrue("json.status should exist",json.has("status"));
+         System.out.println(json.toString());
       } catch (IOException e) {
          fail(e.getMessage());
       }

@@ -6,8 +6,7 @@ import io.hyperfoil.tools.yaup.file.FileUtility;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
@@ -27,7 +26,7 @@ import static io.hyperfoil.tools.yaup.xml.pojo.Xml.Type.Text;
 
 public class Xml {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static final String JSON_ATTRIBUTE_PREFIX = "@";
     public static final String JSON_VALUE_KEY = "text()";

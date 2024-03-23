@@ -178,23 +178,10 @@
       <version>1.21</version>
       <scope>compile</scope>
     </dependency>
-    <!-- <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>1.7.35</version>
-      <scope>compile</scope>
-    </dependency> -->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.25</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-ext</artifactId>
-      <version>1.7.35</version>
-      <scope>compile</scope>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+      <version>3.5.3.Final</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>

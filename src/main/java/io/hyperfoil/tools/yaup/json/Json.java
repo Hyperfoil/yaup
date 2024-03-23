@@ -21,11 +21,10 @@ import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Value;
+import org.jboss.logging.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import javax.script.Bindings;
@@ -68,7 +67,7 @@ import static java.util.Optional.ofNullable;
  * A javascript object representation that can be either an Array or Object.
  */
 public class Json {
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static class MapBuilder {
         private final Json json = new Json();

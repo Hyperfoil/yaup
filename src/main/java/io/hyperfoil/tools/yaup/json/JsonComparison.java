@@ -1,8 +1,7 @@
 package io.hyperfoil.tools.yaup.json;
 
 import io.hyperfoil.tools.yaup.StringUtil;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
@@ -19,7 +18,7 @@ import java.util.function.BiConsumer;
 
 public class JsonComparison {
 
-   final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+   final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
    public static class Entry {
       private String path;

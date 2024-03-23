@@ -5,8 +5,7 @@ import io.hyperfoil.tools.yaup.json.JsonValidator;
 import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 import io.hyperfoil.tools.yaup.xml.pojo.XmlComparison;
-import org.slf4j.ext.XLogger;
-import org.slf4j.ext.XLoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -16,7 +15,7 @@ import java.util.Properties;
 
 public class Yaup {
 
-    final static XLogger logger = XLoggerFactory.getXLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     public static void main(String[] vargs) {
         //https://github.com/oracle/graaljs/issues/764
@@ -27,7 +26,7 @@ public class Yaup {
             String tool = args.remove(0);
             logger.debug("tool: "+tool);
             for(int i=0; i<args.size(); i++){
-                logger.trace("  arg[%2d]: %s%n",i,args.get(i));
+                logger.tracef("  arg[%2d]: %s%n",i,args.get(i));
             }
             switch (tool.toLowerCase()){
                 case "xml":
@@ -37,16 +36,16 @@ public class Yaup {
                     }
                     Xml doc = Xml.parseFile(args.get(1));
                     if(doc == null || !doc.exists()){
-                        logger.error("failed to load %s as xml %n",args.get(1));
+                        logger.errorf("failed to load %s as xml %n",args.get(1));
                         System.exit(1);
                     }
                     XmlOperation operation = XmlOperation.parse(args.get(0));
                     if(operation == null){
-                        logger.error("failed to identify xml operation %s%n",args.get(0));
+                        logger.errorf("failed to identify xml operation %s%n",args.get(0));
                         System.exit(1);
                     }
                     String response = doc.apply(operation);
-                    logger.info("response:%n%s",response);
+                    logger.infof("response:%n%s",response);
                     break;
                 case "xml-diff":
                     XmlComparison.main(args.toArray(new String[]{}));
@@ -64,6 +63,7 @@ public class Yaup {
                         Json errors = validator.validate(dataJson);
                         logger.info(errors.toString());
                     }
+                case "shape":
                 case "typestructure":
                 case "type-structure":
                 case "structure":

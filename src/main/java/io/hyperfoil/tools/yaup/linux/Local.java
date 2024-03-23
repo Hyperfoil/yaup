@@ -1,18 +1,16 @@
 package io.hyperfoil.tools.yaup.linux;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 import java.io.*;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.FileSystems;
 
 /**
  * Created by wreicher
  *
  */
 public class Local {
-    final static Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
     private static final int DEFAULT_PORT = 22;
     private static final String DEFAULT_SSH = "/usr/bin/ssh";
     private static final String DEFAULT_SSH_ADD = "/usr/bin/ssh-add";
@@ -145,16 +143,16 @@ public class Local {
                 outputStream.write(passphrase.getBytes());
                 outputStream.flush();
                 int result = p.waitFor();
-                logger.debug("ssh-add.result = {}",result);
+                logger.debugf("ssh-add.result = %d",result);
                 String line = null;
                 BufferedReader reader = null;
                 reader = new BufferedReader(new InputStreamReader(errorStream));
                 while( (line=reader.readLine())!=null){
-                    logger.error("  E: {}",line);
+                    logger.errorf("  E: %s",line);
                 }
                 reader = new BufferedReader(new InputStreamReader(inputStream));
                 while( (line=reader.readLine())!=null){
-                    logger.trace("  I: {}",line);
+                    logger.tracef("  I: %s",line);
                 }
 
             } catch (IOException e) {
@@ -184,12 +182,12 @@ public class Local {
             String line = null;
             try(BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream))){
                 while( (line=reader.readLine())!=null){
-                    logger.error("  E: {}",line);
+                    logger.errorf("  E: %s",line);
                 }
             }
             try(BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))){
                 while( (line=reader.readLine())!=null){
-                    logger.trace("  I: {}",line);
+                    logger.tracef("  I: %s",line);
                 }
             }
         } catch (IOException | InterruptedException e){
@@ -199,7 +197,7 @@ public class Local {
     private void rsyncSend(String userName,String hostName,int port,String localPath,String remotePath){
         File localFile = new File(localPath);
         if(!localFile.exists()){
-            logger.error("{} does not exist",localPath);
+            logger.errorf("%s does not exist",localPath);
             return;
         }
         String sshOpt = prepSshCommand(port);
@@ -223,7 +221,7 @@ public class Local {
         ProcessBuilder builder = new ProcessBuilder();
         String args = "-avz";//--archive --verbose --compress
         if(remotePath.contains("./")){
-            logger.trace("rsync enabling relative mode for {}",remotePath);
+            logger.tracef("rsync enabling relative mode for %s",remotePath);
             args = args+"R";//turn on relative mode for rsync --relative
         }
 
