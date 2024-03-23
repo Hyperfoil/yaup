@@ -123,16 +123,16 @@ public class StringUtilTest {
    public void jsEval_error_lambda_invalid_array_args(){
       String js = "(min,max)=>{\nreturn Array.from(Array(max-min).keys())\n}";
       try {
-         Object result = StringUtil.jsEval(js, 0,-1);
-      }catch(JsException error){
-         error.printStackTrace();
-         assertTrue(error.getMessage(),error.getMessage().contains("Invalid array length"));
-         assertTrue(error.getMessage(),error.getMessage().contains("RangeError"));
-         assertEquals(js,error.getJs());
-         assertEquals(2,error.getLineStart());
-         assertEquals(2,error.getLineEnd());
-         assertEquals(19,error.getColumnStart());
-         assertEquals(32,error.getColumnEnd());
+         Object result = StringUtil.jsEval(js, 0, -1);
+      } catch (JsException error) {
+         assertTrue(error.getMessage(), error.getMessage().contains("Invalid array length"));
+         assertTrue(error.getMessage(), error.getMessage().contains("RangeError"));
+         assertEquals(js, error.getJs());
+         assertEquals(2, error.getLineStart());
+         assertEquals(2, error.getLineEnd());
+         assertEquals(19, error.getColumnStart());
+         assertEquals(32, error.getColumnEnd());
+
          return;
       }
       fail("expected JsException");
@@ -322,7 +322,6 @@ public class StringUtilTest {
          assertTrue("fetch should return json",result instanceof Json);
          Json json = (Json)result;
          assertTrue("json.status should exist",json.has("status"));
-         System.out.println(json.toString());
       } catch (IOException e) {
          fail(e.getMessage());
       }
