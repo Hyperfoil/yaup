@@ -28,7 +28,7 @@ For example, if `var = "hello, world"` then we could change the greeting with:
 ```
 ${{="${{var}}".replace("hello","hola")}}
 ```
-Notice that we quote `"${{var}}"` otherwise when the value is replaced the javascript expression will see `hello, world.relace(...)` and that is not valid javascript.
+Notice that we quote `"${{var}}"` otherwise when the value is replaced the javascript expression will see `hello, world.replace(...)` and that is not valid javascript.
 
 === Javascript arrays
 The javsacript execution makes it easier to work with variables that are arrays.

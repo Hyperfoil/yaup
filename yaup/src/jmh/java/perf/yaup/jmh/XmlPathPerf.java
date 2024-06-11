@@ -1,4 +1,4 @@
-package perf.yaup.jmh;
+package jmh.java.perf.yaup.jmh;
 
 import io.hyperfoil.tools.yaup.xml.Xml;
 import io.hyperfoil.tools.yaup.xml.XmlLoader;
