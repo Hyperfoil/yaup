@@ -19,10 +19,7 @@ public class YaupPico implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
-        System.out.println("run(...args)");
         CommandLine cmd = new CommandLine(new YaupPico());
-        System.out.println("subcommand count = "+cmd.getSubcommands().size());
-        cmd.getSubcommands().keySet().forEach(k->System.out.println("key="+k));
         return cmd.execute(args);
     }
 
