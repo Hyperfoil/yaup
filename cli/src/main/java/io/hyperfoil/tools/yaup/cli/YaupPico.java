@@ -7,19 +7,22 @@ import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import org.jboss.logging.Logger;
+import picocli.AutoComplete;
 import picocli.CommandLine;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 @TopCommand
-@CommandLine.Command(name="", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class})
+@CommandLine.Command(name="", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class, AutoComplete.GenerateCompletion.class})
 public class YaupPico implements QuarkusApplication {
     final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
     public int run(String... args) throws Exception {
         CommandLine cmd = new CommandLine(new YaupPico());
+        CommandLine gen = cmd.getSubcommands().get("generate-completion");
+        gen.getCommandSpec().usageMessage().hidden(true);
         return cmd.execute(args);
     }
 
