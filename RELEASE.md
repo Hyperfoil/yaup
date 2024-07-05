@@ -1,6 +1,6 @@
 This document summarizes all the steps needed to release next version of yaup.
 
-It is assumed that you have all the priviledges on Sonatype, GitHub push rights and set up GPG keys.
+It is assumed that you have all the privileges on Sonatype, GitHub push rights and set up GPG keys.
 
 Start with building and releasing artefacts:
 

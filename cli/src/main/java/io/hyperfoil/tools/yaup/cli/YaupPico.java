@@ -31,7 +31,7 @@ public class YaupPico implements QuarkusApplication {
         logger.infof("response:%n%s",response);
         return 0;
     }
-    @CommandLine.Command(name="json-schema", description="validate json with a schema")
+    @CommandLine.Command(name="json-schema", description="validate json with a schema",aliases = {"schema"})
     public int jsonSchema(String schemaPath,String jsonPath){
         Json schemaJson = Json.fromFile(schemaPath);
         Json dataJson = Json.fromFile(jsonPath);
