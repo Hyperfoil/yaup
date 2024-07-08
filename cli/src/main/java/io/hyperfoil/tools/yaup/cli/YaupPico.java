@@ -20,6 +20,7 @@ public class YaupPico implements QuarkusApplication {
 
     @Override
     public int run(String... args) throws Exception {
+        System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");
         CommandLine cmd = new CommandLine(new YaupPico());
         CommandLine gen = cmd.getSubcommands().get("generate-completion");
         gen.getCommandSpec().usageMessage().hidden(true);
