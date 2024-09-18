@@ -94,9 +94,14 @@ public class XmlPathTest {
     }
     @Test
     public void match_position(){
-        XmlPath path = XmlPath.parse("/foo/bar[/position() > 0 and /position() < 3]");
+        XmlPath path = XmlPath.parse("/foo/bar[/position() > 0 and /position() < 2]/text()");
         Xml xml = Xml.parse("<foo><biz/><bar>one</bar><bar>two</bar><bar>three</bar></foo>");
         List<Xml> matches = path.getMatches(xml);
+        assertEquals(1,matches.size());
+        Xml match = matches.get(0);
+        assertTrue(match.isText());
+        assertEquals("one",match.getValue());
+
     }
 
     @Test
