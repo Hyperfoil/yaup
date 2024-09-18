@@ -33,6 +33,38 @@ public class XmlOperationTest {
         assertEquals("path","/foo/bar",operation.getPath());
         assertEquals("value","@key = bizz",operation.getValue());
     }
+
+    @Test
+    public void apply_read_tag_text_jenkins_path(){
+        String xmlContent = "";
+        Xml xml = new XmlLoader().loadXml(
+            """
+            <flow-build>
+                <actions>
+                    <hudson.model.CauseAction>
+                        <causeBag>
+                            <entry>
+                                <hudson.model.Cause_-UserIdCause>
+                                    <userId>found</userId>
+                                </hudson.model.Cause_-UserIdCause>
+                            </entry>
+                            <entry>
+                                <hudson.model.Cause_-UserIdCause>
+                                    <userId>wrong</userId>
+                                </hudson.model.Cause_-UserIdCause>
+                            </entry>
+                        </causeBag>
+                    </hudson.model.CauseAction>
+                </actions>
+            </flow-build>
+            """
+        );
+
+        XmlOperation op = XmlOperation.parse("/flow-build/actions/hudson.model.CauseAction/causeBag/entry[1]/hudson.model.Cause_-UserIdCause/userId/text()");
+        String response = op.apply(xml);
+
+        assertEquals("found",response);
+    }
     @Test
     public void apply_read_tag_text(){
         String xmlContent = "<foo><bar>bizz</bar></foo>";
