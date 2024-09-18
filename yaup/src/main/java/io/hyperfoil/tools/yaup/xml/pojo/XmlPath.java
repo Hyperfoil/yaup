@@ -115,12 +115,11 @@ public class XmlPath {
                 //index
                 int closeIndex = StringUtil.indexNotMatching(path,"1234567890",index+1);
                 String criteria = path.substring(index+1,closeIndex);
-                if(!criteria.isEmpty() && criteria.matches("\\d+")){
+                if(!criteria.isEmpty() && criteria.matches("\\d+") && ']' == path.charAt(closeIndex)){
                     XmlPath childIndex = new XmlPath(Type.Index);
                     childIndex.setMethod(Method.Equals);
                     childIndex.setName(criteria);
-                    parentStack.peek().setNext(childIndex);
-                    parentStack.push(childIndex);
+                    parentStack.peek().addChild(childIndex);
                     index = closeIndex+1;
                 }
 
@@ -218,8 +217,8 @@ public class XmlPath {
 
                         index+=closeIndex-suffixIndex+"]".length();
                         parentStack.peek().addChild(childIndex);
-                        parentStack.pop();
-                        parentStack.push(childIndex);
+                        //parentStack.pop();
+                        //parentStack.push(childIndex);
 
                     }else {
                         XmlPath newStart = new XmlPath(Type.Start);
@@ -426,6 +425,11 @@ public class XmlPath {
         append(sb,recursive);
         return sb.toString();
     }
+    public String debugString(){
+        StringBuilder sb = new StringBuilder();
+        append(sb,true,1);
+        return sb.toString();
+    }
 
     public List<Xml> getMatches(Xml xml){
 
@@ -623,8 +627,13 @@ public class XmlPath {
         }
         return rtrn;
     }
-
     private void append(StringBuilder sb,boolean recursive){
+        append(sb,recursive,0);
+    }
+    private void append(StringBuilder sb,boolean recursive,int level){
+        if(level>1 && !Type.Start.equals(getType())){
+            sb.append(String.format("%n%"+(level-1)+"s",""));
+        }
         if(Type.Attribute.equals(getType())){
             sb.append("@");
         }else if (Type.Tag.equals(getType())){
@@ -672,8 +681,14 @@ public class XmlPath {
                     sb.append(" and ");
                 }
                 XmlPath child = children.get(i);
-                child.append(sb,recursive);
+                child.append(sb,recursive,level > 0 && !Type.Start.equals(getType()) ? level+2 : level);
             }
+            if(level>1){
+                sb.append(String.format("%n%"+(level-1)+"s",""));
+            }else {
+                sb.append(String.format("%n"));
+            }
+
             sb.append(childWrap.charAt(1));;
         }else if (Type.Function.equals(getType())){
             sb.append("()");//no children but still a function
@@ -691,7 +706,7 @@ public class XmlPath {
         }
 //        sb.append("} ");
         if(recursive && hasNext()){
-            getNext().append(sb,recursive);
+            getNext().append(sb,recursive,level > 0 && !Type.Start.equals(getType()) ? level + 2 : level);
         }
     }
 }
