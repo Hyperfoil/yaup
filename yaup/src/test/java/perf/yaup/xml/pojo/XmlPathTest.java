@@ -11,16 +11,37 @@ import static org.junit.Assert.*;
 
 public class XmlPathTest {
 
-    @Test @Ignore
-    public void parse_reveredCriteria(){ // Not supported
+    @Test
+    public void parse_reversedCriteria(){ // Not supported
         XmlPath path = XmlPath.parse("/foo/bar[text() = 'fiz' and 'buz' = text()]");
         assertTrue(XmlPath.Type.Undefined.equals(path.getType()));
+    }
+
+    @Test
+    public void parse_double_criteria(){
         XmlPath work = XmlPath.parse("/foo/bar[text() = 'fiz' and text() = 'buz']");
+        assertEquals(XmlPath.Type.Start,work.getType());
+        assertTrue("Start of work should have a next",work.hasNext());
+        work = work.getNext();
+        assertEquals("first path segment should be foo","foo",work.getName());
+        assertTrue("work should have a next",work.hasNext());
+        work = work.getNext();
+        assertEquals("second path segment should be bar","bar",work.getName());
+        assertEquals("bar should have two children",2,work.getChildren().size());
+        assertFalse("bar should not have a next",work.hasNext());
     }
 
     @Test @Ignore
     public void parse_nestedCriteria(){
-        XmlPath path = XmlPath.parse("/foo[/bar[/biz = 'buz']]");
+
+        XmlPath path = XmlPath.parse("/foo[/bar[/biz = 'buz']]/biz/text()");
+        assertEquals(XmlPath.Type.Start,path.getType());
+        assertTrue("path should have next from start",path.hasNext());
+        path = path.getNext();
+        assertEquals("foo",path.getName());
+        assertTrue("foo should have a next segment",path.hasNext());
+        assertEquals("foo should have 1 child",1,path.getChildren().size());
+
     }
 
     @Test
@@ -61,11 +82,15 @@ public class XmlPathTest {
 
         //assertEquals("/[#] is not a valid xpath",XmlPath.Type.Undefined,path.getType());
     }
-    @Test @Ignore
+    @Test
     public void match_tagIndex(){
-        XmlPath path = XmlPath.parse("/foo/bar[1]");
+        XmlPath path = XmlPath.parse("/foo/bar[0]/text()");
         Xml xml = Xml.parse("<foo><biz/><bar>one</bar><bar>two</bar><bar>three</bar></foo>");
         List<Xml> matches = path.getMatches(xml);
+        assertEquals(1,matches.size());
+        Xml match = matches.get(0);
+        assertTrue(match.isText());
+        assertEquals("one",match.getValue());
     }
     @Test
     public void match_position(){

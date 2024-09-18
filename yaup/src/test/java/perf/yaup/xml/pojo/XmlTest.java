@@ -13,6 +13,34 @@ import static org.junit.Assert.*;
 public class XmlTest {
 
     @Test
+    public void apply_jenkins(){
+        Xml doc = Xml.parse(
+            """
+            <flow-build>
+                <actions>
+                    <hudson.model.CauseAction>
+                        <causeBag>
+                            <entry>
+                                <hudson.model.Cause_-UserIdCause>
+                                    <userId>found</userId>
+                                </hudson.model.Cause_-UserIdCause>
+                            </entry>
+                            <entry>
+                                <hudson.model.Cause_-UserIdCause>
+                                    <userId>wrong</userId>
+                                </hudson.model.Cause_-UserIdCause>
+                            </entry>
+                        </causeBag>
+                    </hudson.model.CauseAction>
+                </actions>
+            </flow-build>
+            """
+        );
+        XmlOperation op = XmlOperation.parse("/flow-build/actions/hudson.model.CauseAction/causeBag/entry[0]/hudson.model.Cause_-UserIdCause/userId/text()");
+        assertEquals("found",doc.apply(op));
+    }
+
+    @Test
     public void preserve_urlencoding(){
         String xmlContent = "<get dest=\"${worktmp}/supplierhome.html\" src=\"http://${appserver.web.host}:${appserver.web.port}/specj-web/app?action=Set%20Supplier%20URLs&amp;supp_ws_url=http://${supplier.host}:${supplier.port}/emulator/SupplierService&amp;supp_reply_url=http://${buyer.host}:${buyer.port}/supplier/BuyerService\"/>";
         Xml xml = Xml.parse(xmlContent);
@@ -24,7 +52,7 @@ public class XmlTest {
     public void convertString(){
         Object value = null;
         value = Xml.convertString("-1");
-        assertEquals(new Long(-1),value);
+        assertEquals(-1L,value);
         value = Xml.convertString("123456789012345678");
         assertEquals("max number of characters for a long",new Long(123456789012345678l),value);
         value = Xml.convertString("1234567890123456789");
