@@ -35,8 +35,22 @@ public class XmlOperationTest {
     }
 
     @Test
+    public void apply_concat(){
+        Xml xml = new XmlLoader().loadXml(
+            """
+            <foo>
+                <bar><biz>one</biz><buz>two</buz></bar>
+                <bar><biz>uno</biz><buz>dos</buz></bar>
+            </foo>
+            """
+        );
+        XmlOperation op = XmlOperation.parse("concat(/foo/bar[1]/biz/text(),' ',/foo/bar[1]/buz/text())");
+        String response = op.apply(xml);
+        assertEquals("one two",response);
+    }
+
+    @Test
     public void apply_read_tag_text_jenkins_path(){
-        String xmlContent = "";
         Xml xml = new XmlLoader().loadXml(
             """
             <flow-build>
