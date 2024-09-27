@@ -130,6 +130,7 @@ public class XmlOperationTest {
 
         Xml xml = new XmlLoader().loadXml(xmlContent);
         XmlOperation op = XmlOperation.parse("/foo/bar "+FileUtility.ADD_OPERATION+" <buzz>fuzz</buzz>");
+        assertTrue(op.isAdd());
         op.apply(xml);
 
         assertTrue("should contain 'buzz':\n"+xml.documentString(4),xml.documentString().contains("buzz"));
