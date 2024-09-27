@@ -9,12 +9,17 @@ import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
 import org.jboss.logging.Logger;
+import org.yaml.snakeyaml.reader.StreamReader;
 import picocli.AutoComplete;
 import picocli.CommandLine;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @TopCommand
 @CommandLine.Command(name="", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class, AutoComplete.GenerateCompletion.class})
@@ -31,8 +36,18 @@ public class YaupPico implements QuarkusApplication {
     }
 
     @CommandLine.Command(name="xml", description="perform the operation on an xml document", mixinStandardHelpOptions = true)
-    public int xml(@CommandLine.Option(names={"-j","--json"}) boolean json, String operation, String path){
-        Xml doc = Xml.parseFile(path);
+    public int xml(@CommandLine.Option(names={"-j","--json"}) boolean json, String operation, @CommandLine.Parameters(arity = "0..1") String path){
+        Xml doc;
+        if(path==null || path.isBlank()){
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
+                String allLines = reader.lines().collect(Collectors.joining("\n"));
+                doc = Xml.parse(allLines);
+            } catch (IOException e) {
+                return 1;
+            }
+        } else {
+            doc = Xml.parseFile(path);
+        }
         String response = doc.apply(operation);
         logger.infof("xml response:%n%s",response);
         if(json ){
