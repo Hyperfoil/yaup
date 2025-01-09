@@ -418,6 +418,17 @@ public class StringUtilTest {
    }
 
    @Test
+   public void jsEval_return_JSON_stringify(){
+      try{
+         Json input = Json.fromString("{\"rate\":40563.6}");
+         Object result = StringUtil.jsEval("(a)=>JSON.stringify(a)",input);
+         assertTrue(result.toString().contains("40563.6"));
+      }catch( JsException e){
+         fail(e.getMessage());
+      }
+   }
+
+   @Test
    public void jsEval_function(){
       Map<String,String> map = new HashMap<>();
       map.put("foo","FOO");

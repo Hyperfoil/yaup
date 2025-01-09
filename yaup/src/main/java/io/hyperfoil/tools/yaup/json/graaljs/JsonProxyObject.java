@@ -6,6 +6,7 @@ import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -56,6 +57,13 @@ public class JsonProxyObject implements ProxyObject {
       Object rtrn = json.isArray() && key.matches("\\d+") ? json.get(Integer.parseInt(key)) : json.get(key);
       if (rtrn instanceof Json){
          rtrn =  JsonProxy.create((Json)rtrn);
+      }else if (rtrn instanceof BigDecimal){
+         BigDecimal bigDecimal = (BigDecimal)rtrn;
+         if(bigDecimal.scale()>=0){
+            return bigDecimal.doubleValue();
+         }else{
+            return bigDecimal.longValue();
+         }
       }
       return rtrn;
    }
