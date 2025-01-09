@@ -8,6 +8,7 @@ import io.hyperfoil.tools.yaup.xml.XmlOperation;
 import io.hyperfoil.tools.yaup.xml.pojo.Xml;
 import io.quarkus.picocli.runtime.annotations.TopCommand;
 import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
 import org.jboss.logging.Logger;
 import org.yaml.snakeyaml.reader.StreamReader;
 import picocli.AutoComplete;
@@ -21,11 +22,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@TopCommand
+//@TopCommand
+@QuarkusMain
 @CommandLine.Command(name="", mixinStandardHelpOptions = true, subcommands={CommandLine.HelpCommand.class, AutoComplete.GenerateCompletion.class})
 public class YaupPico implements QuarkusApplication {
     final static Logger logger = Logger.getLogger(MethodHandles.lookup().lookupClass());
 
+    //currently not used?
     @Override
     public int run(String... args) throws Exception {
         System.setProperty("polyglotimpl.DisableClassPathIsolation", "true");
@@ -34,7 +37,6 @@ public class YaupPico implements QuarkusApplication {
         gen.getCommandSpec().usageMessage().hidden(true);
         return cmd.execute(args);
     }
-
     @CommandLine.Command(name="xml", description="perform the operation on an xml document", mixinStandardHelpOptions = true)
     public int xml(@CommandLine.Option(names={"-j","--json"}) boolean json, String operation, @CommandLine.Parameters(arity = "0..1") String path){
         Xml doc;
