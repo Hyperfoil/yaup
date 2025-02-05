@@ -951,8 +951,8 @@ public class Json {
 
     private static void keyId(Json target,StringBuilder sb){
         sb.append("[ ");
-        target.keys().stream().sorted().forEach(key->{
-            Object value = target.get(key);
+        target.keys().stream().sorted((a,b)->a.toString().compareTo(b.toString())).forEach(key->{
+            Object value = target.get(key.toString());
             sb.append(key);
             sb.append(" ");
             if(value instanceof Json){

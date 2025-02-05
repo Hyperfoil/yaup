@@ -77,7 +77,7 @@ public class JsonComparison {
       if(isEmtpy(jsons)){
          return;
       }
-      if(hasNull(jsons)){//if one if the jsons is missing or empty
+      if(hasNull(jsons)){//if one of the jsons is missing or empty
          logger.error("THIS SHOULD BE CAUGHT BEFORE THIS POINT FOR ALL SUB_CALLS");
          Entry newEntry = new Entry(path);
          jsons.forEach((name,json)->{
