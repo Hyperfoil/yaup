@@ -5,7 +5,7 @@
     <groupId>io.hyperfoil.tools</groupId>
     <artifactId>hyperfoil-yaup</artifactId>
     <packaging>pom</packaging>
-    <version>0.9.3</version>
+    <version>0.9.4-SNAPSHOT</version>
     <modules>
         <module>yaup</module>
         <module>cli</module>
