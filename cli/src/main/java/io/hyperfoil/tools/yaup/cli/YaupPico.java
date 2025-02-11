@@ -38,7 +38,11 @@ public class YaupPico implements QuarkusApplication {
         return cmd.execute(args);
     }
     @CommandLine.Command(name="xml", description="perform the operation on an xml document", mixinStandardHelpOptions = true)
-    public int xml(@CommandLine.Option(names={"-j","--json"}) boolean json, String operation, @CommandLine.Parameters(arity = "0..1") String path){
+    public int xml(
+            @CommandLine.Option(names={"-j","--json"},description = "output in json format") boolean json,
+            @CommandLine.Parameters(description = "xml operation") String operation,
+            @CommandLine.Parameters(arity = "0..1", description = "path to xml documents") String path)
+    {
         Xml doc;
         if(path==null || path.isBlank()){
             try(BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))){
