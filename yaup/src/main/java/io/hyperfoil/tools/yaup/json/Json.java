@@ -367,7 +367,7 @@ public class Json {
 
     public static void chainAct(Json target,String prefix,Object value,JsonAction action){
         List<String> chain = toChain(prefix);
-        String key = chain.remove(chain.size()-1).replaceAll("\\\\\\.", ".");
+        String key = !chain.isEmpty() ? chain.remove(chain.size()-1).replaceAll("\\\\\\.", ".") : prefix;
         for(String id : chain){
             id = id.replaceAll("\\\\\\.", ".");
             if (!id.isEmpty()) {
