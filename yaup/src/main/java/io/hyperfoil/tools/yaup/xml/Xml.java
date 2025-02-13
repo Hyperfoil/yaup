@@ -71,7 +71,6 @@ public class Xml {
 
 
         try {
-
             Object resultObj = search.startsWith(XPATH_DELIM) ? xPath.compile(search).evaluate(node,XPathConstants.NODESET) : xPath.compile(search).evaluate(node);//,XPathConstants.NODESET);
 
             if(resultObj instanceof NodeList) {

@@ -22,7 +22,14 @@ public class JsonValidator {
       try {
          OutputUnit outputUnit = validator.validate(new JsonObject(input.toString()));
          if (!outputUnit.getValid()) {
-            outputUnit.getErrors().forEach(e -> rtrn.add(Json.fromString(e.toString())));
+            if(outputUnit.getErrors()!=null && !outputUnit.getErrors().isEmpty()){
+               outputUnit.getErrors().forEach(e -> rtrn.add(Json.fromString(e.toString())));
+            }else{
+   //how are there no errors but it isn't valid
+               if(outputUnit.getError()!=null && !outputUnit.getError().isEmpty()){
+                  rtrn.add(outputUnit.getError());
+               }
+            }
          }
       }catch(SchemaException se){
          rtrn.add(se.getMessage());

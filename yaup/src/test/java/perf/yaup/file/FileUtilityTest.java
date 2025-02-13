@@ -132,6 +132,14 @@ public class FileUtilityTest {
    }
 
    @Test
+   public void getFiles_singleFile() throws IOException {
+      File tmp = File.createTempFile("yaup",".txt");
+      tmp.deleteOnExit();
+      List<String> entries = FileUtility.getFiles(tmp.getPath(),"",true,true);
+      System.out.println(entries);
+   }
+
+   @Test
    public void getFiles_in_one_archive(){
       String pathZip = makeArchive(".zip","bar/foo.txt","bar/biz/bar.txt","biz.txt");
       List<String> files = FileUtility.getFiles(pathZip,"",true,true);

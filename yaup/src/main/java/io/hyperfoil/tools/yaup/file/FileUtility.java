@@ -616,23 +616,31 @@ public class FileUtility {
                }
             }
          } else if (f.exists()) {
-            if (f.isFile() == wantFiles && f.isDirectory() != wantFiles) {
+            if (f.isFile() && isArchive(f)) {
+               if(inArchive) {
+                  List<String> entries = getArchiveEntries(f.getPath());
+                  for (String entry : entries) {
+                     if(nameSubstring!=null) {
+                        if (entry.contains(nameSubstring)) {
+                           rtrn.add(entry);
+                        }
+                     }else{
+                        rtrn.add(entry);
+                     }
+                  }
+               }
+            }else if (f.isFile() == wantFiles && f.isDirectory() != wantFiles) {
                // if there is name filtering
                if (nameSubstring != null && !nameSubstring.isEmpty()) {
                   if (f.getName().contains(nameSubstring) /*&& !isArchive(sub)*/) {
                      rtrn.add(f.getAbsolutePath());
                   }
+               // no filtering means we just add it
+               }else{
+                  rtrn.add(f.getAbsolutePath());
                }
             }
-            if (inArchive && f.isFile() && isArchive(f)) {
 
-               List<String> entries = getArchiveEntries(f.getPath());
-               for (String entry : entries) {
-                  if (entry.contains(nameSubstring)) {
-                     rtrn.add(entry);
-                  }
-               }
-            }
 
          }
       }
