@@ -74,7 +74,7 @@
         <version.maven.project-info-reports>3.5.0</version.maven.project-info-reports>
 <!--        <graalvm.version>23.1.2</graalvm.version>-->
         <graalvm.version>24.0.1</graalvm.version>
-        <jackson.version>2.12.7</jackson.version>
+        <jackson.version>2.13.5</jackson.version>
         <quarkus.version>3.9.1</quarkus.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
