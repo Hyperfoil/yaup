@@ -40,6 +40,17 @@ public class ValueConverterTest {
     };
 
     @Test
+    public void convert_set(){
+        TestProxy proxy = new TestProxy();
+        StringUtil.jsEval("(map)=>{map['foo']= new Set([1,2,3])}",proxy);
+        Object foo = proxy.getMember("foo");
+        assertNotNull("foo should exist",foo);
+        assertTrue("foo should be json",foo instanceof Json);
+        Json json = (Json)foo;
+        assertTrue("foo should be an array, not object",json.isArray());
+    }
+
+    @Test
     public void convert_empty_object(){
         TestProxy proxy = new TestProxy();
         StringUtil.jsEval("(map)=>{map['foo']={}}",proxy);
@@ -48,6 +59,18 @@ public class ValueConverterTest {
         assertTrue("foo should be json",foo instanceof Json);
         Json json = (Json)foo;
         assertFalse("foo should be an object, not array",json.isArray());
+    }
+    @Test
+    public void convert_object(){
+        TestProxy proxy = new TestProxy();
+        StringUtil.jsEval("(map)=>{map['foo']={a:'uno'}}",proxy);
+        Object foo = proxy.getMember("foo");
+        assertNotNull("foo should exist",foo);
+        assertTrue("foo should be json",foo instanceof Json);
+        Json json = (Json)foo;
+        assertFalse("foo should be an object, not array",json.isArray());
+        assertTrue("foo should have a as a key",json.has("a"));
+        assertEquals("uno",json.get("a"));
     }
     @Test
     public void convert_empty_array(){

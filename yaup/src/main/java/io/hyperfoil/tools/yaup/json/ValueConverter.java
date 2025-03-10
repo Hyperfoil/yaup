@@ -60,6 +60,7 @@ public class ValueConverter {
          }
          return new JsException(value.asString());
       }else if (value.hasMembers()){
+
          return convertMapping(value);
       }else{
          //TODO log error wtf is Value?
@@ -84,8 +85,19 @@ public class ValueConverter {
    }
    public static Json convertMapping(Value value){
       Json json = new Json(false);
-      for(String key : value.getMemberKeys()){
-         json.set(key,convert(value.getMember(key)));
+      if(value.getMemberKeys().isEmpty() ){//return a set as a list
+         if(value.hasIterator()) {
+            json = new Json(true);
+            Value iter = value.getIterator();
+            while (iter.hasIteratorNextElement()) {
+               Value next = iter.getIteratorNextElement();
+               json.add(convert(next));
+            }
+         }
+      }else {
+         for (String key : value.getMemberKeys()) {
+            json.set(key, convert(value.getMember(key)));
+         }
       }
       return json;
    }
