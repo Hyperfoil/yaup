@@ -16,6 +16,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
 import io.hyperfoil.tools.yaup.AsciiArt;
+import io.hyperfoil.tools.yaup.Sets;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.file.FileUtility;
 import org.graalvm.polyglot.Context;
@@ -854,6 +855,31 @@ public class Json {
                 rtrn.add(key,value);//trust the value is already a string presentation of the correct values
             }
         });
+        return rtrn;
+    }
+
+    /**
+     * returns true iff the current json contains either all entries or all keys with matching values for the input json
+     * @param json the input json
+     * @return true iff the current json object contains either all values or all keys with matching values for the input json
+     */
+    public boolean contains(Json json){
+        boolean rtrn;
+        if(json.size()>size()){
+            rtrn = false;
+        }else if (isArray() && json.isArray()) {
+            rtrn = json.values().stream().allMatch(v->{
+                if(v instanceof Json){
+                        return values().stream().filter(c -> c instanceof Json).anyMatch(c -> ((Json) c).contains((Json)v));
+                }else{
+                    return values().stream().anyMatch(c -> c.equals(v));
+                }
+            });
+        }else if (!isArray() && !json.isArray()){
+            rtrn = json.keys().stream().allMatch(k-> json.get(k) == null ? get(k) == null : json.get(k).equals(get(k)));
+        }else{
+            rtrn = false;
+        }
         return rtrn;
     }
 
