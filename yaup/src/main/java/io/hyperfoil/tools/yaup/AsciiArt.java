@@ -26,6 +26,8 @@ public class AsciiArt {
     public static final String ANSI_LIGHT_MAGENTA = "\u001B[95m";
     public static final String ANSI_LIGHT_CYAN = "\u001B[96m";
     public static final String ANSI_WHITE = "\u001B[97m";
+    public static final String ANSI_CLEAR_SCREEN = "\u001B2J";
+    public static final String ANSI_REST_CURSOR = "\u001B[H";
 
     private static String KMG_SUFFIX = "KMGTPEZY";
     public static String CHECKED = "✓";
