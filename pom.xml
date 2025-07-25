@@ -76,6 +76,7 @@
         <graalvm.version>24.0.1</graalvm.version>
         <jackson.version>2.13.5</jackson.version>
         <quarkus.version>3.9.1</quarkus.version>
+        <version.vertx>4.5.16</version.vertx>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
     </properties>
@@ -192,7 +193,7 @@
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-json-schema</artifactId>
-                <version>4.4.6</version>
+                <version>${version.vertx}</version>
                 <exclusions>
                     <exclusion><groupId>io.vertx</groupId><artifactId>vertx-core</artifactId></exclusion>
                 </exclusions>

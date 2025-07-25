@@ -31,7 +31,6 @@ public class YaupPicoTest {
 
     @Test
     public void jsonDiff_help(QuarkusMainLauncher launcher) {
-        CommandLine commandLine = new CommandLine(new YaupPico());
         LaunchResult result = launcher.launch("json-diff","-help");
         System.out.println(result.getOutput());
         System.out.println(result.getErrorOutput());
