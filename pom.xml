@@ -7,10 +7,10 @@
     <packaging>pom</packaging>
     <version>0.9.9-SNAPSHOT</version>
     <modules>
+        <module>yaup-core</module>
         <module>yaup</module>
-        <module>cli</module>
     </modules>
-    <name>hyperfoil-yaup</name>
+    <name>hyperfoil-yaup-parent</name>
     <description>Yet Another Utility Project</description>
     <url>https://github.com/Hyperfoil/yaup</url>
     <scm>

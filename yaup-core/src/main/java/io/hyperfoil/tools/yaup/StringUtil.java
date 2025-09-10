@@ -334,18 +334,18 @@ public class StringUtil {
     public static List<String> getPatternNames(String pattern, Map<Object,Object> map,Function<Object,Object> getValue, String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
         UnclearableSet<String> rtrn = new UnclearableSet<>();
         populatePattern(pattern,new HasItAllMap<Object,Object>(map,getValue),prefix,separator,suffix,javascriptPrefix,rtrn,true);
-        return new ArrayList(rtrn);
+        return new ArrayList<>(rtrn);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
         return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
-        Set<String> seen = new HashSet();
-        return populatePattern(pattern,map,Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,seen,false);
+        Set<String> seen = new HashSet<>();
+        return populatePattern(pattern,map,Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,seen,false,true);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,Collection<String> evals,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
-        Set<String> seen = new HashSet();
-        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false);
+        Set<String> seen = new HashSet<>();
+        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false,true);
     }
     private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
         return populatePattern(
@@ -357,10 +357,35 @@ public class StringUtil {
                 suffix,
                 javascriptPrefix,
                 seen,
-                fullScan
+                fullScan,
+                true
         );
     }
-    private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
+    public static String populatePatternOnce(String pattern,Map<Object,Object> map) throws PopulatePatternException{
+        Set<String> seen = new HashSet<>();
+        return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX,seen,false,false);
+    }
+    public static String populatePatternOnce(String pattern, Map<Object,Object> map,Collection<String> evals,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
+        Set<String> seen = new HashSet<>();
+        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false,false);
+    }
+
+    /***
+     *
+     * @param pattern - the input string that may contain a variable pattern
+     * @param map - variable name to value lookup
+     * @param evals - collection of javascript expressions to evaluate before evaluating javascript patterns
+     * @param prefix - sequence that indicates the start of a variable reference
+     * @param separator - sequence that separates the variable name from the default value
+     * @param suffix - sequence that indicates the end of a variable reference
+     * @param javascriptPrefix - sequence following prefix that indicates javascript execution
+     * @param seen - used to track variable names already encountered
+     * @param fullScan - enables scanning inside defaultValues too for getPatternNames
+     * @param loop - toggles between single pass variable replacement or iterative replacement. Used by populatePatternOnce
+     * @return a string with patterns replaced according to loop and values in map.
+     * @throws PopulatePatternException thrown if there is a circular variable reference in the pattern.
+     */
+    private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan,boolean loop) throws PopulatePatternException {
         //boolean replaceMissing = false;
         PopulatePatternException toThrow = null;
         boolean caughtThrow = false;
@@ -445,14 +470,14 @@ public class StringUtil {
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too
                     try {
-                        defaultValue = populatePattern(defaultValue, map, evals, prefix, separator, suffix, javascriptPrefix, seen, fullScan);
+                        defaultValue = populatePattern(defaultValue, map, evals, prefix, separator, suffix, javascriptPrefix, seen, fullScan,loop);
                     }catch(PopulatePatternException ppe){
                         //could not resolve the default, do we care if name resolved?
                         defaultValue=null;//we do not have a valid default value
                     }
                 }
                 try{
-                    name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan);
+                    name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan,loop);
                 }catch (PopulatePatternException ppe){
                     //could not resolve the value in name
                     if(defaultValue==null){
@@ -523,7 +548,7 @@ public class StringUtil {
             if(!replaced && skip < rtrn.length() && nameStart>-1 && toThrow != null){
                 replaced = true;
             }
-        }while(replaced);
+        }while(replaced && loop);
         if(toThrow!=null){
             if(jsEvalException != null){
                 throw new PopulatePatternException("Failed to evaluate JS: " + jsEvalException.getMessage(), rtrn, true);
