@@ -4,7 +4,7 @@
 
     <parent>
         <groupId>io.hyperfoil.tools</groupId>
-        <artifactId>hyperfoil-yaup</artifactId>
+        <artifactId>yaup-parent</artifactId>
         <version>0.9.9-SNAPSHOT</version>
     </parent>
   <name>yaup-core</name>
