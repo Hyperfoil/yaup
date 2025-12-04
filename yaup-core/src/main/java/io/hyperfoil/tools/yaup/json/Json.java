@@ -554,10 +554,9 @@ public class Json {
     public static Json fromJsonNode(JsonNode node){
         Json rtrn = new Json(node.isArray());
         if(node.isArray()){
-            node.fields().forEachRemaining((entry)->{
-                JsonNode value = entry.getValue();
-                rtrn.add(convertJsonNode(value));
-            });
+            for(JsonNode jsonNode:node){
+                rtrn.add(convertJsonNode(jsonNode));
+            }
         }else if (node.isObject()){
             node.fields().forEachRemaining((entry)->{
                 JsonNode value = entry.getValue();
@@ -1303,7 +1302,7 @@ public class Json {
     public void set(Object key, Object value){
         key = box(key);
         if(key instanceof Integer || key instanceof Long){
-            key = ((Number)key).intValue();
+            //key = ((Number)key).intValue();
         }else{
             isArray = false;
         }
@@ -1359,9 +1358,9 @@ public class Json {
     public void add(Object key,Object value){ add(key,value,false); }
     public void add(Object key,Object value,boolean forceArray){
         key = box(key);
-        if(value instanceof Integer){
-            value = new Long(((Integer) value).longValue());
-        }
+//        if(value instanceof Integer){
+//            value = new Long(((Integer) value).longValue());
+//        }
         checkKeyType(key);
 
         if(has(key)){
@@ -1397,8 +1396,10 @@ public class Json {
     private Object box(Object key){
         if(key instanceof Integer || key instanceof Long){
             return ((Number)key).longValue();
+//            return ((Number)key).intValue();
         }else if( key.toString().matches("\\d+")){
             return Long.parseLong(key.toString());
+            //return Integer.parseInt(key.toString());
         }
         return key;
     }
@@ -1441,6 +1442,7 @@ public class Json {
         return getLong(key,0);
     }
     public long getLong(Object key,long defaultValue){
+        key = box(key);
         return has(key) && data.get(key) instanceof Number ? ((Number) data.get(key)).longValue() : defaultValue;
     }
     public Optional<Long> optLong(Object key){

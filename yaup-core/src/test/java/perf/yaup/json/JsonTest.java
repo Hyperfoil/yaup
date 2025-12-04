@@ -39,7 +39,7 @@ public class JsonTest {
         assertTrue(json.has("array"));
         Json jsonArray = json.getJson("array");
         assertNotNull(jsonArray);
-        assertEquals(2, jsonArray.size());
+        assertEquals(json.toString()+" "+jsonArray.toString(),2, jsonArray.size());
         Json first = jsonArray.getJson(0);
         assertNotNull(first);
         assertTrue(first.isEmpty());
