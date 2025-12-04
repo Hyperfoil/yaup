@@ -32,11 +32,7 @@ public class YaupPicoTest {
     @Test
     public void jsonDiff_help(QuarkusMainLauncher launcher) {
         LaunchResult result = launcher.launch("json-diff","-help");
-        System.out.println(result.getOutput());
-        System.out.println(result.getErrorOutput());
         assertNotEquals(0,result.exitCode());
-        System.out.println("out\n"+result.getOutput());
-        System.out.println("err\n"+result.getErrorOutput());
         assertTrue(result.getErrorOutput().contains("Missing required parameters"),result.getErrorOutput()+result.getOutput());
         assertTrue(result.getErrorOutput().contains("Usage:"));
     }

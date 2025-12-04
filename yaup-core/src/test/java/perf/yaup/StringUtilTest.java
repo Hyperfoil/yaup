@@ -70,6 +70,18 @@ public class StringUtilTest {
            "function seconds(v){ return Packages.io.hyperfoil.tools.yaup.StringUtil.parseToMs(v)/1000}",
            "function range(start,stop,step=1){ return Array(Math.ceil(Math.abs(stop - start) / step)).fill(start).map((x, y) => x + Math.ceil(Math.abs(stop - start) / (stop - start)) * y * step);}"
    );
+
+   @Test
+   public void populatePattern_awk_pipe(){
+       String input = "/usr/bin/time -p quarkus3/mvnw clean package -DskipTests 2>&1 >build.log | grep real | awk '{ print $2}'";
+       try {
+           String populated = StringUtil.populatePattern(input,new HashMap<>());
+           assertEquals(input,populated);
+       } catch (PopulatePatternException e) {
+           throw new RuntimeException(e);
+       }
+   }
+
    @Test
    public void jsEval_error_lambda_undefined_variable(){
       Map<Object,Object> globals = new HashMap<Object,Object>();
@@ -377,7 +389,7 @@ public class StringUtilTest {
    @Test
    public void jsEval_async_await_fetch_invalid_host(){
       try (CloseableServer server = new CloseableServer("/","ok")){
-         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('http://nah.nah."+server.getHostname()+":"+server.getPort()+"').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); return rtrn;}", "", "");
+         Object result = StringUtil.jsEval("async (a,b)=>{ let rtrn = false; rtrn = await fetch('invalid://nah.nah."+server.getHostname()+":"+server.getPort()+"').then((a)=>{return 'resolve'},(b)=>{return 'reject'}); return rtrn;}", "", "");
          assertTrue("fetch should return json: " + result, result instanceof String);
          assertEquals("fetch should use reject handler", "reject", (String) result);
       } catch (IOException e) {
