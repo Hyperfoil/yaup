@@ -223,18 +223,10 @@ public class JsFetch implements JsThenable, JsPromiseExecutor{
             result.set("body", content.toString());
          }
          return JsonProxy.create(result);
-      } catch (SocketTimeoutException e){
-
-         e.printStackTrace();
-         return Json.fromThrowable(e);
-      } catch (ProtocolException e) {
-         e.printStackTrace();
-         return Json.fromThrowable(e);
-      } catch (MalformedURLException e) {
-         e.printStackTrace();
-         return Json.fromThrowable(e);
+      } catch (SocketTimeoutException | ProtocolException | MalformedURLException e){
+          throw new JsException(e.getMessage(),"fetch("+url+","+options+")",e);
+//         return Json.fromThrowable(e);
       } catch (IOException e) {
-         //e.printStackTrace();
          throw new JsException(e.getMessage(),"fetch("+url+","+options+")",e);
       }
       //return null;
