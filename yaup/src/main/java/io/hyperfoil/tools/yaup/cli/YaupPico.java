@@ -106,24 +106,26 @@ public class YaupPico implements QuarkusApplication {
     @CommandLine.Command(name="type-structure", description="create a type structure from the provided json files",aliases = {"shape","typestructure","structure"})
     public int structure(List<String> paths){
         if(paths == null || paths.isEmpty()){
-            logger.errorf("missing required paths to json files");
+            logger.errorf("%s%n","missing required paths to json files");
             return 1;
         }
         Json structure = null;
         for(String path : paths){
             Json loaded = Json.fromFile(path);
             Json loadedStructure = Json.typeStructure(loaded);
-            if(structure == null){
-                structure = loadedStructure;
-            }else{
-                structure.add(loadedStructure);
+            if(loadedStructure!=null) {
+                if (structure == null) {
+                    structure = loadedStructure;
+                } else {
+                    structure.add(loadedStructure);
+                }
             }
         }
         if(structure == null){
-            logger.errorf("failed to load structure");
+            logger.errorf("%s%n","failed to load structure");
             return 1;
         }else{
-            System.out.printf(structure.toString(2));
+            System.out.printf("%s%n",structure.toString(2));
         }
         return 0;
     }
