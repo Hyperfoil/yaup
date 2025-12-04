@@ -1,5 +1,8 @@
 package perf.yaup.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.hyperfoil.tools.yaup.StringUtil;
 import io.hyperfoil.tools.yaup.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -16,6 +19,33 @@ import static org.junit.Assert.*;
 
 public class JsonTest {
 
+    @Test
+    public void toString_array_of_empty_objects(){
+        Json json = Json.fromString("[{},{}]");
+        assertEquals("[{},{}]", json.toString());
+
+    }
+
+    @Test
+    public void fromJsonNode_nested_array(){
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode node = mapper.createObjectNode();
+        ArrayNode array = node.putArray("array");
+        array.add(mapper.createObjectNode());
+        array.add(mapper.createObjectNode());
+
+        Json json = Json.fromJsonNode(node);
+
+        assertTrue(json.has("array"));
+        Json jsonArray = json.getJson("array");
+        assertNotNull(jsonArray);
+        assertEquals(2, jsonArray.size());
+        Json first = jsonArray.getJson(0);
+        assertNotNull(first);
+        assertTrue(first.isEmpty());
+        assertFalse(first.isArray());
+
+    }
 
     @Test
     public void merge_two_arrays(){

@@ -121,7 +121,7 @@ public class Json {
                     if("integer".equals(value) && "number".equals(get(key))){
                         //do not add it
                     }else if ("number".equals(value) && "integer".equals(get(key))){
-                        super.set(key,value);//replace integer with more general integer
+                        super.set(key,value);//replace integer with more general number
                     }else if (!(get(key) instanceof HashArray)) {
                         HashArray newEntry = new HashArray();
                         newEntry.add(get(key));
@@ -552,7 +552,7 @@ public class Json {
         return rtrn;
     }
     public static Json fromJsonNode(JsonNode node){
-        Json rtrn = new Json();
+        Json rtrn = new Json(node.isArray());
         if(node.isArray()){
             node.fields().forEachRemaining((entry)->{
                 JsonNode value = entry.getValue();
@@ -891,6 +891,9 @@ public class Json {
      */
     public static Json typeStructure(Json target) {
         Json rtrn;
+        if (target == null){
+            return null;
+        }
         if (target.isArray()) {
             rtrn = new HashArray();
         } else {
@@ -1231,7 +1234,7 @@ public class Json {
         if(isArray){
             rtrn.append("[");
             for(int i=0; i<data.size(); i++){
-                Object value = data.get(i);
+                Object value = data.get(box(i));
                 if(i>0){
                     rtrn.append(",");
                     //newline
@@ -1393,9 +1396,9 @@ public class Json {
 
     private Object box(Object key){
         if(key instanceof Integer || key instanceof Long){
-            return ((Number)key).intValue();
+            return ((Number)key).longValue();
         }else if( key.toString().matches("\\d+")){
-            return Integer.parseInt(key.toString());
+            return Long.parseLong(key.toString());
         }
         return key;
     }
