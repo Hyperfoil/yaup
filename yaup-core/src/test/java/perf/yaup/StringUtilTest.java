@@ -608,6 +608,52 @@ public class StringUtilTest {
          fail(pe.getMessage());
       }
    }
+    @Test
+    public void getPatternNames_pattern_in_default_removeDefaultable(){
+        Map<Object, Object> map = new HashMap<>();
+        try {
+            List<String> names = StringUtil.getPatternNames("${{FOO:${{BAR}}}}",map,true);
+            assertEquals("names should have 1 entries: "+names.toString(),1,names.size());
+            assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("BAR")));
+        } catch (PopulatePatternException pe) {
+            fail(pe.getMessage());
+        }
+    }
+    @Test
+    public void getPatternNames_pattern_with_empty_default_removeDefaultable(){
+        Map<Object, Object> map = new HashMap<>();
+        try {
+            List<String> names = StringUtil.getPatternNames("${{FOO:}}",map,true);
+            assertEquals("names should have 0 entries: "+names.toString(),0,names.size());
+        } catch (PopulatePatternException pe) {
+            fail(pe.getMessage());
+        }
+    }
+
+    @Test
+    public void getPatternNames_pattern_twice_and_first_has_default_removeDefaultable(){
+        Map<Object, Object> map = new HashMap<>();
+        try {
+            List<String> names = StringUtil.getPatternNames("${{FOO:}} ${{FOO}}",map,true);
+            assertEquals("names should have 1 entries: "+names.toString(),1,names.size());
+            assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO")));
+        } catch (PopulatePatternException pe) {
+            fail(pe.getMessage());
+        }
+    }
+
+    @Test
+    public void getPatternNames_pattern_twice_and_second_has_default_removeDefaultable(){
+        Map<Object, Object> map = new HashMap<>();
+        try {
+            List<String> names = StringUtil.getPatternNames("${{FOO}} ${{FOO:}}",map,true);
+            assertEquals("names should have 1 entries: "+names.toString(),1,names.size());
+            assertTrue("names should contain expected entries: "+names.toString(),names.containsAll(Arrays.asList("FOO")));
+        } catch (PopulatePatternException pe) {
+            fail(pe.getMessage());
+        }
+    }
+
    @Test
    public void getPatternNames_pattern_in_javascript(){
       Map<Object, Object> map = new HashMap<>();
@@ -628,7 +674,8 @@ public class StringUtilTest {
                  StringUtil.PATTERN_PREFIX,
                  "_",
                  StringUtil.PATTERN_SUFFIX,
-                 StringUtil.PATTERN_JAVASCRIPT_PREFIX);
+                 StringUtil.PATTERN_JAVASCRIPT_PREFIX,
+                 false);
          assertEquals("names should have 1 entry: "+names,1,names.size());
          assertEquals("names[0] should be RUN.FOO: "+names,"RUN.FOO",names.get(0));
       } catch (PopulatePatternException pe) {

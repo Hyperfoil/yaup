@@ -41,51 +41,57 @@ public class StringUtil {
 
 
     }
-    public static class UnclearableSet<V> implements Set<V> {
+    public static class NameTracker implements Iterable<String>{
+        private final Set<String> seen;
+        private final Set<String> currentSeen;
+        private final Set<String> alwaysHasDefault;
 
-        private final Set<V> set;
-        public UnclearableSet(){this(new HashSet<>());}
-        public UnclearableSet(Set<V> set){this.set = set;}
+        public NameTracker() {
+            this.seen = new HashSet<>();
+            this.currentSeen = new HashSet<>();
+            this.alwaysHasDefault = new HashSet<>();
+        }
+        public void add(String n){
+            currentSeen.add(n);
+        }
+        public boolean contains(String n){
+            return currentSeen.contains(n);
+        }
+        public void clear(){
+            seen.addAll(currentSeen);
+            currentSeen.clear();
+        }
+        public Iterator<String> iterator(){
+            seen.addAll(currentSeen);
+            return seen.iterator();
+        }
+        public boolean haveEverSeen(String n){
+            seen.addAll(currentSeen);
+            return seen.contains(n);
+        }
+        public List<String> getEverSeen(boolean removeDefaultable){
+            seen.addAll(currentSeen);
+            List<String> rtrn = new ArrayList<>(seen);
+            if(removeDefaultable){
+                rtrn.removeAll(alwaysHasDefault);
+            }
+            return rtrn;
+        }
+        public void setDefaultable(String n){
+            alwaysHasDefault.add(n);
+        }
+        public void unsetDefaultable(String n){
+            alwaysHasDefault.remove(n);
+        }
+        public Set<String> getCurrentSeen(){
+            return currentSeen;
+        }
+        public Set<String> getAlwaysHasDefault(){
+            return alwaysHasDefault;
+        }
 
-        @Override
-        public int size() {return set.size();}
-
-        @Override
-        public boolean isEmpty() {return set.isEmpty();}
-
-        @Override
-        public boolean contains(Object o) {return set.contains(o);}
-
-        @Override
-        public Iterator<V> iterator() {return set.iterator();}
-
-        @Override
-        public Object[] toArray() {return set.toArray();}
-
-        @Override
-        public <T> T[] toArray(T[] ts) {return set.toArray(ts);}
-
-        @Override
-        public boolean add(V v) {return set.add(v);}
-
-        @Override
-        public boolean remove(Object o) {return false;}
-
-        @Override
-        public boolean containsAll(Collection<?> collection) {return set.containsAll(collection);}
-
-        @Override
-        public boolean addAll(Collection<? extends V> collection) {return set.addAll(collection);}
-
-        @Override
-        public boolean retainAll(Collection<?> collection) {return set.retainAll(collection);}
-
-        @Override
-        public boolean removeAll(Collection<?> collection) {return false;}
-
-        @Override
-        public void clear() {}
     }
+
     public static class HasItAllMap<K,V> implements Map<K,V> {
         private final Map<K,V> map;
         private final Function<Object,V> valueFactory;
@@ -329,25 +335,26 @@ public class StringUtil {
         return rtrn;
     }
     public static List<String> getPatternNames(String pattern, Map<Object,Object> map) throws PopulatePatternException{
-        return getPatternNames(pattern,map,(v)->"_",PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
+        return getPatternNames(pattern,map,(v)->"_",PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX,false);
     }
-    public static List<String> getPatternNames(String pattern, Map<Object,Object> map,Function<Object,Object> getValue, String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
-        UnclearableSet<String> rtrn = new UnclearableSet<>();
-        populatePattern(pattern,new HasItAllMap<Object,Object>(map,getValue),prefix,separator,suffix,javascriptPrefix,rtrn,true);
-        return new ArrayList<>(rtrn);
+    public static List<String> getPatternNames(String pattern, Map<Object,Object> map,boolean removeDefaultable) throws PopulatePatternException{
+        return getPatternNames(pattern,map,(v)->"_",PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX,removeDefaultable);
+    }
+    public static List<String> getPatternNames(String pattern, Map<Object,Object> map,Function<Object,Object> getValue, String prefix, String separator, String suffix, String javascriptPrefix,boolean removeDefaultable) throws PopulatePatternException{
+        NameTracker tracker = new NameTracker();
+        populatePattern(pattern,new HasItAllMap<Object,Object>(map,getValue),Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,tracker, true, true);
+        return tracker.getEverSeen(removeDefaultable);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map) throws PopulatePatternException{
         return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
-        Set<String> seen = new HashSet<>();
-        return populatePattern(pattern,map,Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,seen,false,true);
+        return populatePattern(pattern,map,Collections.emptyList(),prefix,separator,suffix,javascriptPrefix,new NameTracker(),false,true);
     }
     public static String populatePattern(String pattern, Map<Object,Object> map,Collection<String> evals,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException {
-        Set<String> seen = new HashSet<>();
-        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false,true);
+        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,new NameTracker(),false,true);
     }
-    private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan) throws PopulatePatternException {
+    private static String populatePattern(String pattern, Map<Object,Object> map, String prefix, String separator, String suffix, String javascriptPrefix, NameTracker tracker, boolean fullScan) throws PopulatePatternException {
         return populatePattern(
                 pattern,
                 map,
@@ -356,18 +363,16 @@ public class StringUtil {
                 separator,
                 suffix,
                 javascriptPrefix,
-                seen,
+                tracker,
                 fullScan,
                 true
         );
     }
     public static String populatePatternOnce(String pattern,Map<Object,Object> map) throws PopulatePatternException{
-        Set<String> seen = new HashSet<>();
-        return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX,seen,false,false);
+        return populatePattern(pattern,map,Collections.emptyList(),PATTERN_PREFIX,PATTERN_DEFAULT_SEPARATOR,PATTERN_SUFFIX, PATTERN_JAVASCRIPT_PREFIX,new NameTracker(),false,false);
     }
     public static String populatePatternOnce(String pattern, Map<Object,Object> map,Collection<String> evals,String prefix, String separator, String suffix, String javascriptPrefix) throws PopulatePatternException{
-        Set<String> seen = new HashSet<>();
-        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,false,false);
+        return populatePattern(pattern,map,evals,prefix,separator,suffix,javascriptPrefix,new NameTracker(),false,false);
     }
 
     /***
@@ -379,13 +384,13 @@ public class StringUtil {
      * @param separator - sequence that separates the variable name from the default value
      * @param suffix - sequence that indicates the end of a variable reference
      * @param javascriptPrefix - sequence following prefix that indicates javascript execution
-     * @param seen - used to track variable names already encountered
+     * @param tracker - used to track variable names already encountered
      * @param fullScan - enables scanning inside defaultValues too for getPatternNames
      * @param loop - toggles between single pass variable replacement or iterative replacement. Used by populatePatternOnce
      * @return a string with patterns replaced according to loop and values in map.
      * @throws PopulatePatternException thrown if there is a circular variable reference in the pattern.
      */
-    private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, Set<String> seen, boolean fullScan,boolean loop) throws PopulatePatternException {
+    private static String populatePattern(String pattern, Map<Object,Object> map, Collection<String> evals, String prefix, String separator, String suffix, String javascriptPrefix, NameTracker tracker, boolean fullScan,boolean loop) throws PopulatePatternException {
         //boolean replaceMissing = false;
         PopulatePatternException toThrow = null;
         boolean caughtThrow = false;
@@ -463,21 +468,21 @@ public class StringUtil {
             if(nameStart>-1 && count == 0){
                 replaced = true;
                 if(nameStart > seenIndex && seenIndex >= 0){
-                   seen.clear();
+                   tracker.clear();
                 }
                 String namePattern = rtrn.substring(nameStart + prefix.length(),nameEnd).trim();
                 String name = namePattern;
                 String defaultValue = defaultStart>-1?rtrn.substring(defaultStart+separator.length(),defaultEnd): null;
                 if(defaultValue!=null && fullScan){//fullScan added so getPatternNames can use the same logic and scan defaultValue too
                     try {
-                        defaultValue = populatePattern(defaultValue, map, evals, prefix, separator, suffix, javascriptPrefix, seen, fullScan,loop);
+                        defaultValue = populatePattern(defaultValue, map, evals, prefix, separator, suffix, javascriptPrefix, tracker ,fullScan,loop);
                     }catch(PopulatePatternException ppe){
                         //could not resolve the default, do we care if name resolved?
                         defaultValue=null;//we do not have a valid default value
                     }
                 }
                 try{
-                    name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,seen,fullScan,loop);
+                    name = populatePattern(namePattern,map,evals,prefix,separator,suffix,javascriptPrefix,tracker,fullScan,loop);
                 }catch (PopulatePatternException ppe){
                     //could not resolve the value in name
                     if(defaultValue==null){
@@ -500,11 +505,20 @@ public class StringUtil {
                 }
                 String replacement = null;
                 if(!isJavascript && map.containsKey(name) && map.get(name)!=null && !map.get(name).toString().isEmpty()){
-                    if (seen.contains(name)) {
-                        throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+seen+"\n  rtrn="+rtrn,rtrn);
+                    if (tracker.contains(name)) {
+                        throw new PopulatePatternException("Circular pattern reference "+name+"\n  pattern="+pattern+"\n  nameStart="+nameStart+"\n  seenIndex="+seenIndex+"\n  seen="+tracker.getCurrentSeen()+"\n  rtrn="+rtrn,rtrn);
                     }
                     replacement = map.get(name).toString();
-                    seen.add(name); //only add to seen if used to replace?
+
+                    if( defaultValue!=null){//onlY indicate there's a default if this is the fist time seeing name
+                        //nested check because else should run despite having ever seen
+                        if(!tracker.haveEverSeen(name)) {
+                            tracker.setDefaultable(namePattern);
+                        }
+                    }else{
+                        tracker.unsetDefaultable(name);
+                    }
+                    tracker.add(name); //only add to seen if used to replace?
                 }else if(
                     isJavascript ||
                     StringUtil.findAny(name,"()/*^+-") > -1 ||
