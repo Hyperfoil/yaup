@@ -7,7 +7,7 @@
     <name>yaup-parent</name>
 
     <packaging>pom</packaging>
-    <version>0.9.11</version>
+    <version>0.9.12-SNAPSHOT</version>
 
     <modules>
         <module>yaup-core</module>
@@ -19,7 +19,7 @@
         <connection>scm:git:git://github.com/Hyperfoil/yaup.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/Hyperfoil/yaup.git</developerConnection>
         <url>https://github.com/Hyperfoil/yaup</url>
-        <tag>0.9.11</tag>
+        <tag>0.9.3</tag>
     </scm>
     <licenses>
         <license>
