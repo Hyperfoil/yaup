@@ -1289,9 +1289,9 @@ public class Json {
     public void remove(Object key){
         key = box(key);
         if(isArray() && (key instanceof Integer || key instanceof Long)){
-            int index = ((Number)key).intValue();
-            int size = size();
-            for(int i=index; i<size-1; i++){
+            long index = ((Number)key).longValue();
+            long size = size();
+            for(long i=index; i<size-1; i++){
                 set(i,get(i+1));
             }
             data.remove(size-1);

@@ -286,6 +286,15 @@ public class StringUtilTest {
       assertTrue("input should contain three: "+input,input.values().contains("three"));
    }
    @Test
+   public void jsEval_array_pop(){
+       Json input = Json.fromString("[\"one\",\"two\"]");
+       Object result = StringUtil.jsEval("(a)=>a.pop()",input);
+       assertNotNull("result should not be null",result);
+       assertEquals("two",result);
+       assertEquals(1,input.size());
+
+   }
+   @Test
    public void jsEval_array_concat(){
       Object result = StringUtil.jsEval("(a)=>{return a.concat(['a','b']);}",Json.fromString("[\"one\",\"two\"]"));
       assertNotNull("result should not be null",result);

@@ -142,6 +142,22 @@ public class JsonTest {
         assertTrue("json should have ['10'] "+json,json.has("10"));
         assertTrue("json should have [10] "+json,json.has(10));
     }
+    @Test
+    public void remove_first(){
+        Json json = new Json(true);
+        json.add("foo");
+        json.add("bar");
+        json.remove(0);
+        assertEquals(1,json.size());
+    }
+    @Test
+    public void remove_last(){
+        Json json = new Json(true);
+        json.add("foo");
+        json.add("bar");
+        json.remove(json.size()-1);
+        assertEquals(1,json.size());
+    }
 
     @Test
     public void toChain_doubleQuote_key(){
