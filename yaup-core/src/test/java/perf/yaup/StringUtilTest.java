@@ -1038,7 +1038,7 @@ public class StringUtilTest {
       map.put("FOO", "_");
       map.put("{_}", "FOUND");
       try {
-         String response = StringUtil.populatePattern("$<<{$<<FOO>>}>>", map, "$<<", ":", ">>", "=");
+         String response = StringUtil.populatePattern("$<<<<{$<<<<FOO>>>>}>>>>", map, "$<<<<", ":", ">>>>", "=");
          assertEquals("FOUND", response);
       } catch (PopulatePatternException pe) {
          fail(pe.getMessage());
