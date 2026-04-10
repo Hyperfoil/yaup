@@ -160,6 +160,13 @@ public class JsonTest {
     }
 
     @Test
+    public void add_long_get_long(){
+        Json json = new Json();
+        json.set("key", 1L);
+        Object value = json.get("key");
+        assertTrue(value instanceof Long);
+    }
+    @Test
     public void toChain_doubleQuote_key(){
         List<String> chain = Json.toChain("a.\"1.2.3\".b");
         assertEquals("expect 3 entries: "+chain,3,chain.size());
@@ -288,6 +295,15 @@ public class JsonTest {
             throw new RuntimeException(e);
         }
         assertEquals("wrong number of entries\n"+json,limit*concurrency,json.size());
+    }
+    @Test
+    public void fromString_array_with_number(){
+        Json json = Json.fromString("[5555555555]");
+        assertNotNull(json);
+        assertTrue(json.isArray());
+        Object first = json.get(0);
+        assertNotNull(first);
+        assertTrue(first instanceof Long);
     }
     @Test
     public void chainSet_array_reference(){
