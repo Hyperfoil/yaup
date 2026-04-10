@@ -6,8 +6,7 @@ import io.hyperfoil.tools.yaup.time.SystemTimer;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class SystemTimerTest {
 
@@ -18,6 +17,29 @@ public class SystemTimerTest {
          e.printStackTrace();
       }
 
+   }
+
+
+   @Test
+   public void stop_nested_parallel(){
+
+       int interval = 20;
+
+       SystemTimer timer = new SystemTimer("parent");
+       SystemTimer child = timer.start("child");
+       SystemTimer gchild = child.start("gchild");
+       try { Thread.sleep(interval); } catch (InterruptedException e) { };
+       child.start("sibling",false);
+       try { Thread.sleep(interval); } catch (InterruptedException e) { };
+       gchild.start("sequential_1",false);
+       try { Thread.sleep(interval); } catch (InterruptedException e) { };
+       gchild.start("parallel_1",true);
+       try { Thread.sleep(interval); } catch (InterruptedException e) { };
+       gchild.start("sequential_2",false);
+       try { Thread.sleep(interval); } catch (InterruptedException e) { };
+       timer.start("next");
+       timer.stop();
+       assertFalse("timers should not contain negative numbers:\n"+timer.getJson().toString(2),timer.getJson().toString().matches(".*-\\d.*"));
    }
 
    @Test @Ignore

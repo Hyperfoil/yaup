@@ -112,12 +112,19 @@ public class SystemTimer {
      * @return new SystemTime
      */
     public SystemTimer start(String name, Json data, boolean parallel){
-//TODO throwing breaks async ScriptCmd
-//        if(isStopped()){
-//            throw new IllegalStateException("cannot start("+name.trim()+") after stop("+this.name+")");
-//        }
-
+        if(isStopped()){
+            return NULL;
+        }
+        //if going to be parallel
+        if(parallel && !hasParallel){
+            SystemTimer tmr = parent;
+            while(tmr!=null && !tmr.hasParallel){
+                tmr.hasParallel = true;
+                tmr = tmr.parent;
+            }
+        }
         hasParallel = hasParallel || parallel;
+
         long milli = System.currentTimeMillis();
         long nano = System.nanoTime();
         if(isActive()) {
@@ -172,10 +179,13 @@ public class SystemTimer {
         stop(milliStop,nanoStop,null,stopParallel);
     }
     private void stop(long milliStop,long nanoStop,Json data,boolean stopParallel){
-        if(isActive() && ( stopParallel || !isParallel)) {
+        if(isActive() && ( stopParallel || !isParallel )) {
             this.milliStop = milliStop;
             this.nanoStop = nanoStop;
-            stopChildren(milliStop,nanoStop,data,stopParallel);
+            //children cannot continue past their parent's stop time
+            if(hasChildren()) {
+                stopChildren(milliStop, nanoStop, data, true);
+            }
         }
     }
 
@@ -189,7 +199,8 @@ public class SystemTimer {
     private void stopChildren(long milliStop,long nanoStop,Json data, boolean stopParallel){
         int counter = children.size()-1;
         while(counter>=0 && ( (stopParallel && hasParallel) || children.get(counter).isActive())){
-            children.get(counter).stop(milliStop, nanoStop, data,stopParallel);
+            SystemTimer child = children.get(counter);
+            child.stop(milliStop, nanoStop, data,stopParallel);
             counter--;
         }
         if(stopParallel){
@@ -198,6 +209,10 @@ public class SystemTimer {
 
     }
 
+    /**
+     * get the timer tree as json
+     * @return
+     */
     public Json getJson(){
         Json rtrn = new Json();
         rtrn.set("name",getName());
